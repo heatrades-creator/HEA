@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const rateLimitMap = new Map();
 
 function rateLimit(ip) {
-  const now = Date.now;
+  const now = Date.now();
   const windowMs = 60 * 1000;
   const maxRequests = 3;
 

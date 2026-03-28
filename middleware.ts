@@ -5,5 +5,5 @@ export default withAuth({
 });
 
 export const config = {
-  matcher: ['/dashboard/((?!login).*)'],
+  matcher: ['/dashboard/((?!login).*)', '/solar-analyser/:path*'],
 };

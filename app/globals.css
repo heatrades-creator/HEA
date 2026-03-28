@@ -72,6 +72,19 @@ body {
   .animate-breathe-subtle {
     animation: breathe-subtle 8s ease-in-out infinite;
   }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slide-in 0.25s ease-out;
+  }
 };
 
 /* Respect user motion preferences */

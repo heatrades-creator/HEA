@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const rateLimitMap = new Map();
 
 function rateLimit(ip) {
-  const now = Date.now;
+  const now = Date.now();
   const windowMs = 60 * 1000;
   const maxRequests = 3;
 
@@ -43,7 +43,7 @@ async function sendTelegram({ name, email, phone, service, message, solarTier })
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return;
 
-  const text = `📩 New Contact Form Submission
+  const text = `\u{1F4E9} New Contact Form Submission
 
 Name: ${name}
 Email: ${email}

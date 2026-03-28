@@ -1,32 +1,33 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
+import ModernContactForm from "@/components/Form";
 
 export const metadata: Metadata = {
-  title: "Book a Solar Consultation | HEA",
+  title: "Book a Consultation | HEA",
   description:
-    "Fill in a few details and upload your electricity bill — we'll download your usage data from Powercor and design the perfect solar and battery system for your home.",
+    "Get in touch with Heffernan Electrical Automation for smart home, solar, EV charger, and general electrical services in Melbourne.",
 };
 
 export default function BookPage() {
   return (
     <>
       <Nav />
-      {/* Gold accent stripe + full-viewport intake form */}
       <div
-        className="w-full bg-heffgray2 border-t-4 border-heffdark"
-        style={{ marginTop: "80px", height: "calc(100vh - 80px)", overflow: "hidden" }}
+        className="w-full bg-gradient-to-b from-slate-50 to-white min-h-screen"
+        style={{ paddingTop: "100px" }}
       >
-        <div className="relative w-full h-full">
-          <div
-            className="absolute inset-0 bg-gradient-to-br from-heffblack via-slate-800 to-heffdark opacity-5 pointer-events-none"
-            aria-hidden="true"
-          />
-          <iframe
-            src="https://script.google.com/macros/s/AKfycbwYbZHXmEguJJFmGT0hd94M5heR8TUJFVConEBwcEI5x-DTgLUibdN5dlLp-VKr5tQ/exec"
-            title="Book a Solar Consultation"
-            allow="fullscreen"
-            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-          />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold text-slate-900 mb-3">
+              Book a Consultation
+            </h1>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Tell us about your project and we&apos;ll get back to you within 24 hours.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <ModernContactForm />
+          </div>
         </div>
       </div>
     </>

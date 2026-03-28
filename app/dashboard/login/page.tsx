@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { signIn } from 'next-auth/react';
 import LoginButton from './LoginButton';
 
 export const metadata = { title: 'Staff Login | HEA' };

@@ -1,5 +1,4 @@
 import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import SignOutButton from './SignOutButton';
 
@@ -7,7 +6,12 @@ export const metadata = { title: 'Dashboard | HEA' };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
-  if (!session) redirect('/dashboard/login');
+
+  // If no session, render children without dashboard nav
+  // (login page needs this, middleware handles protection for other pages)
+  if (!session) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="min-h-screen bg-[#181818]">

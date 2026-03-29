@@ -28,7 +28,7 @@ const Footer = ({ data }: FooterProps) => {
     facebookUrl: "#",
     instagramUrl: "#",
     copyrightText:
-      "© 2025 Heffernan Electrical Automation. All rights reserved. REC 37307 · Licensed & Insured.",
+      "\u00a9 2025 Heffernan Electrical Automation. All rights reserved. REC 37307 \u00b7 Licensed & Insured.",
   };
 
   const footerData = data || defaultData;
@@ -149,7 +149,16 @@ const Footer = ({ data }: FooterProps) => {
         </div>
 
         <div className="border-t border-slate-800 pt-8 text-center text-slate-400">
-          <p>{footerData.copyrightText}</p>
+          <p>
+            {footerData.copyrightText}
+            <span className="mx-2">\u00b7</span>
+            <Link
+              href="/dashboard"
+              className="text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              Staff
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

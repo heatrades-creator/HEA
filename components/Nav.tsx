@@ -46,7 +46,10 @@ const Nav = () => {
         <div className="grid grid-cols-3 md:grid-cols-2 justify-stretch items-center h-20 mx-4">
           <div className="md:hidden"></div>
           <div className="flex items-center">
-            <div>
+            <div
+              onDoubleClick={() => window.location.href = '/dashboard'}
+              className="cursor-pointer"
+            >
               <Image src={logo} alt="Logo" height={50} />
             </div>
           </div>

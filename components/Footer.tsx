@@ -149,7 +149,16 @@ const Footer = ({ data }: FooterProps) => {
         </div>
 
         <div className="border-t border-slate-800 pt-8 text-center text-slate-400">
-          <p>{footerData.copyrightText}</p>
+          <p>
+            {footerData.copyrightText}
+            <span className="mx-2">·</span>
+            <Link
+              href="/dashboard"
+              className="text-slate-600 hover:text-slate-400 transition-colors"
+            >
+              Staff
+            </Link>
+          </p>
         </div>
       </div>
     </footer>

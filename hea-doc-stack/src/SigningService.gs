@@ -1,14 +1,13 @@
 /**
  * SigningService.gs
- * Manages the e-signature queue.
- * Phase 7: Full DocuSeal/OpenSign integration is not yet implemented.
- * This module must exist and be callable without errors.
+ * Manages the document signing queue.
+ * Full DocuSeal/OpenSign integration is Phase 7 — syncSigningStatus is a stub.
  */
 
 const SigningService = (() => {
 
   /**
-   * Appends a job to the SIGNING_QUEUE sheet with status PENDING.
+   * Adds a PDF to the SIGNING_QUEUE for later dispatch to a signing provider.
    * @param {string} jobId
    * @param {string} docClass
    * @param {string} pdfFileId
@@ -20,30 +19,30 @@ const SigningService = (() => {
     const provider = SheetRepository.getSettingValue(CONFIG.SETTINGS_KEYS.SIGNING_PROVIDER) || 'DOCUSEAL';
 
     const row = {
-      job_id:            jobId           || '',
-      doc_class:         docClass        || '',
-      pdf_file_id:       pdfFileId       || '',
-      pdf_link:          pdfLink         || '',
-      recipient_name:    recipientName   || '',
-      recipient_email:   recipientEmail  || '',
-      provider:          provider,
-      send_status:       'PENDING',
-      sign_status:       'PENDING',
-      signed_file_link:  '',
-      sign_request_id:   '',
-      last_sync:         new Date().toISOString()
+      job_id:           jobId           || '',
+      doc_class:        docClass        || '',
+      pdf_file_id:      pdfFileId       || '',
+      pdf_link:         pdfLink         || '',
+      recipient_name:   recipientName   || '',
+      recipient_email:  recipientEmail  || '',
+      provider:         provider,
+      send_status:      'PENDING',
+      sign_status:      'PENDING',
+      signed_file_link: '',
+      sign_request_id:  '',
+      last_sync:        new Date().toISOString()
     };
 
     SheetRepository.appendRow(CONFIG.TABS.SIGNING_QUEUE, row);
-    Logger_.log('SigningService', `Queued ${jobId} for signing via ${provider}`, 'INFO');
+    Logger_.log('SigningService', `Job ${jobId} queued for signing via ${provider}`, 'INFO');
   };
 
   /**
-   * Stub — Phase 7 implementation will sync signing status from provider.
-   * Currently logs a not-implemented message and returns immediately.
+   * Syncs signing status with the configured provider.
+   * STUB — Phase 7 implementation pending.
    */
   const syncSigningStatus = () => {
-    Logger_.log('SigningService', 'syncSigningStatus: not implemented — Phase 7', 'INFO');
+    Logger_.log('SigningService', 'syncSigningStatus: not yet implemented (Phase 7)', 'INFO');
   };
 
   return { queueForSigning, syncSigningStatus };

@@ -45,12 +45,11 @@ const CONFIG = {
     archive:  '99_Archive'
   },
 
-  /** Claude API configuration */
-  CLAUDE: {
-    API_URL:            'https://api.anthropic.com/v1/messages',
-    MODEL:              'claude-opus-4-5',
-    MAX_TOKENS:         2000,
-    ANTHROPIC_VERSION:  '2023-06-01'
+  /** Gemini API configuration (free tier — no billing required) */
+  GEMINI: {
+    API_URL:    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+    MODEL:      'gemini-1.5-flash',
+    MAX_TOKENS: 2000
   },
 
   /** Job ID generation settings */

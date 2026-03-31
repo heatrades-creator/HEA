@@ -1,59 +1,61 @@
 /**
  * ClaudeClient.gs
- * HTTP client for the Anthropic Claude Messages API.
- * All external API calls are isolated in this module.
+ * AI API client — now powered by Google Gemini 1.5 Flash (free tier).
+ * Module name kept as ClaudeClient so no other files need changing.
+ * Free tier limits: 15 requests/min, 1,500 requests/day — sufficient for proposals.
  */
 
 const ClaudeClient = (() => {
 
-  /**
-   * Pauses execution for a given number of milliseconds.
-   * @param {number} ms
-   */
+  /** Pauses execution for a given number of milliseconds. */
   const _sleep = (ms) => {
     Utilities.sleep(ms);
   };
 
   /**
-   * Calls the Claude API with a system prompt and user content string.
+   * Calls the Gemini API with a system prompt and user content string.
    * Retries on HTTP 429, 500, and 503 with exponential backoff.
    * @param {string} systemPrompt
    * @param {string} userContent
    * @param {number} [attempt] - Current attempt number (1-indexed). Defaults to 1.
-   * @returns {string} The raw text response from Claude.
+   * @returns {string} The raw text response from Gemini.
    * @throws {Error} On non-retryable HTTP errors or exhausted retries.
    */
   const call = (systemPrompt, userContent, attempt) => {
     const currentAttempt = attempt || 1;
 
-    const apiKey = PropertiesService.getScriptProperties().getProperty('CLAUDE_API_KEY');
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
     if (!apiKey) {
       throw new Error(
-        `${CONFIG.ERROR_CLASS.CONFIG_ERROR}: CLAUDE_API_KEY not set in Script Properties`
+        `${CONFIG.ERROR_CLASS.CONFIG_ERROR}: GEMINI_API_KEY not set in Script Properties`
       );
     }
 
+    // Gemini combines system + user content into a single user turn
+    const combinedPrompt = `${systemPrompt}\n\n${userContent}`;
+
     const requestBody = {
-      model:      CONFIG.CLAUDE.MODEL,
-      max_tokens: CONFIG.CLAUDE.MAX_TOKENS,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: userContent }]
+      contents: [
+        { role: 'user', parts: [{ text: combinedPrompt }] }
+      ],
+      generationConfig: {
+        maxOutputTokens: CONFIG.GEMINI.MAX_TOKENS,
+        temperature:     0.3
+      }
     };
+
+    const url = `${CONFIG.GEMINI.API_URL}?key=${apiKey}`;
 
     const options = {
       method:             'post',
       contentType:        'application/json',
-      headers: {
-        'x-api-key':          apiKey,
-        'anthropic-version':  CONFIG.CLAUDE.ANTHROPIC_VERSION
-      },
       payload:            JSON.stringify(requestBody),
       muteHttpExceptions: true
     };
 
-    Logger_.log('ClaudeClient', `API call attempt ${currentAttempt}/${CONFIG.RETRY.MAX_ATTEMPTS}`, 'INFO');
+    Logger_.log('ClaudeClient', `Gemini API call attempt ${currentAttempt}/${CONFIG.RETRY.MAX_ATTEMPTS}`, 'INFO');
 
-    const response = UrlFetchApp.fetch(CONFIG.CLAUDE.API_URL, options);
+    const response = UrlFetchApp.fetch(url, options);
     const status   = response.getResponseCode();
     const body     = response.getContentText();
 
@@ -76,23 +78,28 @@ const ClaudeClient = (() => {
       );
     }
 
+    // Gemini response: candidates[0].content.parts[0].text
     const parsed = JSON.parse(body);
-    const text   = parsed.content && parsed.content[0] && parsed.content[0].text
-      ? parsed.content[0].text.trim()
+    const text   = parsed.candidates &&
+                   parsed.candidates[0] &&
+                   parsed.candidates[0].content &&
+                   parsed.candidates[0].content.parts &&
+                   parsed.candidates[0].content.parts[0]
+      ? parsed.candidates[0].content.parts[0].text.trim()
       : '';
 
     if (!text) {
       throw new Error(
-        `${CONFIG.ERROR_CLASS.CLAUDE_API_ERROR}: Empty response content from Claude`
+        `${CONFIG.ERROR_CLASS.CLAUDE_API_ERROR}: Empty response from Gemini API`
       );
     }
 
-    Logger_.log('ClaudeClient', `API call succeeded on attempt ${currentAttempt}`, 'INFO');
+    Logger_.log('ClaudeClient', `Gemini API call succeeded on attempt ${currentAttempt}`, 'INFO');
     return text;
   };
 
   /**
-   * Convenience method: builds the prompt then calls Claude.
+   * Convenience method: builds the prompt then calls Gemini.
    * @param {Object} normalisedData
    * @param {string} templateId
    * @returns {string}

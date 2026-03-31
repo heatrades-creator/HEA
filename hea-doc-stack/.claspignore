@@ -1,0 +1,6 @@
+tests/
+scripts/
+README.md
+.clasp.json
+node_modules/
+*.md

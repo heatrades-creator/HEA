@@ -47,8 +47,8 @@ const CONFIG = {
 
   /** Gemini API configuration (free tier — no billing required) */
   GEMINI: {
-    API_URL:    'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
-    MODEL:      'gemini-1.5-flash',
+    API_URL:    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+    MODEL:      'gemini-2.0-flash',
     MAX_TOKENS: 2000
   },
 

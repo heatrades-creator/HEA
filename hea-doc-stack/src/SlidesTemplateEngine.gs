@@ -91,9 +91,15 @@ const SlidesTemplateEngine = (() => {
     const fileId = copy.getId();
 
     const presentation = SlidesApp.openById(fileId);
-    const slides = presentation.getSlides();
 
-    slides.forEach(slide => _processSlide(slide, placeholders));
+    // Use presentation-level replaceAllText which handles split text runs correctly.
+    // Per-run replacement fails when Slides splits a placeholder across multiple runs.
+    Object.keys(placeholders).forEach(key => {
+      const value = placeholders[key] !== null && placeholders[key] !== undefined
+        ? String(placeholders[key])
+        : '';
+      presentation.replaceAllText(key, value);
+    });
 
     presentation.saveAndClose();
 

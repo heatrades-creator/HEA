@@ -1,6 +1,8 @@
 import { getServerSession } from 'next-auth';
 import Link from 'next/link';
+import { Suspense } from 'react';
 import SignOutButton from './SignOutButton';
+import ProposalUsageBadge from '@/components/dashboard/ProposalUsageBadge';
 
 export const metadata = { title: 'Dashboard | HEA' };
 
@@ -30,6 +32,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         <div className="flex items-center gap-4">
+          <Suspense fallback={<div className="hidden sm:block w-48 h-7 bg-[#2a2a2a] rounded-lg animate-pulse" />}>
+            <ProposalUsageBadge />
+          </Suspense>
           <span className="text-[#555] text-sm hidden sm:block">
             {session.user?.email}
           </span>

@@ -1,8 +1,8 @@
 /**
  * ClaudeClient.gs
- * AI API client — now powered by Google Gemini 1.5 Flash (free tier).
+ * AI API client — powered by Google Gemini 2.5 Flash (free tier).
  * Module name kept as ClaudeClient so no other files need changing.
- * Free tier limits: 15 requests/min, 1,500 requests/day — sufficient for proposals.
+ * Free tier limits: 10 RPM, 500 RPD — sufficient for proposals.
  */
 
 const ClaudeClient = (() => {
@@ -18,7 +18,7 @@ const ClaudeClient = (() => {
    * @param {string} systemPrompt
    * @param {string} userContent
    * @param {number} [attempt] - Current attempt number (1-indexed). Defaults to 1.
-   * @returns {string} The raw text response from Gemini.
+   * @returns {{ text: string, tokenCount: number }} Response text and total tokens used.
    * @throws {Error} On non-retryable HTTP errors or exhausted retries.
    */
   const call = (systemPrompt, userContent, attempt) => {
@@ -78,15 +78,16 @@ const ClaudeClient = (() => {
       );
     }
 
-    // Gemini response: candidates[0].content.parts[0].text
-    const parsed = JSON.parse(body);
-    const text   = parsed.candidates &&
-                   parsed.candidates[0] &&
-                   parsed.candidates[0].content &&
-                   parsed.candidates[0].content.parts &&
-                   parsed.candidates[0].content.parts[0]
-      ? parsed.candidates[0].content.parts[0].text.trim()
-      : '';
+    // Parse Gemini response — skip any internal "thinking" parts (gemini-2.5 feature)
+    const parsed   = JSON.parse(body);
+    const parts    = parsed.candidates &&
+                     parsed.candidates[0] &&
+                     parsed.candidates[0].content &&
+                     parsed.candidates[0].content.parts
+      ? parsed.candidates[0].content.parts
+      : [];
+    const textPart = parts.find(p => !p.thought) || parts[0];
+    const text     = textPart ? textPart.text.trim() : '';
 
     if (!text) {
       throw new Error(
@@ -94,15 +95,20 @@ const ClaudeClient = (() => {
       );
     }
 
-    Logger_.log('ClaudeClient', `Gemini API call succeeded on attempt ${currentAttempt}`, 'INFO');
-    return text;
+    // Extract real token usage from Gemini's usageMetadata
+    const tokenCount = (parsed.usageMetadata && parsed.usageMetadata.totalTokenCount)
+      ? Number(parsed.usageMetadata.totalTokenCount)
+      : 0;
+
+    Logger_.log('ClaudeClient', `Gemini API call succeeded on attempt ${currentAttempt} (${tokenCount} tokens)`, 'INFO');
+    return { text, tokenCount };
   };
 
   /**
    * Convenience method: builds the prompt then calls Gemini.
    * @param {Object} normalisedData
    * @param {string} templateId
-   * @returns {string}
+   * @returns {{ text: string, tokenCount: number }}
    */
   const callWithPrompt = (normalisedData, templateId) => {
     const { systemPrompt, userContent } = PromptBuilder.buildPrompt(normalisedData, templateId);

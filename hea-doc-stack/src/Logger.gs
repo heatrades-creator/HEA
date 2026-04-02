@@ -29,9 +29,10 @@ const Logger_ = (() => {
    * @param {string} status - SUCCESS or FAILED
    * @param {number} durationMs
    * @param {string} triggeredBy
+   * @param {number} [tokenCount] - Total Gemini tokens consumed (from usageMetadata).
    */
   const writeExportLog = (jobId, docClass, templateId, outputFileId, outputLink,
-                          pdfFileId, pdfLink, status, durationMs, triggeredBy) => {
+                          pdfFileId, pdfLink, status, durationMs, triggeredBy, tokenCount) => {
     const row = {
       timestamp:       new Date().toISOString(),
       job_id:          jobId          || '',
@@ -43,7 +44,8 @@ const Logger_ = (() => {
       pdf_link:        pdfLink        || '',
       status:          status         || '',
       run_duration_ms: durationMs     || '',
-      triggered_by:    triggeredBy    || ''
+      triggered_by:    triggeredBy    || '',
+      total_tokens:    tokenCount     || 0
     };
     try {
       SheetRepository.appendRow(CONFIG.TABS.EXPORT_LOG, row);

@@ -95,8 +95,8 @@ function _runPipeline(nd, triggeredBy, startTime) {
     templateId = tc['template_id'];
     JobService.updateJobField(jobId, 'template_id', templateId);
 
-    // S4-S5: Call Claude, update stage
-    const rawResponse = ClaudeClient.callWithPrompt(nd, templateId);
+    // S4-S5: Call Gemini, update stage — destructure text and real token count
+    const { text: rawResponse, tokenCount } = ClaudeClient.callWithPrompt(nd, templateId);
     JobService.updateJobStage(jobId, CONFIG.PIPELINE_STAGE.CLAUDE_COMPLETE);
 
     // S6: Validate JSON
@@ -127,11 +127,11 @@ function _runPipeline(nd, triggeredBy, startTime) {
       pdfLink   = pdfResult.pdfLink;
     }
 
-    // S13-S15: Write links, stage, export log
+    // S13-S15: Write links, stage, export log (include real token count)
     JobService.updateJobOutputLinks(jobId, outputFileId, outputLink, pdfFileId, pdfLink);
     JobService.updateJobStage(jobId, CONFIG.PIPELINE_STAGE.EXPORT_COMPLETE);
     Logger_.writeExportLog(jobId, docClass, templateId, outputFileId, outputLink,
-                           pdfFileId, pdfLink, 'SUCCESS', Date.now() - startTime, triggeredBy);
+                           pdfFileId, pdfLink, 'SUCCESS', Date.now() - startTime, triggeredBy, tokenCount);
 
     // S16: Signing queue
     if (String(tc['require_signing'] || '').toUpperCase() === 'TRUE') {
@@ -148,7 +148,7 @@ function _runPipeline(nd, triggeredBy, startTime) {
       'ERROR', true, err.stack ? err.stack.substring(0, 300) : '');
     JobService.markJobFailed(jobId);
     Logger_.writeExportLog(jobId, docClass, templateId, outputFileId, outputLink,
-                           pdfFileId, pdfLink, 'FAILED', Date.now() - startTime, triggeredBy);
+                           pdfFileId, pdfLink, 'FAILED', Date.now() - startTime, triggeredBy, 0);
     throw err;
   }
 }

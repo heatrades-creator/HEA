@@ -94,11 +94,13 @@ const SlidesTemplateEngine = (() => {
 
     // Use presentation-level replaceAllText which handles split text runs correctly.
     // Per-run replacement fails when Slides splits a placeholder across multiple runs.
+    // Manifest keys are stored WITHOUT braces (e.g. "Customer_Name").
+    // We wrap them here to match the template format {Variable_Name}.
     Object.keys(placeholders).forEach(key => {
       const value = placeholders[key] !== null && placeholders[key] !== undefined
         ? String(placeholders[key])
         : '';
-      presentation.replaceAllText(key, value);
+      presentation.replaceAllText('{' + key + '}', value);
     });
 
     presentation.saveAndClose();
@@ -133,7 +135,8 @@ const SlidesTemplateEngine = (() => {
     }).join(' ');
 
     presentation.saveAndClose();
-    return requiredKeys.filter(key => allText.indexOf(key) !== -1);
+    // Manifest keys have no braces; check for the brace-wrapped form still present in the doc.
+    return requiredKeys.filter(key => allText.indexOf('{' + key + '}') !== -1);
   };
 
   return { fillTemplate, auditUnresolvedPlaceholders };

@@ -94,7 +94,7 @@ Use null or empty string per null_policy for unknown values.`;
         job_id:        '<JOB-YYYY-NNNN>',
         template_id:   '<HEA_TEMPLATE_..._vNNN>',
         file_name:     '<HEA_DOCTYPE_DATE_JOBID_SURNAME_ADDR_vNNN>',
-        placeholders:  { '{{PLACEHOLDER_KEY}}': '<value_string>' },
+        placeholders:  { 'Variable_Name': '<value_string — key matches template {Variable_Name} tokens, NO braces in key>' },
         meta: {
           tone:               'premium_restrained',
           word_budget_profile:'visual_template_safe',

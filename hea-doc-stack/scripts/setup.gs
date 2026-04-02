@@ -63,6 +63,10 @@ function setupSheetHeaders() {
     ],
     SETTINGS: [
       'key','value','description'
+    ],
+    DOCUMENT_JOBS: [
+      'job_number','doc_job_id','doc_class','template_display_name',
+      'status','output_link','pdf_link','generated_at','token_count','triggered_by'
     ]
   };
 

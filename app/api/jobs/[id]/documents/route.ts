@@ -44,6 +44,7 @@ export async function POST(req: NextRequest, { params }: Params) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action: 'generateDocument', jobNumber, docClass }),
+    signal: AbortSignal.timeout(58_000),
   });
 
   const data = await res.json();

@@ -34,8 +34,6 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
 
   // Fetch available templates from GAS on mount
   useEffect(() => {
-    const gasUrl = '/api/templates'; // proxied via Next.js route below
-    // Fetch directly via the documents API which loads templates server-side
     fetch(`/api/jobs/${jobNumber}/templates`)
       .then(r => r.ok ? r.json() : [])
       .then(setTemplates)

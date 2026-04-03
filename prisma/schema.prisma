@@ -1,0 +1,117 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ─── LEADS ────────────────────────────────────────────────────────────────────
+
+model Lead {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // From public quote form
+  firstName     String
+  lastName      String
+  email         String
+  phone         String
+  address       String
+  suburb        String
+  state         String
+  postcode      String
+  annualBillAud Int?
+  roofType      String?   // "tile" | "metal" | "flat" | "other"
+  storeys       Int?
+  notes         String?
+  leadSource    String    @default("website") // "website" | "ada_widget" | "referral"
+
+  // Status machine
+  // "pending_review" | "opensolar_created" | "rejected" | "duplicate" | "auto_qualified"
+  status String @default("pending_review")
+
+  // OpenSolar data (set after human confirms)
+  openSolarProjectId   Int?
+  openSolarCreatedAt   DateTime?
+  openSolarCreatedBy   String?   // admin email who confirmed
+  openSolarShareLink   String?   // proposal URL for customer
+  openSolarStage       String?
+  openSolarSystemKw    Float?
+  openSolarOutputKwh   Float?
+  openSolarPriceAud    Float?
+
+  // Cost tracking
+  apiCostAud      Float?
+  apiCostSnapshot String?   // JSON snapshot of env vars at time of API call
+
+  // Customer journey milestones (all set via webhooks — always free)
+  proposalSentAt      DateTime?
+  proposalViewedAt    DateTime?
+  proposalAcceptedAt  DateTime?
+  financeApprovedAt   DateTime?
+  contractSignedAt    DateTime?
+  depositPaidAt       DateTime?
+  permitSubmittedAt   DateTime?
+  soldAt              DateTime?
+  installedAt         DateTime?
+
+  // Customer proposal access token (for /proposal/[token] page)
+  proposalToken String @unique @default(cuid())
+
+  // Relations
+  auditLog AuditEntry[]
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────────────────────
+
+model AuditEntry {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+
+  // Action types:
+  // "lead_received"          — new lead from public form or Ada widget
+  // "human_confirmed"        — admin clicked confirm, project created in OpenSolar
+  // "opensolar_created"      — alias for human_confirmed (legacy compat)
+  // "opensolar_create_failed"— createProject() threw, lead stays pending_review
+  // "rejected"               — admin rejected the lead
+  // "webhook_received"       — generic OpenSolar webhook
+  // "proposal_sent"          — proposal sent to customer
+  // "proposal_viewed"        — customer opened proposal
+  // "proposal_accepted"      — customer accepted proposal
+  // "finance_approved"       — finance application approved
+  // "contract_signed"        — customer signed contract
+  // "deposit_paid"           — deposit payment received
+  // "permit_submitted"       — permit application submitted
+  // "job_sold"               — project marked sold in OpenSolar
+  // "job_installed"          — installation date set
+  // "premium_imagery_requested" — Nearmap imagery enabled (paid)
+  // "permit_pack_requested"  — permit & engineering package ordered (paid)
+  action  String
+  actor   String    // "system" | admin email | "opensolar_webhook"
+  detail  String?   // JSON string with extra context
+  costAud Float?    // ONLY set for paid actions. null for all free actions.
+}
+
+// ─── SYSTEM CONFIG ────────────────────────────────────────────────────────────
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+// Keys used:
+// "ada_widget_enabled"           "true" | "false"
+// "ada_auto_creates_projects"    "true" | "false" | "unknown"  ← MUST confirm with OpenSolar
+// "cashflow_enabled"             "true" | "false"
+// "integrated_finance_enabled"   "true" | "false"
+// "esignature_enabled"           "true" | "false"
+// "auto_design_enabled"          "true" | "false"
+// "supplier_assist_enabled"      "true" | "false"
+// "permitting_enabled"           "true" | "false"
+// "premium_imagery_enabled"      "true" | "false"

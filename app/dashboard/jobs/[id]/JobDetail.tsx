@@ -6,20 +6,32 @@ import { useRouter } from 'next/navigation';
 const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
 
 const STAGE_COLORS: Record<string, string> = {
-  Lead: 'bg-[#3a3a3a] text-[#aaa]',
-  Quoted: 'bg-blue-900/40 text-blue-300',
-  Booked: 'bg-purple-900/40 text-purple-300',
+  Lead:          'bg-[#3a3a3a] text-[#aaa]',
+  Quoted:        'bg-blue-900/40 text-blue-300',
+  Booked:        'bg-purple-900/40 text-purple-300',
   'In Progress': 'bg-yellow-900/40 text-[#ffd100]',
-  Complete: 'bg-green-900/40 text-green-400',
+  Complete:      'bg-green-900/40 text-green-400',
 };
 
 export default function JobDetail({ job }: { job: any }) {
   const router = useRouter();
-  const [status, setStatus] = useState(job.status);
-  const [notes, setNotes] = useState(job.notes ?? '');
+
+  // Core fields
+  const [status, setStatus]   = useState(job.status);
+  const [notes, setNotes]     = useState(job.notes ?? '');
   const [driveUrl, setDriveUrl] = useState(job.driveUrl ?? '');
+
+  // Solar system fields
+  const [systemSize, setSystemSize]       = useState(job.systemSize ?? '');
+  const [batterySize, setBatterySize]     = useState(job.batterySize ?? '');
+  const [totalPrice, setTotalPrice]       = useState(job.totalPrice ?? '');
+  const [annualBill, setAnnualBill]       = useState(job.annualBill ?? '');
+  const [financeRequired, setFinanceRequired] = useState<boolean>(
+    job.financeRequired === true || job.financeRequired === 'TRUE' || job.financeRequired === 'true'
+  );
+
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved]   = useState(false);
 
   async function save() {
     setSaving(true);
@@ -27,10 +39,19 @@ export default function JobDetail({ job }: { job: any }) {
       await fetch(`/api/jobs/${job.jobNumber}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, notes, driveUrl }),
+        body: JSON.stringify({
+          status,
+          notes,
+          driveUrl,
+          systemSize,
+          batterySize,
+          totalPrice,
+          annualBill,
+          financeRequired,
+        }),
       });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => setSaved(false), 2500);
       router.refresh();
     } finally {
       setSaving(false);
@@ -54,11 +75,11 @@ export default function JobDetail({ job }: { job: any }) {
         <p className="text-[#555] text-xs whitespace-nowrap">{job.createdDate}</p>
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Contact */}
+      <div className="p-6 space-y-7">
+        {/* Contact info (read-only) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Phone" value={job.phone} href={`tel:${job.phone}`} />
-          <Field label="Email" value={job.email} href={`mailto:${job.email}`} />
+          <ReadField label="Phone" value={job.phone} href={`tel:${job.phone}`} />
+          <ReadField label="Email" value={job.email} href={`mailto:${job.email}`} />
         </div>
 
         {/* Stage selector */}
@@ -81,17 +102,64 @@ export default function JobDetail({ job }: { job: any }) {
           </div>
         </div>
 
+        {/* ── System Details ── */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-[#888] text-xs uppercase tracking-wider">System Details</p>
+            <div className="flex-1 h-px bg-[#2a2a2a]" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+            <TextInput
+              label="System Size (kW)"
+              value={systemSize}
+              onChange={setSystemSize}
+              placeholder="e.g. 6.6"
+            />
+            <TextInput
+              label="Battery Size (kWh)"
+              value={batterySize}
+              onChange={setBatterySize}
+              placeholder="e.g. 10"
+            />
+            <TextInput
+              label="Quote Value ($)"
+              value={totalPrice}
+              onChange={setTotalPrice}
+              placeholder="e.g. 12500"
+            />
+            <TextInput
+              label="Est. Annual Bill ($)"
+              value={annualBill}
+              onChange={setAnnualBill}
+              placeholder="e.g. 2400"
+            />
+          </div>
+          <label className="inline-flex items-center gap-2.5 cursor-pointer">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={financeRequired}
+                onChange={(e) => setFinanceRequired(e.target.checked)}
+              />
+              <div className="w-9 h-5 bg-[#2a2a2a] border border-[#333] rounded-full peer-checked:bg-[#ffd100] transition-colors" />
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-[#555] rounded-full peer-checked:translate-x-4 peer-checked:bg-[#181818] transition-all" />
+            </div>
+            <span className="text-[#888] text-xs uppercase tracking-wider">Finance Required</span>
+          </label>
+        </div>
+
         {/* Drive URL */}
         <div>
           <label className="block text-[#888] text-xs uppercase tracking-wider mb-2">
-            Google Drive Folder URL
+            Google Drive Folder
           </label>
           <div className="flex gap-2">
             <input
               type="url"
               value={driveUrl}
               onChange={(e) => setDriveUrl(e.target.value)}
-              placeholder="https://drive.google.com/drive/folders/..."
+              placeholder="https://drive.google.com/drive/folders/…"
               className="flex-1 bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
             />
             {driveUrl && (
@@ -115,7 +183,7 @@ export default function JobDetail({ job }: { job: any }) {
             onChange={(e) => setNotes(e.target.value)}
             rows={5}
             className="w-full bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100] resize-none"
-            placeholder="Job notes, site details, equipment..."
+            placeholder="Job notes, site details, equipment, special requirements…"
           />
         </div>
 
@@ -132,7 +200,7 @@ export default function JobDetail({ job }: { job: any }) {
   );
 }
 
-function Field({ label, value, href }: { label: string; value?: string; href?: string }) {
+function ReadField({ label, value, href }: { label: string; value?: string; href?: string }) {
   if (!value) return null;
   return (
     <div>
@@ -144,6 +212,31 @@ function Field({ label, value, href }: { label: string; value?: string; href?: s
       ) : (
         <p className="text-white text-sm">{value}</p>
       )}
+    </div>
+  );
+}
+
+function TextInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-[#888] text-xs uppercase tracking-wider mb-1.5">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
+      />
     </div>
   );
 }

@@ -80,8 +80,8 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
         </div>
         <div className="border-t border-[#242424]" />
         <div>
-          <p className="text-[#333] text-[10px] uppercase tracking-widest font-semibold mb-2">Quick Filters</p>
-          <p className="text-[#333] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
+          <p className="text-[#555] text-[10px] uppercase tracking-widest font-semibold mb-2">Quick Filters</p>
+          <p className="text-[#555] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
               const count = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
@@ -133,7 +133,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
         </div>
 
         {/* Count / pagination info */}
-        <p className="text-[#3a3a3a] text-xs mb-3">
+        <p className="text-[#555] text-xs mb-3">
           {sorted.length === 0
             ? 'No jobs found'
             : `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, sorted.length)} of ${sorted.length} jobs`}

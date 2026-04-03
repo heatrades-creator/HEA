@@ -30,15 +30,17 @@ async function getAllDocuments(): Promise<DocRecord[]> {
 export default async function DocumentsPage() {
   const docs = await getAllDocuments();
 
-  // Normalise field names — GAS EXPORT_LOG headers may vary
+  // Normalise field names — matches actual EXPORT_LOG columns:
+  // timestamp, job_id, doc_class, template_id, output_file_id,
+  // output_file_link, pdf_file_id, pdf_link, status, run_duration_ms, triggered_by, total_tokens
   const normalised: DocRecord[] = docs.map((row) => ({
-    jobNumber:   String(row.job_number ?? row.jobNumber ?? row['Job Number'] ?? ''),
-    clientName:  String(row.client_name ?? row.clientName ?? row['Client Name'] ?? ''),
-    docClass:    String(row.doc_class ?? row.docClass ?? row['Doc Class'] ?? row.type ?? ''),
-    status:      String(row.status ?? row.Status ?? ''),
-    generatedAt: String(row.generated_at ?? row.generatedAt ?? row['Generated At'] ?? row.timestamp ?? ''),
-    outputLink:  String(row.output_link ?? row.outputLink ?? row['Output Link'] ?? row.draft_link ?? ''),
-    pdfLink:     String(row.pdf_link ?? row.pdfLink ?? row['PDF Link'] ?? ''),
+    jobNumber:   String(row.job_id   ?? row.job_number ?? row.jobNumber ?? ''),
+    clientName:  String(row.client_name ?? row.clientName ?? ''),
+    docClass:    String(row.doc_class ?? row.docClass ?? ''),
+    status:      String(row.status ?? ''),
+    generatedAt: String(row.timestamp ?? row.generated_at ?? row.generatedAt ?? ''),
+    outputLink:  String(row.output_file_link ?? row.output_link ?? row.outputLink ?? ''),
+    pdfLink:     String(row.pdf_link ?? row.pdfLink ?? ''),
   }));
 
   // Most recent first

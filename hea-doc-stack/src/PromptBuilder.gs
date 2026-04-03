@@ -6,15 +6,27 @@
 const PromptBuilder = (() => {
 
   /** Fallback system prompt used when PROMPT_CONFIG row is not found. */
-  const SYSTEM_PROMPT_FALLBACK = `You are a structured document content engine for Home Energy Australia.
+  const SYSTEM_PROMPT_FALLBACK = `You are a structured document content engine for Heffernan Electrical Automation (HEA), a solar and battery installer based in Bendigo, Victoria, Australia.
 Your sole output is a single valid JSON object.
 No markdown fences. No explanation. No preamble.
-Map job intake data to document placeholder values.
+Map job intake data to document placeholder values exactly as specified.
 Keep all text premium, restrained and client-safe.
-Never invent technical specifications, prices or system sizes.
-Separate SCOPE, ASSUMPTIONS, and EXCLUSIONS into their own fields — never merge them.
+Never invent technical specifications, prices or system sizes not present in job_data.
+For derived financial fields (savings, payback, CO2, trees): calculate from the provided inputs using these rules:
+  - Yearly_Savings: format est_annual_saving as "$X,XXX/yr" or derive from bill reduction if not given
+  - Pay_BP: format payback_years as "X years" or estimate from price / annual saving
+  - C02_S: solar kW × 1.06 tonnes CO2/kW/yr, format as "X.X t CO2/yr"
+  - Trees_Planted25: CO2_annual × 25 / 0.06 trees per tonne rounded to nearest 10, format as "XXX trees"
+  - 25_Y_Value: est_annual_saving × 25, format as "$XXX,XXX"
+  - Net_Price: total_price formatted as "$XX,XXX inc GST" or use null if unknown
+For date fields: use today's date from proposal_date in the payload.
+  - Generation_Date: format as "3 April 2026"
+  - Expiery_Date: 30 days after Generation_Date, same format
+For Quote_Number: use job_id value exactly.
+For company and designer fields: use values from company_data and designer_data exactly as provided — do not modify them.
+For Page_Number: always return empty string "".
 Keep all text fields within their character budgets.
-Use null or empty string per null_policy for unknown values.`;
+Use empty string for unknown optional fields.`;
 
   /** The six writing rules injected into every prompt. */
   const WRITING_RULES = [
@@ -36,6 +48,40 @@ Use null or empty string per null_policy for unknown values.`;
     return placeholders.map(p =>
       `${p.key} | type:${p.type} | required:${p.required} | max_chars:${p.max_chars} | null_policy:${p.null_policy}`
     ).join('\n');
+  };
+
+  /**
+   * Loads brand config key/value pairs from BRAND_CONFIG tab.
+   * @returns {Object}
+   */
+  const _loadBrandConfig = () => {
+    try {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TABS.BRAND_CONFIG);
+      if (!sheet || sheet.getLastRow() <= 1) return {};
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+      const cfg  = {};
+      data.forEach(row => { if (row[0]) cfg[String(row[0])] = String(row[1] || ''); });
+      return cfg;
+    } catch (e) { return {}; }
+  };
+
+  /**
+   * Loads designer info from SETTINGS tab (keys: DESIGNER_NAME, DESIGNER_MOBILE, DESIGNER_EMAIL).
+   * @returns {{ name: string, mobile: string, email: string }}
+   */
+  const _loadDesignerConfig = () => {
+    try {
+      const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CONFIG.TABS.SETTINGS);
+      if (!sheet || sheet.getLastRow() <= 1) return { name: '', mobile: '', email: '' };
+      const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+      const s    = {};
+      data.forEach(row => { if (row[0]) s[String(row[0])] = String(row[1] || ''); });
+      return {
+        name:   s['DESIGNER_NAME']   || '',
+        mobile: s['DESIGNER_MOBILE'] || '',
+        email:  s['DESIGNER_EMAIL']  || ''
+      };
+    } catch (e) { return { name: '', mobile: '', email: '' }; }
   };
 
   /**
@@ -69,6 +115,9 @@ Use null or empty string per null_policy for unknown values.`;
 
     const manifest    = TemplateRegistry.getPlaceholderManifest(templateId);
     const constraints = _formatConstraints(manifest.placeholders || []);
+
+    const brand    = _loadBrandConfig();
+    const designer = _loadDesignerConfig();
 
     const jobData = {
       doc_class:             normalisedData['doc_class']             || '',
@@ -105,6 +154,16 @@ Use null or empty string per null_policy for unknown values.`;
       placeholder_constraints: constraints,
       proposal_date:           Utilities_.formatDateLong(new Date()),
       job_data:                jobData,
+      company_data: {
+        hea_mobile:  brand['hea_mobile']  || '',
+        hea_email:   brand['hea_email']   || '',
+        hea_address: brand['hea_address'] || ''
+      },
+      designer_data: {
+        name:   designer.name,
+        mobile: designer.mobile,
+        email:  designer.email
+      },
       writing_rules:           WRITING_RULES
     };
 

@@ -113,8 +113,8 @@ const CONFIG = {
     SIGNING_PROVIDER:   'SIGNING_PROVIDER'
   },
 
-  /** Regex matching {Variable_Name} placeholders (single brace, mixed case) */
-  PLACEHOLDER_PATTERN: /\{[A-Za-z][A-Za-z0-9_]*\}/g,
+  /** Regex matching {Variable_Name} or {25_Y_Value} placeholders (single brace, alphanumeric start) */
+  PLACEHOLDER_PATTERN: /\{[A-Za-z0-9][A-Za-z0-9_]*\}/g,
 
   /** Retry policy for transient failures */
   RETRY: {

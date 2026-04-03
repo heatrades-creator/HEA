@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import JobDocuments from '@/components/dashboard/JobDocuments';
 
 const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
 
@@ -127,6 +128,9 @@ export default function JobDetail({ job }: { job: any }) {
         >
           {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
         </button>
+
+        {/* Document generation */}
+        <JobDocuments jobNumber={job.jobNumber} />
       </div>
     </div>
   );

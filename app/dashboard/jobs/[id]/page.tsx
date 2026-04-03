@@ -23,7 +23,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
   if (!job) notFound();
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto p-6">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 text-[#888] hover:text-[#ffd100] text-sm mb-6 transition-colors"

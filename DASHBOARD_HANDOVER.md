@@ -204,15 +204,57 @@ Secondary button:
 
 ## 8. What To Build — Dashboard Expansion
 
-**Target GUI style:** Enterprise-grade data management UI. Reference: Qualys Patch Management dashboard. Key characteristics:
+**Target GUI style:** Enterprise-grade data management UI inspired by **Qualys Patch Management** dashboard. Qualys uses a tri-pane layout with a fixed top bar, collapsible left sidebar TOC, and dense main content. Key UI patterns to adapt to HEA's dark theme:
+
+### Qualys Design Patterns To Implement (adapted to HEA dark theme)
+
+**Layout:**
+- Fixed top bar (~56px) — logo left, search center, user/stats right
+- Left sidebar (~260px) — collapsible, independent scroll, active item has left border accent
+- Main content area — max-width ~1100px, padded, scrolls independently
+
+**Sidebar navigation:**
+- Section headers in uppercase tracking-wider (like current label style)
+- Active item: `border-l-2 border-[#ffd100] bg-[#ffd100]/5 text-white`
+- Inactive item: `text-[#666] hover:text-[#aaa] hover:bg-[#252525]`
+- Expand/collapse chevrons for grouped sections
+- Item height: ~36px, px-4, text-sm
+
+**Data tables:**
+- Header row: `bg-[#252525] border-b border-[#333]` — sticky, col labels text-[#888] text-xs uppercase tracking-wider
+- Body rows: `border-b border-[#2a2a2a] hover:bg-[#252525]` — height ~48px
+- Zebra striping optional (subtle: every other row `bg-[#1e1e1e]`)
+- Checkbox column (16px) for bulk selection
+- Sortable columns: up/down chevron icon next to header label, active sort highlights column header
+- Row click → navigate to detail page
+- Actions column: icon buttons (…) or inline text links
+
+**Status badges (Qualys-style pills, adapted):**
+- Rounded pill: `px-2.5 py-0.5 rounded-full text-xs font-medium`
+- Same palette as current STAGE_STYLES but used inline in table cells
+
+**Filter/search bar above tables:**
+- Search input (left), filter dropdowns (status, date), results count (right)
+- `bg-[#202020] border-b border-[#2e2e2e] px-4 py-3 flex items-center gap-3`
+
+**Stat cards (metrics panels):**
+- `bg-[#202020] border border-[#2e2e2e] rounded-xl p-5`
+- Large number in white (text-3xl font-bold), label below in text-[#555] text-sm
+- Subtle coloured left border accent per metric type
+- 4 cards in a row: `grid grid-cols-2 lg:grid-cols-4 gap-4`
+
+**Note/callout boxes:**
+- Info: `bg-blue-950/30 border-l-4 border-blue-500 rounded-r-lg px-4 py-3`
+- Warning: `bg-yellow-950/30 border-l-4 border-[#ffd100] rounded-r-lg px-4 py-3`
+
+**General characteristics from Qualys:**
 - Left **sidebar navigation** (not just top nav) with iconified menu items
-- Dense **data table view** as the primary jobs view (with sortable columns, search, filters) — alternative to or alongside the Kanban board
-- **Stats/metrics panels** at the top of the main view (total jobs, jobs by stage, revenue pipeline)
+- Dense **data table view** as the primary jobs view (with sortable columns, search, filters)
+- **Stats/metrics panels** at the top of the main view
 - **Inline row actions** on table rows (open, move stage, generate doc)
 - **Filter bar** above tables (filter by status, date range, suburb)
 - Professional **status pill badges** in table cells
-- **Pagination** or virtual scroll for large job lists
-- **Column chooser** or at minimum consistent column layout
+- **Pagination** (25 per page)
 - **Quick search** that filters the job table in real time
 
 **Specific pages/features to add:**

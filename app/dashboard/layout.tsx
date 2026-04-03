@@ -42,7 +42,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
       </nav>
 
-      <main className="p-6">{children}</main>
+      <main>{children}</main>
     </div>
   );
 }

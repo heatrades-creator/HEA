@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
+import Nav from "@/components/Nav"
+import Footer from "@/components/Footer"
 
 export const dynamic = "force-dynamic"
 
@@ -35,7 +37,9 @@ export default async function ProposalPage({
   ]
 
   return (
-    <main className="min-h-screen bg-[#181818] py-16 px-4">
+    <>
+    <Nav />
+    <main className="min-h-screen bg-[#181818] pt-32 pb-16 px-4">
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-10">
           <img src="/Logo_transparent.png" alt="HEA Group" className="h-12 mx-auto mb-6" />
@@ -118,5 +122,7 @@ export default async function ProposalPage({
         </p>
       </div>
     </main>
+    <Footer />
+    </>
   )
 }

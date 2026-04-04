@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { X, Menu, Shield, LayoutDashboard, Sun } from "lucide-react";
+import { X, Menu, Shield, LayoutDashboard, Sun, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -69,6 +69,12 @@ const Nav = () => {
               About
             </button>
             <Link
+              href="/quote"
+              className="text-slate-700 text-lg hover:text-heffdark transition-colors"
+            >
+              Solar Quote
+            </Link>
+            <Link
               href="/book"
               className="bg-heffdarkgray text-white px-6 py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:bg-heffdark hover:scale-105"
             >
@@ -123,6 +129,13 @@ const Nav = () => {
             >
               Reviews
             </button>
+            <Link
+              href="/quote"
+              onClick={() => setIsMenuOpen(false)}
+              className="block w-full text-left py-2 text-slate-700"
+            >
+              Solar Quote
+            </Link>
             <Link
               href="/book"
               onClick={() => setIsMenuOpen(false)}
@@ -189,6 +202,14 @@ const Nav = () => {
               >
                 <Sun className="w-5 h-5" />
                 <span className="text-sm font-medium">Solar Analyser</span>
+              </Link>
+              <Link
+                href="/admin"
+                onClick={() => setIsStaffOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-[#ccc] hover:bg-[#252525] hover:text-[#ffd100] transition-colors"
+              >
+                <Zap className="w-5 h-5" />
+                <span className="text-sm font-medium">OpenSolar Admin</span>
               </Link>
             </div>
 

@@ -72,6 +72,11 @@ const Footer = ({ data }: FooterProps) => {
                 </Link>
               </li>
               <li>
+                <Link href="/quote" className="hover:text-white transition-colors">
+                  Solar Quote
+                </Link>
+              </li>
+              <li>
                 <button
                   onClick={() => scrollToSection("contact")}
                   className="hover:text-white transition-colors"

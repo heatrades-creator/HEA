@@ -19,7 +19,7 @@ export default function OnboardingPage() {
     ]).then(([casesData, peopleData]) => {
       const caseList = Array.isArray(casesData) ? casesData : [];
       const peopleList = Array.isArray(peopleData) ? peopleData : [];
-      const enriched = caseList.map((c: { person_id: string }) => {
+      const enriched = caseList.map((c: { person_id: string; status?: string }) => {
         const p = (peopleList as { person_id: string; full_name?: string }[]).find(p => p.person_id === c.person_id);
         return { ...c, personName: p?.full_name ?? c.person_id };
       });

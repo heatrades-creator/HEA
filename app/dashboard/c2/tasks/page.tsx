@@ -1,22 +1,43 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import TaskList from '@/components/dashboard/c2/TaskList';
+import { getCached, setCached } from '@/lib/c2Cache';
 
-export const metadata = { title: 'Tasks | HEA Command' };
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<unknown[]>(() => getCached('tasks') ?? []);
+  const [loading, setLoading] = useState(!getCached('tasks'));
 
-async function getTasks() {
-  const url = process.env.C2_GAS_URL;
-  if (!url) return [];
-  try {
-    const res = await fetch(`${url}?action=listTasks`, { next: { revalidate: 30 } });
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+  useEffect(() => {
+    if (getCached('tasks')) return;
+    fetch('/api/c2/tasks')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setCached('tasks', list);
+        setTasks(list);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-export default async function TasksPage() {
-  const tasks = await getTasks();
-  const openCount = tasks.filter((t: { status?: string }) => (t.status || 'OPEN').toUpperCase() === 'OPEN' || (t.status || '').toUpperCase() === 'IN_PROGRESS').length;
+  const openCount = (tasks as { status?: string }[]).filter(t =>
+    ['OPEN', 'IN_PROGRESS'].includes((t.status || 'OPEN').toUpperCase())
+  ).length;
+
+  if (loading) return (
+    <div className="p-6 max-w-3xl mx-auto animate-pulse">
+      <div className="mb-6"><div className="h-6 w-20 bg-gray-200 rounded mb-2" /><div className="h-4 w-44 bg-gray-100 rounded" /></div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+            <div className="h-4 w-64 bg-gray-200 rounded" />
+            <div className="h-5 w-12 bg-gray-200 rounded-full ml-4" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-3xl mx-auto">

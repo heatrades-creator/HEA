@@ -1,21 +1,43 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import PeopleTable from '@/components/dashboard/c2/PeopleTable';
+import { getCached, setCached } from '@/lib/c2Cache';
 
-export const metadata = { title: 'People | HEA Command' };
+export default function PeoplePage() {
+  const [people, setPeople] = useState<unknown[]>(() => getCached('people') ?? []);
+  const [loading, setLoading] = useState(!getCached('people'));
 
-async function getPeople() {
-  const url = process.env.C2_GAS_URL;
-  if (!url) return [];
-  try {
-    const res = await fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } });
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+  useEffect(() => {
+    if (getCached('people')) return; // already cached — no fetch needed
+    fetch('/api/c2/people')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setCached('people', list);
+        setPeople(list);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-export default async function PeoplePage() {
-  const people = await getPeople();
+  if (loading) return (
+    <div className="p-6 max-w-5xl mx-auto animate-pulse">
+      <div className="mb-6">
+        <div className="h-6 w-24 bg-gray-200 rounded mb-2" />
+        <div className="h-4 w-40 bg-gray-100 rounded" />
+      </div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
+            <div className="h-4 w-40 bg-gray-200 rounded" />
+            <div className="flex gap-2"><div className="h-5 w-20 bg-gray-200 rounded-full" /><div className="h-5 w-14 bg-gray-200 rounded-full" /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">

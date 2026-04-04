@@ -1,21 +1,40 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import CandidatePipeline from '@/components/dashboard/c2/CandidatePipeline';
+import { getCached, setCached } from '@/lib/c2Cache';
 
-export const metadata = { title: 'Recruitment | HEA Command' };
+export default function RecruitmentPage() {
+  const [candidates, setCandidates] = useState<unknown[]>(() => getCached('candidates') ?? []);
+  const [loading, setLoading] = useState(!getCached('candidates'));
 
-async function getCandidates() {
-  const url = process.env.C2_GAS_URL;
-  if (!url) return [];
-  try {
-    const res = await fetch(`${url}?action=listCandidates`, { next: { revalidate: 30 } });
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+  useEffect(() => {
+    if (getCached('candidates')) return;
+    fetch('/api/c2/candidates')
+      .then(r => r.json())
+      .then(data => {
+        const list = Array.isArray(data) ? data : [];
+        setCached('candidates', list);
+        setCandidates(list);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-export default async function RecruitmentPage() {
-  const candidates = await getCandidates();
+  if (loading) return (
+    <div className="p-6 animate-pulse">
+      <div className="mb-6"><div className="h-6 w-32 bg-gray-200 rounded mb-2" /><div className="h-4 w-52 bg-gray-100 rounded" /></div>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex-shrink-0 w-56 bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <div className="h-4 w-20 bg-gray-200 rounded mb-3" />
+            <div className="space-y-2">{[...Array(2)].map((_, j) => <div key={j} className="bg-white border border-gray-200 rounded-lg p-3 h-16" />)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-6">
       <div className="mb-6">

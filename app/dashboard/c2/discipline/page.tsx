@@ -1,46 +1,39 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import DisciplineTable from '@/components/dashboard/c2/DisciplineTable';
+import { getCached, setCached } from '@/lib/c2Cache';
 
-export const metadata = { title: 'Discipline | HEA Command' };
+export default function DisciplinePage() {
+  const [cases, setCases] = useState<unknown[]>(() => getCached('discipline') ?? []);
+  const [loading, setLoading] = useState(!getCached('discipline'));
 
-async function getData() {
-  const url = process.env.C2_GAS_URL;
-  if (!url) return { cases: [], people: [] };
-  try {
-    const [casesRes, peopleRes] = await Promise.all([
-      fetch(`${url}?action=listDiscipline`, { next: { revalidate: 30 } }),
-      fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
-    ]);
-    return {
-      cases: Array.isArray(await casesRes.clone().json()) ? await casesRes.json() : [],
-      people: Array.isArray(await peopleRes.clone().json()) ? await peopleRes.json() : [],
-    };
-  } catch {
-    return { cases: [], people: [] };
-  }
-}
+  useEffect(() => {
+    if (getCached('discipline')) return;
+    Promise.all([
+      fetch('/api/c2/discipline').then(r => r.json()),
+      fetch('/api/c2/people').then(r => r.json()),
+    ]).then(([casesData, peopleData]) => {
+      const caseList = Array.isArray(casesData) ? casesData : [];
+      const peopleList = Array.isArray(peopleData) ? peopleData : [];
+      const enriched = caseList.map((c: { person_id: string }) => {
+        const p = (peopleList as { person_id: string; full_name?: string }[]).find(p => p.person_id === c.person_id);
+        return { ...c, personName: p?.full_name };
+      });
+      setCached('discipline', enriched);
+      setCases(enriched);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
 
-export default async function DisciplinePage() {
-  const url = process.env.C2_GAS_URL;
-  let cases: { case_id: string; person_id: string; category?: string; severity?: string; status?: string; description?: string; outcome?: string; created_at?: string }[] = [];
-  let people: { person_id: string; full_name?: string }[] = [];
-
-  if (url) {
-    try {
-      const [casesRes, peopleRes] = await Promise.all([
-        fetch(`${url}?action=listDiscipline`, { next: { revalidate: 30 } }),
-        fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
-      ]);
-      const casesData = await casesRes.json();
-      const peopleData = await peopleRes.json();
-      cases = Array.isArray(casesData) ? casesData : [];
-      people = Array.isArray(peopleData) ? peopleData : [];
-    } catch {}
-  }
-
-  const enriched = cases.map(c => {
-    const p = people.find(p => p.person_id === c.person_id);
-    return { ...c, personName: p?.full_name };
-  });
+  if (loading) return (
+    <div className="p-6 max-w-5xl mx-auto animate-pulse">
+      <div className="mb-6"><div className="h-6 w-28 bg-gray-200 rounded mb-2" /><div className="h-4 w-44 bg-gray-100 rounded" /></div>
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {[...Array(4)].map((_, i) => <div key={i} className="flex items-center justify-between px-5 py-4 border-b border-gray-100 h-16" />)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -50,7 +43,7 @@ export default async function DisciplinePage() {
           {cases.length > 0 ? `${cases.length} case${cases.length !== 1 ? 's' : ''}` : 'Discipline cases and performance improvement plans'}
         </p>
       </div>
-      <DisciplineTable cases={enriched} />
+      <DisciplineTable cases={cases as never} />
     </div>
   );
 }

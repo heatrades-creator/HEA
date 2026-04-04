@@ -41,9 +41,9 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search name or email…"
-          className="flex-1 bg-[#202020] border border-[#2e2e2e] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
+          className="flex-1 bg-white border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100]"
         />
-        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-[#202020] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-[#888] focus:outline-none focus:border-[#ffd100]">
+        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-white border border-[#e5e9f0] rounded-lg px-3 py-2 text-sm text-[#6b7280] focus:outline-none focus:border-[#ffd100]">
           <option value="ALL">All Status</option>
           <option value="ACTIVE">Active</option>
           <option value="PROBATION">Probation</option>
@@ -51,7 +51,7 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
           <option value="SUSPENDED">Suspended</option>
           <option value="TERMINATED">Terminated</option>
         </select>
-        <select value={filterDeploy} onChange={e => setFilterDeploy(e.target.value)} className="bg-[#202020] border border-[#2e2e2e] rounded-lg px-3 py-2 text-sm text-[#888] focus:outline-none focus:border-[#ffd100]">
+        <select value={filterDeploy} onChange={e => setFilterDeploy(e.target.value)} className="bg-white border border-[#e5e9f0] rounded-lg px-3 py-2 text-sm text-[#6b7280] focus:outline-none focus:border-[#ffd100]">
           <option value="ALL">All Deployability</option>
           <option value="FULL">Full</option>
           <option value="LIMITED">Limited</option>
@@ -63,33 +63,33 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
       </div>
 
       {/* Table */}
-      <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl overflow-hidden">
+      <div className="bg-white border border-[#e5e9f0] rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-              <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Name</th>
-              <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden sm:table-cell">Type</th>
-              <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Status</th>
-              <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Deploy</th>
-              <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden lg:table-cell">Start Date</th>
+            <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
+              <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Name</th>
+              <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Type</th>
+              <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Status</th>
+              <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Deploy</th>
+              <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden lg:table-cell">Start Date</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-5 py-12 text-center text-[#444] text-sm">
+                <td colSpan={5} className="px-5 py-12 text-center text-[#9ca3af] text-sm">
                   {initialPeople.length === 0 ? 'No people yet. Add your first person above.' : 'No results match your filters.'}
                 </td>
               </tr>
             ) : filtered.map((p, i) => (
-              <tr key={p.person_id} className={`border-b border-[#252525] hover:bg-[#232323] transition-colors cursor-pointer ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}>
+              <tr key={p.person_id} className={`border-b border-[#edf0f5] hover:bg-[#232323] transition-colors cursor-pointer ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}>
                 <td className="px-5 py-3">
                   <Link href={`/dashboard/c2/people/${p.person_id}`} className="block">
-                    <p className="text-white font-medium">{p.full_name || '—'}</p>
-                    {p.email && <p className="text-[#555] text-xs mt-0.5">{p.email}</p>}
+                    <p className="text-[#111827] font-medium">{p.full_name || '—'}</p>
+                    {p.email && <p className="text-[#9ca3af] text-xs mt-0.5">{p.email}</p>}
                   </Link>
                 </td>
-                <td className="px-5 py-3 text-[#666] text-xs hidden sm:table-cell">
+                <td className="px-5 py-3 text-[#6b7280] text-xs hidden sm:table-cell">
                   {(p.employment_type || '').replace(/_/g, ' ')}
                 </td>
                 <td className="px-5 py-3">
@@ -98,7 +98,7 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
                 <td className="px-5 py-3">
                   <DeployabilityBadge value={p.deployability || 'FULL'} />
                 </td>
-                <td className="px-5 py-3 text-[#555] text-xs hidden lg:table-cell">
+                <td className="px-5 py-3 text-[#9ca3af] text-xs hidden lg:table-cell">
                   {p.start_date ? String(p.start_date).substring(0, 10) : '—'}
                 </td>
               </tr>
@@ -107,7 +107,7 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
         </table>
       </div>
 
-      <p className="text-[#444] text-xs mt-3">{filtered.length} of {initialPeople.length} people</p>
+      <p className="text-[#9ca3af] text-xs mt-3">{filtered.length} of {initialPeople.length} people</p>
 
       {showModal && <NewPersonModal onClose={() => setShowModal(false)} />}
     </div>

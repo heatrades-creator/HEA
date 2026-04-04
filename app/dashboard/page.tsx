@@ -86,8 +86,8 @@ export default async function DashboardPage() {
     <div className="p-6 max-w-5xl mx-auto">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold">Overview</h1>
-        <p className="text-[#555] text-sm mt-0.5">Heffernan Electrical Automation</p>
+        <h1 className="text-[#111827] text-xl font-semibold">Overview</h1>
+        <p className="text-[#9ca3af] text-sm mt-0.5">Heffernan Electrical Automation</p>
       </div>
 
       {/* ── Stat cards ── */}
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         <StatCard
           label="Total Jobs"
           value={totalJobs}
-          accent="border-[#333]"
+          accent="border-[#e5e9f0]"
           href="/dashboard/jobs"
         />
         <StatCard
@@ -125,26 +125,26 @@ export default async function DashboardPage() {
       {/* ── Bottom row: Recent Jobs + AI Usage ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Jobs — takes 2/3 width */}
-        <div className="lg:col-span-2 bg-[#202020] border border-[#2e2e2e] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#2e2e2e] flex items-center justify-between">
-            <h2 className="text-white text-sm font-semibold">Recent Jobs</h2>
+        <div className="lg:col-span-2 bg-white border border-[#e5e9f0] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
+            <h2 className="text-[#111827] text-sm font-semibold">Recent Jobs</h2>
             <Link href="/dashboard/jobs" className="text-[#ffd100] text-xs hover:text-[#e6bc00] transition-colors">
               View all →
             </Link>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#252525]">
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Job #</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Client</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden sm:table-cell">Status</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden md:table-cell">Created</th>
+              <tr className="border-b border-[#edf0f5]">
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Job #</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Client</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Status</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden md:table-cell">Created</th>
               </tr>
             </thead>
             <tbody>
               {recentJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-10 text-center text-[#444] text-sm">
+                  <td colSpan={4} className="px-5 py-10 text-center text-[#9ca3af] text-sm">
                     No jobs yet. <Link href="/dashboard/jobs" className="text-[#ffd100] hover:underline">Create your first job →</Link>
                   </td>
                 </tr>
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
                 recentJobs.map((job, i) => (
                   <tr
                     key={job.jobNumber}
-                    className={`border-b border-[#252525] hover:bg-[#252525] transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
+                    className={`border-b border-[#edf0f5] hover:bg-gray-100 transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
                   >
                     <td className="px-5 py-3">
                       <Link
@@ -162,13 +162,13 @@ export default async function DashboardPage() {
                         {job.jobNumber}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-white text-sm">{job.clientName}</td>
+                    <td className="px-5 py-3 text-[#111827] text-sm">{job.clientName}</td>
                     <td className="px-5 py-3 hidden sm:table-cell">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STAGE_STYLES[job.status] ?? 'bg-[#3a3a3a] text-[#aaa]'}`}>
                         {job.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-[#555] text-xs hidden md:table-cell">{job.createdDate ?? '—'}</td>
+                    <td className="px-5 py-3 text-[#9ca3af] text-xs hidden md:table-cell">{job.createdDate ?? '—'}</td>
                   </tr>
                 ))
               )}
@@ -177,18 +177,18 @@ export default async function DashboardPage() {
         </div>
 
         {/* AI Usage card — takes 1/3 */}
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5 flex flex-col gap-4">
-          <h2 className="text-white text-sm font-semibold">AI Usage Today</h2>
+        <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 flex flex-col gap-4">
+          <h2 className="text-[#111827] text-sm font-semibold">AI Usage Today</h2>
 
           <div>
             <div className="flex items-end justify-between mb-1.5">
-              <span className="text-[#555] text-xs">Proposals generated</span>
+              <span className="text-[#9ca3af] text-xs">Proposals generated</span>
               <span className={`text-lg font-bold tabular-nums ${usagePct >= 80 ? 'text-red-400' : 'text-white'}`}>
                 {usage.pdfs_today}
-                <span className="text-[#444] text-xs font-normal ml-1">/ {usage.daily_limit}</span>
+                <span className="text-[#9ca3af] text-xs font-normal ml-1">/ {usage.daily_limit}</span>
               </span>
             </div>
-            <div className="w-full h-1.5 bg-[#2a2a2a] rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-[#eef0f5] rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all ${usagePct >= 80 ? 'bg-red-500' : 'bg-[#ffd100]'}`}
                 style={{ width: `${Math.max(2, usagePct)}%` }}
@@ -197,12 +197,12 @@ export default async function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3">
-              <p className="text-[#444] text-[10px] uppercase tracking-wider mb-1">Tokens Today</p>
+            <div className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3">
+              <p className="text-[#9ca3af] text-[10px] uppercase tracking-wider mb-1">Tokens Today</p>
               <p className="text-white font-bold tabular-nums text-sm">{usage.tokens_today.toLocaleString()}</p>
             </div>
-            <div className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3">
-              <p className="text-[#444] text-[10px] uppercase tracking-wider mb-1">Remaining</p>
+            <div className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3">
+              <p className="text-[#9ca3af] text-[10px] uppercase tracking-wider mb-1">Remaining</p>
               <p className={`font-bold tabular-nums text-sm ${usagePct >= 80 ? 'text-red-400' : 'text-white'}`}>
                 {usage.remaining}
               </p>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
           </div>
 
           {usage.avg_tokens > 0 && (
-            <p className="text-[#444] text-xs">
+            <p className="text-[#9ca3af] text-xs">
               Avg {usage.avg_tokens.toLocaleString()} tokens / proposal
             </p>
           )}
@@ -228,13 +228,13 @@ export default async function DashboardPage() {
       <div className="mt-6 flex gap-3">
         <Link
           href="/dashboard/jobs"
-          className="border border-[#333] text-[#888] hover:border-[#555] hover:text-white transition-colors px-4 py-2 rounded-lg text-sm"
+          className="border border-[#e5e9f0] text-[#6b7280] hover:border-[#555] hover:text-[#111827] transition-colors px-4 py-2 rounded-lg text-sm"
         >
           View all jobs →
         </Link>
         <Link
           href="/dashboard/kanban"
-          className="border border-[#333] text-[#888] hover:border-[#555] hover:text-white transition-colors px-4 py-2 rounded-lg text-sm"
+          className="border border-[#e5e9f0] text-[#6b7280] hover:border-[#555] hover:text-[#111827] transition-colors px-4 py-2 rounded-lg text-sm"
         >
           Open Kanban board →
         </Link>
@@ -248,7 +248,7 @@ function StatCard({
   value,
   accent,
   sub,
-  valueColor = 'text-white',
+  valueColor = 'text-[#111827]',
   href,
 }: {
   label: string;
@@ -261,11 +261,11 @@ function StatCard({
   return (
     <Link
       href={href}
-      className={`bg-[#202020] border border-[#2e2e2e] border-l-2 ${accent} rounded-xl p-5 hover:bg-[#252525] transition-colors`}
+      className={`bg-white border border-[#e5e9f0] border-l-2 ${accent} rounded-xl p-5 hover:bg-gray-100 transition-colors`}
     >
-      <p className="text-[#555] text-xs uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-[#9ca3af] text-xs uppercase tracking-wider mb-2">{label}</p>
       <p className={`text-3xl font-bold tabular-nums leading-none ${valueColor}`}>{value}</p>
-      {sub && <p className="text-[#444] text-xs mt-1.5">{sub}</p>}
+      {sub && <p className="text-[#9ca3af] text-xs mt-1.5">{sub}</p>}
     </Link>
   );
 }

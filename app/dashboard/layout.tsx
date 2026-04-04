@@ -15,18 +15,18 @@ export default async function DashboardLayout({ children }: { children: React.Re
   }
 
   return (
-    <div className="min-h-screen bg-[#181818] flex flex-col">
+    <div className="min-h-screen bg-[#f1f3f8] flex flex-col">
       {/* ── Top bar ── */}
-      <header className="h-14 bg-[#202020] border-b border-[#2a2a2a] flex items-center justify-between px-5 flex-shrink-0 z-20">
+      <header className="h-14 bg-white border-b border-[#e5e9f0] flex items-center justify-between px-5 flex-shrink-0 z-20 shadow-sm">
         <Link href="/dashboard" className="flex-shrink-0">
           <img src="/Logo_transparent.png" alt="HEA" className="h-8 w-auto" />
         </Link>
 
         <div className="flex items-center gap-4">
-          <Suspense fallback={<div className="hidden sm:block w-44 h-7 bg-[#2a2a2a] rounded-lg animate-pulse" />}>
+          <Suspense fallback={<div className="hidden sm:block w-44 h-7 bg-gray-100 rounded-lg animate-pulse" />}>
             <ProposalUsageBadge />
           </Suspense>
-          <span className="text-[#444] text-xs hidden md:block">{session.user?.email}</span>
+          <span className="text-gray-400 text-xs hidden md:block">{session.user?.email}</span>
           <SignOutButton />
         </div>
       </header>
@@ -34,12 +34,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* ── Body: sidebar + main ── */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left sidebar */}
-        <aside className="w-52 flex-shrink-0 bg-[#1d1d1d] border-r border-[#242424] flex flex-col overflow-y-auto">
+        <aside className="w-52 flex-shrink-0 bg-white border-r border-[#e5e9f0] flex flex-col overflow-y-auto shadow-sm">
           <DashboardNav />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto bg-[#181818]">
+        <main className="flex-1 overflow-y-auto bg-[#f1f3f8]">
           {children}
         </main>
       </div>

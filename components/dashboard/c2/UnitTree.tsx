@@ -29,20 +29,20 @@ function UnitNode({ unit, depth = 0 }: { unit: Unit & { children: Unit[] }, dept
     HQ: 'text-[#ffd100]', COMPANY: 'text-blue-400', PLATOON: 'text-purple-400',
     SECTION: 'text-green-400', TEAM: 'text-sky-400', DEPARTMENT: 'text-orange-400',
   };
-  const typeColor = typeColors[(unit.unit_type || '').toUpperCase()] ?? 'text-[#888]';
+  const typeColor = typeColors[(unit.unit_type || '').toUpperCase()] ?? 'text-[#6b7280]';
 
   return (
     <div style={{ marginLeft: depth * 20 }}>
-      <div className={`bg-[#202020] border border-[#2e2e2e] rounded-xl p-4 mb-2 ${depth > 0 ? 'border-l-2 border-l-[#2e2e2e]' : ''}`}>
+      <div className={`bg-white border border-[#e5e9f0] rounded-xl p-4 mb-2 ${depth > 0 ? 'border-l-2 border-l-[#2e2e2e]' : ''}`}>
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <span className={`text-xs font-mono uppercase ${typeColor}`}>{unit.unit_type || 'UNIT'}</span>
             </div>
-            <p className="text-white font-medium">{unit.name}</p>
-            {unit.description && <p className="text-[#555] text-xs mt-0.5">{unit.description}</p>}
+            <p className="text-[#111827] font-medium">{unit.name}</p>
+            {unit.description && <p className="text-[#9ca3af] text-xs mt-0.5">{unit.description}</p>}
           </div>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${unit.status === 'ACTIVE' ? 'bg-green-900/30 text-green-400' : 'bg-[#2a2a2a] text-[#555]'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${unit.status === 'ACTIVE' ? 'bg-green-900/30 text-green-400' : 'bg-[#eef0f5] text-[#9ca3af]'}`}>
             {unit.status || 'ACTIVE'}
           </span>
         </div>
@@ -59,8 +59,8 @@ export default function UnitTree({ units }: { units: Unit[] }) {
 
   if (units.length === 0) {
     return (
-      <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-8 text-center">
-        <p className="text-[#444] text-sm">No units configured yet.</p>
+      <div className="bg-white border border-[#e5e9f0] rounded-xl p-8 text-center">
+        <p className="text-[#9ca3af] text-sm">No units configured yet.</p>
         <p className="text-[#333] text-xs mt-1">Units are the organisational structure — squads, teams, sections, departments.</p>
       </div>
     );

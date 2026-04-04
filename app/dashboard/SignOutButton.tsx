@@ -6,7 +6,7 @@ export default function SignOutButton() {
   return (
     <button
       onClick={() => signOut({ callbackUrl: '/dashboard/login' })}
-      className="text-[#888] hover:text-white text-sm transition-colors"
+      className="text-[#6b7280] hover:text-[#111827] text-sm transition-colors"
     >
       Sign out
     </button>

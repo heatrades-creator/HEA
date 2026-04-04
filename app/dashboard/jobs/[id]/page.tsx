@@ -26,7 +26,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
     <div className="max-w-3xl mx-auto p-6">
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-2 text-[#888] hover:text-[#ffd100] text-sm mb-6 transition-colors"
+        className="inline-flex items-center gap-2 text-[#6b7280] hover:text-[#ffd100] text-sm mb-6 transition-colors"
       >
         ← Back to Dashboard
       </Link>

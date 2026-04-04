@@ -19,8 +19,8 @@ export default async function PeoplePage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold">People</h1>
-        <p className="text-[#555] text-sm mt-0.5">
+        <h1 className="text-[#111827] text-xl font-semibold">People</h1>
+        <p className="text-[#9ca3af] text-sm mt-0.5">
           {people.length > 0 ? `${people.length} personnel record${people.length !== 1 ? 's' : ''}` : 'All HEA personnel'}
         </p>
       </div>

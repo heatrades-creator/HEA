@@ -35,8 +35,8 @@ export default async function OnboardingPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold">Onboarding</h1>
-        <p className="text-[#555] text-sm mt-0.5">
+        <h1 className="text-[#111827] text-xl font-semibold">Onboarding</h1>
+        <p className="text-[#9ca3af] text-sm mt-0.5">
           {active.length > 0 ? `${active.length} active onboarding case${active.length !== 1 ? 's' : ''}` : 'Track new starters through induction and setup'}
         </p>
       </div>

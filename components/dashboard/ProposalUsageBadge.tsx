@@ -32,21 +32,21 @@ export default async function ProposalUsageBadge() {
   const tokensStr = s.tokens_today.toLocaleString();
 
   return (
-    <div className="hidden sm:flex items-center gap-2.5 bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-1.5 text-xs">
+    <div className="hidden sm:flex items-center gap-2.5 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-1.5 text-xs">
       {/* PDF count */}
       <div className="flex items-baseline gap-1">
         <span className={`font-bold tabular-nums ${warn ? 'text-red-400' : 'text-white'}`}>
           {s.pdfs_today}
         </span>
-        <span className="text-[#444]">PDFs</span>
+        <span className="text-[#9ca3af]">PDFs</span>
       </div>
 
       <span className="text-[#333]">·</span>
 
       {/* Real token count */}
       <div className="flex items-baseline gap-1">
-        <span className="text-[#888] tabular-nums">{tokensStr}</span>
-        <span className="text-[#444]">tokens</span>
+        <span className="text-[#6b7280] tabular-nums">{tokensStr}</span>
+        <span className="text-[#9ca3af]">tokens</span>
       </div>
 
       {/* Progress bar */}
@@ -58,7 +58,7 @@ export default async function ProposalUsageBadge() {
       </div>
 
       {/* Remaining — real calculation: 500 − pdfs_today */}
-      <span className={`tabular-nums ${warn ? 'text-red-400' : 'text-[#555]'}`}>
+      <span className={`tabular-nums ${warn ? 'text-red-400' : 'text-[#9ca3af]'}`}>
         {s.remaining} left
       </span>
     </div>

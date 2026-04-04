@@ -60,9 +60,9 @@ export default function JobDetail({ job }: { job: any }) {
   }
 
   return (
-    <div className="bg-[#202020] rounded-xl border border-[#2e2e2e] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#e5e9f0] overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-[#2e2e2e] flex items-start justify-between gap-4">
+      <div className="px-6 py-5 border-b border-[#e5e9f0] flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <span className="text-[#ffd100] font-mono font-bold text-lg">{job.jobNumber}</span>
@@ -70,10 +70,10 @@ export default function JobDetail({ job }: { job: any }) {
               {status}
             </span>
           </div>
-          <h1 className="text-white text-xl font-semibold">{job.clientName}</h1>
-          {job.address && <p className="text-[#888] text-sm mt-0.5">{job.address}</p>}
+          <h1 className="text-[#111827] text-xl font-semibold">{job.clientName}</h1>
+          {job.address && <p className="text-[#6b7280] text-sm mt-0.5">{job.address}</p>}
         </div>
-        <p className="text-[#555] text-xs whitespace-nowrap">{job.createdDate}</p>
+        <p className="text-[#9ca3af] text-xs whitespace-nowrap">{job.createdDate}</p>
       </div>
 
       <div className="p-6 space-y-7">
@@ -85,7 +85,7 @@ export default function JobDetail({ job }: { job: any }) {
 
         {/* Stage selector */}
         <div>
-          <label className="block text-[#888] text-xs uppercase tracking-wider mb-2">Stage</label>
+          <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-2">Stage</label>
           <div className="flex flex-wrap gap-2">
             {STAGES.map((s) => (
               <button
@@ -94,7 +94,7 @@ export default function JobDetail({ job }: { job: any }) {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
                   status === s
                     ? 'border-[#ffd100] text-[#ffd100] bg-[#ffd100]/10'
-                    : 'border-[#333] text-[#666] hover:border-[#555] hover:text-[#aaa]'
+                    : 'border-[#e5e9f0] text-[#6b7280] hover:border-[#555] hover:text-[#aaa]'
                 }`}
               >
                 {s}
@@ -106,8 +106,8 @@ export default function JobDetail({ job }: { job: any }) {
         {/* ── System Details ── */}
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <p className="text-[#888] text-xs uppercase tracking-wider">System Details</p>
-            <div className="flex-1 h-px bg-[#2a2a2a]" />
+            <p className="text-[#6b7280] text-xs uppercase tracking-wider">System Details</p>
+            <div className="flex-1 h-px bg-[#eef0f5]" />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             <TextInput
@@ -143,16 +143,16 @@ export default function JobDetail({ job }: { job: any }) {
                 checked={financeRequired}
                 onChange={(e) => setFinanceRequired(e.target.checked)}
               />
-              <div className="w-9 h-5 bg-[#2a2a2a] border border-[#333] rounded-full peer-checked:bg-[#ffd100] transition-colors" />
-              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-[#555] rounded-full peer-checked:translate-x-4 peer-checked:bg-[#181818] transition-all" />
+              <div className="w-9 h-5 bg-[#eef0f5] border border-[#e5e9f0] rounded-full peer-checked:bg-[#ffd100] transition-colors" />
+              <div className="absolute top-0.5 left-0.5 w-4 h-4 bg-[#555] rounded-full peer-checked:translate-x-4 peer-checked:bg-[#f1f3f8] transition-all" />
             </div>
-            <span className="text-[#888] text-xs uppercase tracking-wider">Finance Required</span>
+            <span className="text-[#6b7280] text-xs uppercase tracking-wider">Finance Required</span>
           </label>
         </div>
 
         {/* Drive URL */}
         <div>
-          <label className="block text-[#888] text-xs uppercase tracking-wider mb-2">
+          <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-2">
             Google Drive Folder
           </label>
           <div className="flex gap-2">
@@ -161,14 +161,14 @@ export default function JobDetail({ job }: { job: any }) {
               value={driveUrl}
               onChange={(e) => setDriveUrl(e.target.value)}
               placeholder="https://drive.google.com/drive/folders/…"
-              className="flex-1 bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
+              className="flex-1 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100]"
             />
             {driveUrl && (
               <a
                 href={driveUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3 py-2 bg-[#2a2a2a] border border-[#333] rounded-lg text-[#888] hover:text-[#ffd100] hover:border-[#ffd100] transition-colors text-sm"
+                className="px-3 py-2 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg text-[#6b7280] hover:text-[#ffd100] hover:border-[#ffd100] transition-colors text-sm"
               >
                 Open ↗
               </a>
@@ -178,12 +178,12 @@ export default function JobDetail({ job }: { job: any }) {
 
         {/* Notes */}
         <div>
-          <label className="block text-[#888] text-xs uppercase tracking-wider mb-2">Notes</label>
+          <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-2">Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={5}
-            className="w-full bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100] resize-none"
+            className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100] resize-none"
             placeholder="Job notes, site details, equipment, special requirements…"
           />
         </div>
@@ -208,13 +208,13 @@ function ReadField({ label, value, href }: { label: string; value?: string; href
   if (!value) return null;
   return (
     <div>
-      <p className="text-[#888] text-xs uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-[#6b7280] text-xs uppercase tracking-wider mb-1">{label}</p>
       {href ? (
         <a href={href} className="text-white hover:text-[#ffd100] transition-colors text-sm">
           {value}
         </a>
       ) : (
-        <p className="text-white text-sm">{value}</p>
+        <p className="text-[#111827] text-sm">{value}</p>
       )}
     </div>
   );
@@ -233,13 +233,13 @@ function TextInput({
 }) {
   return (
     <div>
-      <label className="block text-[#888] text-xs uppercase tracking-wider mb-1.5">{label}</label>
+      <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-1.5">{label}</label>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
+        className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100]"
       />
     </div>
   );

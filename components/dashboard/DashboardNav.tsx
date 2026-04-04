@@ -3,9 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/* ─────────────────────────────────────────────
-   Navigation structure — all tools have a home
-───────────────────────────────────────────── */
 const NAV_SECTIONS = [
   {
     label: 'Workspace',
@@ -174,7 +171,6 @@ const BOTTOM_SECTION = [
 function isActive(pathname: string, href: string, exact: boolean): boolean {
   if (exact) return pathname === href;
   if (href === '/dashboard/jobs') {
-    // Active on /dashboard/jobs AND /dashboard/jobs/[id], but not /dashboard/kanban etc.
     return pathname === '/dashboard/jobs' || pathname.startsWith('/dashboard/jobs/');
   }
   return pathname === href || pathname.startsWith(href + '/');
@@ -195,16 +191,16 @@ function NavItem({
 }) {
   const cls = `flex items-center gap-2.5 px-3 py-2 text-sm rounded-lg border-l-2 transition-colors ${
     active
-      ? 'border-[#ffd100] bg-[#ffd100]/8 text-white font-medium'
-      : 'border-transparent text-[#777] hover:text-[#bbb] hover:bg-[#252525]'
+      ? 'border-[#ffd100] bg-[#ffd100]/10 text-[#111827] font-semibold'
+      : 'border-transparent text-[#4b5563] hover:text-[#111827] hover:bg-gray-100'
   }`;
 
   const content = (
     <>
-      <span className={active ? 'text-[#ffd100]' : 'text-[#555]'}>{icon}</span>
+      <span className={active ? 'text-[#b8900a]' : 'text-[#9ca3af]'}>{icon}</span>
       <span className="leading-none">{label}</span>
       {external && (
-        <svg className="w-3 h-3 ml-auto text-[#444]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="w-3 h-3 ml-auto text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
         </svg>
       )}
@@ -231,18 +227,14 @@ export default function DashboardNav() {
 
   return (
     <nav className="flex flex-col h-full py-3 px-2">
-      {/* Main sections */}
       <div className="flex-1 space-y-5">
         {NAV_SECTIONS.map((section) => (
           <div key={section.label}>
-            {/* Section label */}
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#444] px-3 mb-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 px-3 mb-1.5">
               {section.label}
             </p>
-            {/* Items */}
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                // Overview: only exact /dashboard
                 const active = item.href === '/dashboard'
                   ? pathname === '/dashboard'
                   : isActive(pathname, item.href, item.exact);
@@ -263,8 +255,7 @@ export default function DashboardNav() {
         ))}
       </div>
 
-      {/* Bottom — Settings */}
-      <div className="border-t border-[#2a2a2a] pt-3 space-y-0.5">
+      <div className="border-t border-gray-100 pt-3 space-y-0.5">
         {BOTTOM_SECTION.map((item) => (
           <NavItem
             key={item.href}

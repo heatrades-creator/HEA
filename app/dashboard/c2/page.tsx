@@ -15,10 +15,10 @@ async function getOverview() {
 
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
-    <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5">
-      <p className="text-[#888] text-xs uppercase tracking-wider mb-3">{label}</p>
-      <p className={`text-3xl font-bold ${color ?? 'text-white'}`}>{value}</p>
-      {sub && <p className="text-[#555] text-xs mt-1">{sub}</p>}
+    <div className="bg-white border border-[#e5e9f0] rounded-xl p-5">
+      <p className="text-[#6b7280] text-xs uppercase tracking-wider mb-3">{label}</p>
+      <p className={`text-3xl font-bold ${color ?? 'text-[#111827]'}`}>{value}</p>
+      {sub && <p className="text-[#9ca3af] text-xs mt-1">{sub}</p>}
     </div>
   );
 }
@@ -31,14 +31,14 @@ export default async function C2OverviewPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold">Command</h1>
-        <p className="text-[#555] text-sm mt-0.5">Workforce overview — HEA Command & Control</p>
+        <h1 className="text-[#111827] text-xl font-semibold">Command</h1>
+        <p className="text-[#9ca3af] text-sm mt-0.5">Workforce overview — HEA Command & Control</p>
       </div>
 
       {notConfigured && (
-        <div className="bg-[#1a1a1a] border border-[#ffd100]/30 rounded-xl p-5 mb-6">
+        <div className="bg-[#f5f7fb] border border-[#ffd100]/30 rounded-xl p-5 mb-6">
           <p className="text-[#ffd100] text-sm font-semibold mb-1">C2_GAS_URL not configured</p>
-          <p className="text-[#666] text-sm">Add <code className="bg-[#2a2a2a] px-1 rounded text-[#aaa]">C2_GAS_URL</code> to your Vercel environment variables and redeploy. See the Setup Report for full instructions.</p>
+          <p className="text-[#6b7280] text-sm">Add <code className="bg-[#eef0f5] px-1 rounded text-[#aaa]">C2_GAS_URL</code> to your Vercel environment variables and redeploy. See the Setup Report for full instructions.</p>
         </div>
       )}
 
@@ -55,22 +55,22 @@ export default async function C2OverviewPage() {
           label="Open Tasks"
           value={data?.open_tasks ?? '—'}
           sub="requiring action"
-          color={data?.open_tasks > 0 ? 'text-[#ffd100]' : 'text-white'}
+          color={data?.open_tasks > 0 ? 'text-[#ffd100]' : 'text-[#111827]'}
         />
         <StatCard
           label="Doc Alerts"
           value={data?.expiring_docs ?? '—'}
           sub="expiring or expired"
-          color={data?.expiring_docs > 0 ? 'text-red-400' : 'text-white'}
+          color={data?.expiring_docs > 0 ? 'text-red-400' : 'text-[#111827]'}
         />
       </div>
 
       {/* Deployability breakdown */}
       {data && (
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5 mb-6">
-          <p className="text-[#888] text-xs uppercase tracking-wider mb-4">Deployability Breakdown</p>
+        <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 mb-6">
+          <p className="text-[#6b7280] text-xs uppercase tracking-wider mb-4">Deployability Breakdown</p>
           <div className="flex items-center gap-4">
-            <div className="flex-1 bg-[#1a1a1a] rounded-full h-2.5 overflow-hidden">
+            <div className="flex-1 bg-[#f5f7fb] rounded-full h-2.5 overflow-hidden">
               {data.headcount > 0 && (
                 <div className="h-full flex">
                   <div className="bg-green-600" style={{ width: `${(data.deployable_full / data.headcount) * 100}%` }} />
@@ -81,29 +81,29 @@ export default async function C2OverviewPage() {
             </div>
           </div>
           <div className="flex items-center gap-6 mt-3">
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-600" /><span className="text-[#888] text-xs">Full ({data.deployable_full})</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#ffd100]" /><span className="text-[#888] text-xs">Limited ({data.deployable_limited})</span></div>
-            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-600" /><span className="text-[#888] text-xs">Blocked ({data.deployable_blocked})</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-600" /><span className="text-[#6b7280] text-xs">Full ({data.deployable_full})</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#ffd100]" /><span className="text-[#6b7280] text-xs">Limited ({data.deployable_limited})</span></div>
+            <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-600" /><span className="text-[#6b7280] text-xs">Blocked ({data.deployable_blocked})</span></div>
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent people */}
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-[#2e2e2e] flex items-center justify-between">
-            <p className="text-white text-sm font-medium">Recent People</p>
+        <div className="bg-white border border-[#e5e9f0] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
+            <p className="text-[#111827] text-sm font-medium">Recent People</p>
             <Link href="/dashboard/c2/people" className="text-[#ffd100] text-xs hover:underline">View all →</Link>
           </div>
           {!data?.recent_people?.length ? (
-            <p className="px-5 py-8 text-center text-[#444] text-sm">No people yet</p>
+            <p className="px-5 py-8 text-center text-[#9ca3af] text-sm">No people yet</p>
           ) : (
-            <div className="divide-y divide-[#252525]">
+            <div className="divide-y divide-[#edf0f5]">
               {(data.recent_people || []).map((p: { person_id: string; full_name: string; employment_type?: string; status?: string; deployability?: string }) => (
-                <Link key={p.person_id} href={`/dashboard/c2/people/${p.person_id}`} className="flex items-center justify-between px-5 py-3 hover:bg-[#252525] transition-colors">
+                <Link key={p.person_id} href={`/dashboard/c2/people/${p.person_id}`} className="flex items-center justify-between px-5 py-3 hover:bg-gray-100 transition-colors">
                   <div>
-                    <p className="text-white text-sm">{p.full_name}</p>
-                    <p className="text-[#555] text-xs">{(p.employment_type || '').replace(/_/g, ' ')}</p>
+                    <p className="text-[#111827] text-sm">{p.full_name}</p>
+                    <p className="text-[#9ca3af] text-xs">{(p.employment_type || '').replace(/_/g, ' ')}</p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${p.deployability === 'FULL' ? 'bg-green-900/40 text-green-400' : p.deployability === 'BLOCKED' ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/30 text-[#ffd100]'}`}>
                     {p.deployability || 'FULL'}
@@ -115,8 +115,8 @@ export default async function C2OverviewPage() {
         </div>
 
         {/* Quick links */}
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5">
-          <p className="text-white text-sm font-medium mb-4">Command Modules</p>
+        <div className="bg-white border border-[#e5e9f0] rounded-xl p-5">
+          <p className="text-[#111827] text-sm font-medium mb-4">Command Modules</p>
           <div className="grid grid-cols-2 gap-2">
             {[
               { href: '/dashboard/c2/people', label: 'People', desc: 'All personnel' },
@@ -126,9 +126,9 @@ export default async function C2OverviewPage() {
               { href: '/dashboard/c2/tasks', label: 'Tasks', desc: 'Open actions' },
               { href: '/dashboard/c2/discipline', label: 'Discipline', desc: 'Cases & PIPs' },
             ].map(item => (
-              <Link key={item.href} href={item.href} className="bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-3 hover:border-[#ffd100]/30 hover:bg-[#1d1d1d] transition-colors">
-                <p className="text-white text-sm font-medium">{item.label}</p>
-                <p className="text-[#444] text-xs mt-0.5">{item.desc}</p>
+              <Link key={item.href} href={item.href} className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3 hover:border-[#ffd100]/30 hover:bg-[#f0f2f7] transition-colors">
+                <p className="text-[#111827] text-sm font-medium">{item.label}</p>
+                <p className="text-[#9ca3af] text-xs mt-0.5">{item.desc}</p>
               </Link>
             ))}
           </div>

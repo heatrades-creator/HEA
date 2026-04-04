@@ -24,23 +24,23 @@ export default function JobListView({
   const router = useRouter();
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-[#2a2a2a] flex-1">
+    <div className="overflow-x-auto rounded-xl border border-[#e5e9f0] flex-1">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium">Status</th>
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium">Job #</th>
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium">Client</th>
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium hidden md:table-cell">Address</th>
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Created</th>
-            <th className="px-4 py-3 text-left text-[#444] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Phone</th>
+          <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Status</th>
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Job #</th>
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Client</th>
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden md:table-cell">Address</th>
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Created</th>
+            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Phone</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody>
           {jobs.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-16 text-center text-[#444] text-sm">
+              <td colSpan={7} className="px-4 py-16 text-center text-[#9ca3af] text-sm">
                 No jobs found
               </td>
             </tr>
@@ -78,7 +78,7 @@ function JobRow({
     <tr
       onClick={onClick}
       className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group ${
-        isEven ? 'bg-[#1d1d1d]' : 'bg-[#1a1a1a]'
+        isEven ? 'bg-[#f0f2f7]' : 'bg-[#f5f7fb]'
       } hover:bg-[#232323]`}
     >
       <td className="px-4 py-3">
@@ -89,21 +89,21 @@ function JobRow({
       <td className="px-4 py-3 font-mono text-[#ffd100] text-xs font-bold whitespace-nowrap">
         {job.jobNumber}
       </td>
-      <td className="px-4 py-3 text-white font-medium">{job.clientName}</td>
-      <td className="px-4 py-3 text-[#666] hidden md:table-cell">
+      <td className="px-4 py-3 text-[#111827] font-medium">{job.clientName}</td>
+      <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell">
         <span className="block truncate max-w-[200px]">{job.address ?? '—'}</span>
       </td>
-      <td className="px-4 py-3 text-[#555] hidden lg:table-cell whitespace-nowrap">
+      <td className="px-4 py-3 text-[#9ca3af] hidden lg:table-cell whitespace-nowrap">
         {job.createdDate ?? '—'}
       </td>
-      <td className="px-4 py-3 text-[#666] hidden lg:table-cell whitespace-nowrap">
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
         {job.phone ?? '—'}
       </td>
       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
         <div className="relative inline-block">
           <button
             onClick={() => setShowMove(!showMove)}
-            className="text-[#444] hover:text-[#888] text-xs transition-colors px-1 py-0.5"
+            className="text-[#9ca3af] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
           >
             Move ▾
           </button>
@@ -114,7 +114,7 @@ function JobRow({
                 className="fixed inset-0 z-10"
                 onClick={() => setShowMove(false)}
               />
-              <div className="absolute right-0 top-7 bg-[#2a2a2a] border border-[#333] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
+              <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
                 {STAGES.map((s) => (
                   <button
                     key={s}

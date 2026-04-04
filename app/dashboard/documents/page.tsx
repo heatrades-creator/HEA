@@ -49,22 +49,22 @@ export default async function DocumentsPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold">Documents</h1>
-        <p className="text-[#555] text-sm mt-0.5">
+        <h1 className="text-[#111827] text-xl font-semibold">Documents</h1>
+        <p className="text-[#9ca3af] text-sm mt-0.5">
           {sorted.length > 0 ? `${sorted.length} generated document${sorted.length !== 1 ? 's' : ''}` : 'All AI-generated proposals and documents'}
         </p>
       </div>
 
       {sorted.length === 0 ? (
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-12 text-center">
-          <p className="text-[#555] text-sm mb-2">No documents yet.</p>
-          <p className="text-[#444] text-xs">
+        <div className="bg-white border border-[#e5e9f0] rounded-xl p-12 text-center">
+          <p className="text-[#9ca3af] text-sm mb-2">No documents yet.</p>
+          <p className="text-[#9ca3af] text-xs">
             Generate a proposal from a job detail page. Documents will appear here once the GAS{' '}
-            <code className="bg-[#2a2a2a] px-1 py-0.5 rounded text-[#888]">getAllDocuments</code> action is deployed.
+            <code className="bg-[#eef0f5] px-1 py-0.5 rounded text-[#6b7280]">getAllDocuments</code> action is deployed.
           </p>
-          <div className="mt-6 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg p-4 text-left max-w-lg mx-auto">
+          <div className="mt-6 bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-4 text-left max-w-lg mx-auto">
             <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-2">GAS Setup Required</p>
-            <p className="text-[#666] text-xs leading-relaxed">
+            <p className="text-[#6b7280] text-xs leading-relaxed">
               Add the <code className="text-[#aaa]">getAllDocuments</code> case to your{' '}
               <code className="text-[#aaa]">HEAJobsAPI.gs</code> doGet handler, then re-deploy the web app.
               See the GAS snippet in the codebase comments.
@@ -72,22 +72,22 @@ export default async function DocumentsPage() {
           </div>
         </div>
       ) : (
-        <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl overflow-hidden">
+        <div className="bg-white border border-[#e5e9f0] rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#2a2a2a] bg-[#1a1a1a]">
-                <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Job #</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden sm:table-cell">Client</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Doc Type</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium hidden md:table-cell">Generated</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#444] uppercase tracking-widest font-medium">Links</th>
+              <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
+                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Job #</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Client</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Doc Type</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden md:table-cell">Generated</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Links</th>
               </tr>
             </thead>
             <tbody>
               {sorted.map((doc, i) => (
                 <tr
                   key={i}
-                  className={`border-b border-[#252525] hover:bg-[#252525] transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
+                  className={`border-b border-[#edf0f5] hover:bg-gray-100 transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
                 >
                   <td className="px-5 py-3">
                     {doc.jobNumber ? (
@@ -98,16 +98,16 @@ export default async function DocumentsPage() {
                         {doc.jobNumber}
                       </Link>
                     ) : (
-                      <span className="text-[#444] text-xs">—</span>
+                      <span className="text-[#9ca3af] text-xs">—</span>
                     )}
                   </td>
-                  <td className="px-5 py-3 text-white hidden sm:table-cell">{doc.clientName || '—'}</td>
+                  <td className="px-5 py-3 text-[#111827] hidden sm:table-cell">{doc.clientName || '—'}</td>
                   <td className="px-5 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#2a2a2a] text-[#aaa] font-medium">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#eef0f5] text-[#aaa] font-medium">
                       {doc.docClass || 'Proposal'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#555] text-xs hidden md:table-cell whitespace-nowrap">
+                  <td className="px-5 py-3 text-[#9ca3af] text-xs hidden md:table-cell whitespace-nowrap">
                     {doc.generatedAt || '—'}
                   </td>
                   <td className="px-5 py-3">
@@ -117,7 +117,7 @@ export default async function DocumentsPage() {
                           href={doc.outputLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-[#888] hover:text-[#ffd100] transition-colors"
+                          className="text-xs text-[#6b7280] hover:text-[#ffd100] transition-colors"
                         >
                           Draft ↗
                         </a>
@@ -146,10 +146,10 @@ export default async function DocumentsPage() {
 
       {/* GAS snippet callout for Jesse */}
       <details className="mt-8 group">
-        <summary className="text-[#444] text-xs cursor-pointer hover:text-[#666] transition-colors select-none">
+        <summary className="text-[#9ca3af] text-xs cursor-pointer hover:text-[#6b7280] transition-colors select-none">
           GAS setup — <span className="group-open:hidden">show snippet</span><span className="hidden group-open:inline">hide snippet</span>
         </summary>
-        <div className="mt-3 bg-[#1a1a1a] border border-[#2a2a2a] rounded-xl p-5">
+        <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5">
           <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-3">
             Add to HEAJobsAPI.gs — doGet switch statement
           </p>
@@ -176,8 +176,8 @@ export default async function DocumentsPage() {
     .createTextOutput(JSON.stringify(docs))
     .setMimeType(ContentService.MimeType.JSON);
 }`}</pre>
-          <p className="text-[#444] text-xs mt-3">
-            After adding this, go to <strong className="text-[#888]">Deploy → Manage Deployments → New Version → Deploy</strong>.
+          <p className="text-[#9ca3af] text-xs mt-3">
+            After adding this, go to <strong className="text-[#6b7280]">Deploy → Manage Deployments → New Version → Deploy</strong>.
           </p>
         </div>
       </details>

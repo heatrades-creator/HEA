@@ -21,6 +21,13 @@ function onFormSubmit(e) {
       site_address: normalisedData['site_address'],
       doc_class:    normalisedData['doc_class']
     });
+    sendTelegramAlert_(
+      `📥 <b>New Intake Form</b>\n` +
+      `🆔 ${jobId}\n` +
+      `👤 ${normalisedData['client_name'] || 'Unknown'}\n` +
+      `📍 ${normalisedData['site_address'] || 'No address'}\n` +
+      `📄 ${normalisedData['doc_class'] || ''}`
+    );
     _runPipeline(normalisedData, 'FORM', startTime);
   } catch (err) {
     Logger_.writeErrorLog(
@@ -140,6 +147,15 @@ function _runPipeline(nd, triggeredBy, startTime) {
     }
 
     // S17: Return success
+    const clientName = nd['client_name'] || jobId;
+    const pdfMsg = pdfLink
+      ? `\n📄 <a href="${pdfLink}">View PDF</a>`
+      : (outputLink ? `\n📄 <a href="${outputLink}">View Document</a>` : '');
+    sendTelegramAlert_(
+      `✅ <b>Proposal Ready</b>\n` +
+      `🆔 ${jobId}\n` +
+      `👤 ${clientName}${pdfMsg}`
+    );
     return { success: true, jobId, outputLink, pdfLink };
 
   } catch (err) {
@@ -222,6 +238,31 @@ function _extractRawRow(e) {
     else if (t.includes('note'))                                { raw.notes_raw = v; }
   });
   return raw;
+}
+
+/**
+ * Sends a Telegram message to the configured chat.
+ * Silently fails if credentials are missing or the request errors.
+ * @param {string} message - HTML-formatted message text.
+ */
+function sendTelegramAlert_(message) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const token = props.getProperty('TELEGRAM_BOT_TOKEN');
+    const chatId = props.getProperty('TELEGRAM_CHAT_ID');
+    if (!token || !chatId) return;
+    UrlFetchApp.fetch(
+      'https://api.telegram.org/bot' + token + '/sendMessage',
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+        muteHttpExceptions: true,
+      }
+    );
+  } catch (e) {
+    Logger.log('Telegram alert error: ' + e);
+  }
 }
 
 /**

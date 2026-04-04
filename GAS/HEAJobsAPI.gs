@@ -126,7 +126,7 @@ function createJob(sheet, data) {
     createdDate,
   ]);
 
-  return {
+  const job = {
     jobNumber,
     clientName: data.clientName || '',
     phone: data.phone || '',
@@ -137,17 +137,38 @@ function createJob(sheet, data) {
     notes: data.notes || '',
     createdDate,
   };
+
+  sendTelegramAlert_(
+    `🆕 <b>New Job #${jobNumber}</b>\n` +
+    `👤 ${job.clientName || 'Unknown'}\n` +
+    `📍 ${job.address || 'No address'}\n` +
+    `📊 Stage: ${job.status}`
+  );
+
+  return job;
 }
 
 function updateJob(sheet, data) {
   const row = findRowByJobNumber(sheet, data.jobNumber);
   if (!row) return null;
 
+  const before = rowToJob(sheet.getRange(row, 1, 1, 9).getValues()[0]);
+
   if (data.status !== undefined)   sheet.getRange(row, COL.STATUS).setValue(data.status);
   if (data.driveUrl !== undefined) sheet.getRange(row, COL.DRIVE_URL).setValue(data.driveUrl);
   if (data.notes !== undefined)    sheet.getRange(row, COL.NOTES).setValue(data.notes);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 9).getValues()[0]);
+  const after = rowToJob(sheet.getRange(row, 1, 1, 9).getValues()[0]);
+
+  if (data.status !== undefined && data.status !== before.status) {
+    sendTelegramAlert_(
+      `📋 <b>Job #${after.jobNumber} updated</b>\n` +
+      `👤 ${after.clientName}\n` +
+      `🔄 ${before.status} → <b>${after.status}</b>`
+    );
+  }
+
+  return after;
 }
 
 function findJobByNumber(sheet, jobNumber) {
@@ -194,4 +215,28 @@ function jsonResponse(data, status) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+// ---------------------------------------------------------------------------
+// Telegram notifications
+// ---------------------------------------------------------------------------
+
+function sendTelegramAlert_(message) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const token = props.getProperty('TELEGRAM_BOT_TOKEN');
+    const chatId = props.getProperty('TELEGRAM_CHAT_ID');
+    if (!token || !chatId) return;
+    UrlFetchApp.fetch(
+      'https://api.telegram.org/bot' + token + '/sendMessage',
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+        muteHttpExceptions: true,
+      }
+    );
+  } catch (e) {
+    Logger.log('Telegram alert error: ' + e);
+  }
 }

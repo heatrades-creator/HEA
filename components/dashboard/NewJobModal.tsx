@@ -16,7 +16,6 @@ export default function NewJobModal({
     email: '',
     address: '',
     notes: '',
-    driveUrl: '',
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +62,6 @@ export default function NewJobModal({
             <Input label="Email" value={form.email} onChange={(v) => set('email', v)} placeholder="jane@example.com" type="email" />
           </div>
           <Input label="Address" value={form.address} onChange={(v) => set('address', v)} placeholder="12 Example St, Bendigo VIC 3550" />
-          <Input label="Google Drive Folder URL" value={form.driveUrl} onChange={(v) => set('driveUrl', v)} placeholder="https://drive.google.com/..." type="url" />
           <div>
             <label className="block text-[#888] text-xs uppercase tracking-wider mb-1.5">Notes</label>
             <textarea

@@ -78,10 +78,10 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
 
         {/* Quick Filters */}
         <div>
-          <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest font-semibold mb-3">
+          <p className="text-[#555] text-[10px] uppercase tracking-widest font-semibold mb-3">
             Quick Filters
           </p>
-          <p className="text-[#3a3a3a] text-[10px] uppercase tracking-widest mb-2">Status</p>
+          <p className="text-[#555] text-[10px] uppercase tracking-widest mb-2">Status</p>
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
               const count = stage === 'All'
@@ -179,7 +179,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
         </div>
 
         {/* Job count line */}
-        <p className="text-[#3a3a3a] text-xs mb-4">
+        <p className="text-[#555] text-xs mb-4">
           {filteredJobs.length} {filteredJobs.length === 1 ? 'job' : 'jobs'}
           {filterStage !== 'All' && ` · filtered by ${filterStage}`}
           {search && ` · "${search}"`}
@@ -234,8 +234,8 @@ function KanbanColumns({
             {/* Cards */}
             <div className="space-y-3 min-h-[200px]">
               {stageJobs.length === 0 && (
-                <div className="border-2 border-dashed border-[#232323] rounded-xl h-20 flex items-center justify-center">
-                  <span className="text-[#333] text-xs">No jobs</span>
+                <div className="border border-dashed border-[#2e2e2e] rounded-xl h-20 flex items-center justify-center">
+                  <span className="text-[#444] text-xs">No jobs</span>
                 </div>
               )}
               {stageJobs.map((job) => (
@@ -297,7 +297,7 @@ function JobCard({
         <p className="text-[#555] text-xs mt-1 truncate">{job.address}</p>
       )}
       {job.createdDate && (
-        <p className="text-[#3a3a3a] text-xs mt-2">{job.createdDate}</p>
+        <p className="text-[#555] text-xs mt-2">{job.createdDate}</p>
       )}
 
       {/* Move stage */}

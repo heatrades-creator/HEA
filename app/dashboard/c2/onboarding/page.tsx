@@ -45,7 +45,7 @@ export default function OnboardingPage() {
           {cases.length > 0 ? `${cases.length} active onboarding case${cases.length !== 1 ? 's' : ''}` : 'Track new starters through induction and setup'}
         </p>
       </div>
-      <OnboardingTracker cases={cases} />
+      <OnboardingTracker cases={cases as never[]} />
     </div>
   );
 }

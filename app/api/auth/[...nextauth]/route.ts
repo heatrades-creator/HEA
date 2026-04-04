@@ -1,11 +1,12 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
-const ALLOWED_EMAILS = [
-  'hea.trades@gmail.com',
-  'jdmheff@gmail.com',
-  'sbjma.alexisflores@gmail.com',
-];
+// Manage staff access via Vercel env var ALLOWED_EMAILS (comma-separated).
+// Falls back to the original list if the env var is not set.
+const ALLOWED_EMAILS = (
+  process.env.ALLOWED_EMAILS ||
+  'hea.trades@gmail.com,jdmheff@gmail.com,sbjma.alexisflores@gmail.com'
+).split(',').map((e) => e.trim()).filter(Boolean);
 
 const handler = NextAuth({
   providers: [

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { X, Menu, Shield, LayoutDashboard, Sun } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import logo from "@/public/Logo_transparent.png";
 
 const Nav = () => {
@@ -74,16 +74,14 @@ const Nav = () => {
             >
               Book a Consultation
             </Link>
-            {session && (
-              <button
-                onClick={() => setIsStaffOpen(true)}
-                className="text-slate-400 hover:text-heffdark transition-colors"
-                aria-label="Staff tools"
-                title="Staff tools"
-              >
-                <Shield className="w-5 h-5" />
-              </button>
-            )}
+            <button
+              onClick={() => session ? setIsStaffOpen(true) : signIn('google', { callbackUrl: '/dashboard' })}
+              className="text-slate-400 hover:text-heffdark transition-colors"
+              aria-label={session ? 'Staff tools' : 'Staff login'}
+              title={session ? 'Staff tools' : 'Staff login'}
+            >
+              <Shield className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -130,18 +128,16 @@ const Nav = () => {
             >
               Book a Consultation
             </Link>
-            {session && (
-              <button
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  setIsStaffOpen(true);
-                }}
-                className="flex items-center gap-2 w-full text-left py-2 text-slate-400"
-              >
-                <Shield className="w-4 h-4" />
-                Staff Tools
-              </button>
-            )}
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                session ? setIsStaffOpen(true) : signIn('google', { callbackUrl: '/dashboard' });
+              }}
+              className="flex items-center gap-2 w-full text-left py-2 text-slate-400"
+            >
+              <Shield className="w-4 h-4" />
+              {session ? 'Staff Tools' : 'Staff Login'}
+            </button>
           </div>
         </div>
       )}

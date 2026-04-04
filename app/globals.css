@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #181818;
+  --foreground: #ededed;
 }
 
 @theme inline {
@@ -21,12 +21,7 @@
   --color-heffgray2: #F7F7F7;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Dashboard always dark — override for marketing pages via body class if needed */
 
 body {
   background: var(--background);

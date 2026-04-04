@@ -1,10 +1,5 @@
 import { prisma } from "@/lib/db"
-import { Prisma } from "@prisma/client"
 import { AuditLog } from "@/components/admin/AuditLog"
-
-type AuditEntryWithLead = Prisma.AuditEntryGetPayload<{
-  include: { lead: { select: { firstName: true; lastName: true } } }
-}>
 
 export const dynamic = "force-dynamic"
 
@@ -23,7 +18,7 @@ export default async function AuditPage() {
   const totalSpendAud = spendResult._sum.costAud ?? 0
 
   // Serialize dates
-  const serialized = entries.map((e: AuditEntryWithLead) => ({
+  const serialized = entries.map((e) => ({
     ...e,
     createdAt: e.createdAt.toISOString(),
   }))

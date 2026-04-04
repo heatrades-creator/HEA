@@ -153,7 +153,7 @@ const Footer = ({ data }: FooterProps) => {
             {footerData.copyrightText}
             <span className="mx-2">\u00b7</span>
             <Link
-              href="/dashboard"
+              href="/dashboard/login"
               className="text-slate-600 hover:text-slate-400 transition-colors"
             >
               Staff

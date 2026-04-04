@@ -154,6 +154,20 @@ function createJob(sheet, data) {
   const jobNumber = getNextJobNumber(sheet);
   const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
 
+  // Auto-create or reuse Drive folder keyed on clientName + address (no jobId = same client reuses folder)
+  let driveUrl = '';
+  try {
+    const safeName = safeString_(data.clientName || 'Unknown') + '_' + safeString_(data.address || '');
+    const root = getOrCreateDriveFolder_(DriveApp.getRootFolder(), 'HEA Jobs');
+    const clientFolder = getOrCreateDriveFolder_(root, safeName);
+    ['01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
+      getOrCreateDriveFolder_(clientFolder, sub);
+    });
+    driveUrl = clientFolder.getUrl();
+  } catch (e) {
+    Logger.log('Drive folder error: ' + e);
+  }
+
   sheet.appendRow([
     jobNumber,
     data.clientName      || '',
@@ -161,7 +175,7 @@ function createJob(sheet, data) {
     data.email           || '',
     data.address         || '',
     data.status          || 'Lead',
-    data.driveUrl        || '',
+    driveUrl,
     data.notes           || '',
     createdDate,
     data.systemSize      || '',
@@ -178,7 +192,7 @@ function createJob(sheet, data) {
     email:           data.email           || '',
     address:         data.address         || '',
     status:          data.status          || 'Lead',
-    driveUrl:        data.driveUrl        || '',
+    driveUrl,
     notes:           data.notes           || '',
     createdDate,
     systemSize:      data.systemSize      || '',
@@ -254,6 +268,23 @@ function jsonResponse(data) {
   const output = ContentService.createTextOutput(JSON.stringify(data));
   output.setMimeType(ContentService.MimeType.JSON);
   return output;
+}
+
+// ---------------------------------------------------------------------------
+// Drive folder helpers
+// ---------------------------------------------------------------------------
+
+function safeString_(input) {
+  return String(input || '').trim()
+    .replace(/[/\\'"<>|*?:@]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .substring(0, 50);
+}
+
+function getOrCreateDriveFolder_(parent, name) {
+  const iter = parent.getFoldersByName(name);
+  return iter.hasNext() ? iter.next() : parent.createFolder(name);
 }
 
 // ---------------------------------------------------------------------------

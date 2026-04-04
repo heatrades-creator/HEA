@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db"
+import type { AuditEntry, Lead } from "@prisma/client"
 import { AuditLog } from "@/components/admin/AuditLog"
+
+type AuditEntryWithLead = AuditEntry & {
+  lead: Pick<Lead, "firstName" | "lastName">
+}
 
 export const dynamic = "force-dynamic"
 
@@ -18,7 +23,7 @@ export default async function AuditPage() {
   const totalSpendAud = spendResult._sum.costAud ?? 0
 
   // Serialize dates
-  const serialized = entries.map(e => ({
+  const serialized = entries.map((e: AuditEntryWithLead) => ({
     ...e,
     createdAt: e.createdAt.toISOString(),
   }))

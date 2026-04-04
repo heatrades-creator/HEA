@@ -1,13 +1,12 @@
 import PeopleTable from '@/components/dashboard/c2/PeopleTable';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'People | HEA Command' };
 
 async function getPeople() {
   const url = process.env.C2_GAS_URL;
   if (!url) return [];
   try {
-    const res = await fetch(`${url}?action=listPeople`, { cache: 'no-store' });
+    const res = await fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } });
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {

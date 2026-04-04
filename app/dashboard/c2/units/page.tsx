@@ -1,6 +1,5 @@
 import UnitTree from '@/components/dashboard/c2/UnitTree';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Units | HEA Command' };
 
 async function getData() {
@@ -8,9 +7,9 @@ async function getData() {
   if (!url) return { units: [], roles: [], ranks: [] };
   try {
     const [uRes, rRes, rkRes] = await Promise.all([
-      fetch(`${url}?action=listUnits`, { cache: 'no-store' }),
-      fetch(`${url}?action=listRoles`, { cache: 'no-store' }),
-      fetch(`${url}?action=listRanks`, { cache: 'no-store' }),
+      fetch(`${url}?action=listUnits`, { next: { revalidate: 30 } }),
+      fetch(`${url}?action=listRoles`, { next: { revalidate: 30 } }),
+      fetch(`${url}?action=listRanks`, { next: { revalidate: 30 } }),
     ]);
     return {
       units: await uRes.json(),

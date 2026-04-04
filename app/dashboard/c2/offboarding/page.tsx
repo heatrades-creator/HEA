@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Offboarding | HEA Command' };
 
 type OffboardingCase = {
@@ -20,8 +19,8 @@ async function getData() {
   if (!url) return { cases: [], people: [] };
   try {
     const [casesRes, peopleRes] = await Promise.all([
-      fetch(`${url}?action=listOffboarding`, { cache: 'no-store' }),
-      fetch(`${url}?action=listPeople`, { cache: 'no-store' }),
+      fetch(`${url}?action=listOffboarding`, { next: { revalidate: 30 } }),
+      fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
     ]);
     const cases = await casesRes.json();
     const people = await peopleRes.json();

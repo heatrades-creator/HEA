@@ -1,13 +1,12 @@
 import Link from 'next/link';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Command | HEA' };
 
 async function getOverview() {
   const url = process.env.C2_GAS_URL;
   if (!url) return null;
   try {
-    const res = await fetch(`${url}?action=getOverview`, { cache: 'no-store' });
+    const res = await fetch(`${url}?action=getOverview`, { next: { revalidate: 30 } });
     return await res.json();
   } catch {
     return null;

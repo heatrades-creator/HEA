@@ -1,6 +1,5 @@
 import DisciplineTable from '@/components/dashboard/c2/DisciplineTable';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Discipline | HEA Command' };
 
 async function getData() {
@@ -8,8 +7,8 @@ async function getData() {
   if (!url) return { cases: [], people: [] };
   try {
     const [casesRes, peopleRes] = await Promise.all([
-      fetch(`${url}?action=listDiscipline`, { cache: 'no-store' }),
-      fetch(`${url}?action=listPeople`, { cache: 'no-store' }),
+      fetch(`${url}?action=listDiscipline`, { next: { revalidate: 30 } }),
+      fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
     ]);
     return {
       cases: Array.isArray(await casesRes.clone().json()) ? await casesRes.json() : [],
@@ -28,8 +27,8 @@ export default async function DisciplinePage() {
   if (url) {
     try {
       const [casesRes, peopleRes] = await Promise.all([
-        fetch(`${url}?action=listDiscipline`, { cache: 'no-store' }),
-        fetch(`${url}?action=listPeople`, { cache: 'no-store' }),
+        fetch(`${url}?action=listDiscipline`, { next: { revalidate: 30 } }),
+        fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
       ]);
       const casesData = await casesRes.json();
       const peopleData = await peopleRes.json();

@@ -1,6 +1,5 @@
 import OnboardingTracker from '@/components/dashboard/c2/OnboardingTracker';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Onboarding | HEA Command' };
 
 async function getData() {
@@ -8,8 +7,8 @@ async function getData() {
   if (!url) return { cases: [], people: [] };
   try {
     const [casesRes, peopleRes] = await Promise.all([
-      fetch(`${url}?action=listOnboarding`, { cache: 'no-store' }),
-      fetch(`${url}?action=listPeople`, { cache: 'no-store' }),
+      fetch(`${url}?action=listOnboarding`, { next: { revalidate: 30 } }),
+      fetch(`${url}?action=listPeople`, { next: { revalidate: 30 } }),
     ]);
     const cases = await casesRes.json();
     const people = await peopleRes.json();

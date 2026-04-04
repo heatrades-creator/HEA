@@ -1,13 +1,12 @@
 import CandidatePipeline from '@/components/dashboard/c2/CandidatePipeline';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Recruitment | HEA Command' };
 
 async function getCandidates() {
   const url = process.env.C2_GAS_URL;
   if (!url) return [];
   try {
-    const res = await fetch(`${url}?action=listCandidates`, { cache: 'no-store' });
+    const res = await fetch(`${url}?action=listCandidates`, { next: { revalidate: 30 } });
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {

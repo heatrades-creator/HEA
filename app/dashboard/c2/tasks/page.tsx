@@ -1,13 +1,12 @@
 import TaskList from '@/components/dashboard/c2/TaskList';
 
-export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Tasks | HEA Command' };
 
 async function getTasks() {
   const url = process.env.C2_GAS_URL;
   if (!url) return [];
   try {
-    const res = await fetch(`${url}?action=listTasks`, { cache: 'no-store' });
+    const res = await fetch(`${url}?action=listTasks`, { next: { revalidate: 30 } });
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {

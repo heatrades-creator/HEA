@@ -50,7 +50,7 @@ export default function NewJobModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e9f0]">
           <h2 className="text-[#111827] font-semibold">New Job</h2>
-          <button onClick={onClose} className="text-[#9ca3af] hover:text-[#111827] transition-colors text-xl leading-none">
+          <button onClick={onClose} className="text-[#6b7280] hover:text-[#111827] transition-colors text-xl leading-none">
             ×
           </button>
         </div>
@@ -63,12 +63,12 @@ export default function NewJobModal({
           </div>
           <Input label="Address" value={form.address} onChange={(v) => set('address', v)} placeholder="12 Example St, Bendigo VIC 3550" />
           <div>
-            <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-1.5">Notes</label>
+            <label className="block text-[#374151] text-xs uppercase tracking-wider mb-1.5">Notes</label>
             <textarea
               value={form.notes}
               onChange={(e) => set('notes', e.target.value)}
               rows={3}
-              className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100] resize-none"
+              className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#6b7280] focus:outline-none focus:border-[#ffd100] resize-none"
               placeholder="Initial notes..."
             />
           </div>
@@ -112,13 +112,13 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-1.5">{label}</label>
+      <label className="block text-[#374151] text-xs uppercase tracking-wider mb-1.5">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100]"
+        className="w-full bg-[#eef0f5] border border-[#e5e9f0] rounded-lg px-3 py-2 text-[#111827] text-sm placeholder:text-[#6b7280] focus:outline-none focus:border-[#ffd100]"
       />
     </div>
   );

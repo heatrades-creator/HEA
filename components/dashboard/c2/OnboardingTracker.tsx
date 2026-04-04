@@ -53,7 +53,7 @@ export default function OnboardingTracker({ cases }: { cases: OnboardingCase[] }
   if (cases.length === 0) {
     return (
       <div className="bg-white border border-[#e5e9f0] rounded-xl p-8 text-center">
-        <p className="text-[#9ca3af] text-sm">No active onboarding cases.</p>
+        <p className="text-[#6b7280] text-sm">No active onboarding cases.</p>
         <p className="text-[#333] text-xs mt-1">Onboarding cases are created automatically when a candidate accepts an offer.</p>
       </div>
     );
@@ -71,7 +71,7 @@ export default function OnboardingTracker({ cases }: { cases: OnboardingCase[] }
               <div>
                 <p className="text-[#111827] font-medium">{c.personName || c.person_id}</p>
                 {c.target_start_date && (
-                  <p className="text-[#9ca3af] text-xs mt-0.5">Target start: {String(c.target_start_date).substring(0, 10)}</p>
+                  <p className="text-[#6b7280] text-xs mt-0.5">Target start: {String(c.target_start_date).substring(0, 10)}</p>
                 )}
               </div>
               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isComplete ? 'bg-green-900/40 text-green-400' : 'bg-blue-900/40 text-blue-300'}`}>
@@ -91,7 +91,7 @@ export default function OnboardingTracker({ cases }: { cases: OnboardingCase[] }
                         <svg className="w-2.5 h-2.5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
                       )}
                     </div>
-                    <p className={`text-xs ${done ? (current ? 'text-[#ffd100] font-medium' : 'text-[#9ca3af]') : 'text-[#333]'}`}>{step.label}</p>
+                    <p className={`text-xs ${done ? (current ? 'text-[#ffd100] font-medium' : 'text-[#6b7280]') : 'text-[#333]'}`}>{step.label}</p>
                   </div>
                 );
               })}

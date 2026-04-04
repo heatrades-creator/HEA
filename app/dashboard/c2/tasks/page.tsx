@@ -22,7 +22,7 @@ export default async function TasksPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Tasks</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">
+        <p className="text-[#6b7280] text-sm mt-0.5">
           {openCount > 0 ? `${openCount} open task${openCount !== 1 ? 's' : ''} — ${tasks.length} total` : 'All tasks — automated and manual'}
         </p>
       </div>

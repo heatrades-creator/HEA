@@ -70,7 +70,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
         {/* Total count */}
         <div className="pt-1">
           <div className="text-4xl font-bold text-[#111827] tabular-nums leading-none">{jobs.length}</div>
-          <div className="text-[#9ca3af] text-xs mt-1.5">Total Jobs</div>
+          <div className="text-[#6b7280] text-xs mt-1.5">Total Jobs</div>
         </div>
 
         {/* Divider */}
@@ -78,10 +78,10 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
 
         {/* Quick Filters */}
         <div>
-          <p className="text-[#9ca3af] text-[10px] uppercase tracking-widest font-semibold mb-3">
+          <p className="text-[#6b7280] text-[10px] uppercase tracking-widest font-semibold mb-3">
             Quick Filters
           </p>
-          <p className="text-[#9ca3af] text-[10px] uppercase tracking-widest mb-2">Status</p>
+          <p className="text-[#6b7280] text-[10px] uppercase tracking-widest mb-2">Status</p>
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
               const count = stage === 'All'
@@ -103,7 +103,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
                     className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${
                       isActive
                         ? 'bg-[#ffd100]/20 text-[#ffd100]'
-                        : 'bg-gray-100 text-[#9ca3af]'
+                        : 'bg-gray-100 text-[#6b7280]'
                     }`}
                   >
                     {count}
@@ -122,7 +122,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
           {/* Search */}
           <div className="relative flex-1 max-w-xs">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af] w-3.5 h-3.5 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280] w-3.5 h-3.5 pointer-events-none"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -144,7 +144,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
               className={`px-3 py-2 transition-colors text-sm ${
                 viewMode === 'list'
                   ? 'bg-[#ffd100]/10 text-[#ffd100]'
-                  : 'text-[#9ca3af] hover:text-[#aaa]'
+                  : 'text-[#6b7280] hover:text-[#aaa]'
               }`}
             >
               {/* List icon */}
@@ -158,7 +158,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
               className={`px-3 py-2 transition-colors text-sm border-l border-[#e5e9f0] ${
                 viewMode === 'kanban'
                   ? 'bg-[#ffd100]/10 text-[#ffd100]'
-                  : 'text-[#9ca3af] hover:text-[#aaa]'
+                  : 'text-[#6b7280] hover:text-[#aaa]'
               }`}
             >
               {/* Kanban / columns icon */}
@@ -179,7 +179,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
         </div>
 
         {/* Job count line */}
-        <p className="text-[#9ca3af] text-xs mb-4">
+        <p className="text-[#6b7280] text-xs mb-4">
           {filteredJobs.length} {filteredJobs.length === 1 ? 'job' : 'jobs'}
           {filterStage !== 'All' && ` · filtered by ${filterStage}`}
           {search && ` · "${search}"`}
@@ -226,7 +226,7 @@ function KanbanColumns({
             {/* Column header */}
             <div className="flex items-center justify-between mb-3">
               <span className={`text-sm font-semibold ${styles.header}`}>{stage}</span>
-              <span className="text-xs text-[#9ca3af] bg-[#f5f7fb] px-2 py-0.5 rounded-full tabular-nums">
+              <span className="text-xs text-[#6b7280] bg-[#f5f7fb] px-2 py-0.5 rounded-full tabular-nums">
                 {stageJobs.length}
               </span>
             </div>
@@ -235,7 +235,7 @@ function KanbanColumns({
             <div className="space-y-3 min-h-[200px]">
               {stageJobs.length === 0 && (
                 <div className="border border-dashed border-[#e5e9f0] rounded-xl h-20 flex items-center justify-center">
-                  <span className="text-[#9ca3af] text-xs">No jobs</span>
+                  <span className="text-[#6b7280] text-xs">No jobs</span>
                 </div>
               )}
               {stageJobs.map((job) => (
@@ -284,7 +284,7 @@ function JobCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-[#9ca3af] hover:text-[#ffd100] transition-colors text-xs"
+            className="text-[#6b7280] hover:text-[#ffd100] transition-colors text-xs"
             title="Open Drive folder"
           >
             &#128193;
@@ -294,17 +294,17 @@ function JobCard({
 
       <p className="text-[#111827] text-sm font-medium leading-snug">{job.clientName}</p>
       {job.address && (
-        <p className="text-[#9ca3af] text-xs mt-1 truncate">{job.address}</p>
+        <p className="text-[#6b7280] text-xs mt-1 truncate">{job.address}</p>
       )}
       {job.createdDate && (
-        <p className="text-[#9ca3af] text-xs mt-2">{job.createdDate}</p>
+        <p className="text-[#6b7280] text-xs mt-2">{job.createdDate}</p>
       )}
 
       {/* Move stage */}
       <div className="mt-3 relative" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setShowMove(!showMove)}
-          className="text-[#9ca3af] hover:text-[#6b7280] text-xs transition-colors"
+          className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors"
         >
           Move stage ▾
         </button>

@@ -21,7 +21,7 @@ export default async function LoginPage() {
 
         <LoginButton />
 
-        <p className="text-[#9ca3af] text-xs text-center">
+        <p className="text-[#6b7280] text-xs text-center">
           Access restricted to authorised HEA staff only.
         </p>
       </div>

@@ -87,7 +87,7 @@ export default async function DashboardPage() {
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Overview</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">Heffernan Electrical Automation</p>
+        <p className="text-[#6b7280] text-sm mt-0.5">Heffernan Electrical Automation</p>
       </div>
 
       {/* ── Stat cards ── */}
@@ -135,16 +135,16 @@ export default async function DashboardPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#edf0f5]">
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Job #</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Client</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Status</th>
-                <th className="px-5 py-2.5 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden md:table-cell">Created</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Job #</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Client</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden sm:table-cell">Status</th>
+                <th className="px-5 py-2.5 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden md:table-cell">Created</th>
               </tr>
             </thead>
             <tbody>
               {recentJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-5 py-10 text-center text-[#9ca3af] text-sm">
+                  <td colSpan={4} className="px-5 py-10 text-center text-[#6b7280] text-sm">
                     No jobs yet. <Link href="/dashboard/jobs" className="text-[#ffd100] hover:underline">Create your first job →</Link>
                   </td>
                 </tr>
@@ -168,7 +168,7 @@ export default async function DashboardPage() {
                         {job.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-[#9ca3af] text-xs hidden md:table-cell">{job.createdDate ?? '—'}</td>
+                    <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell">{job.createdDate ?? '—'}</td>
                   </tr>
                 ))
               )}
@@ -182,10 +182,10 @@ export default async function DashboardPage() {
 
           <div>
             <div className="flex items-end justify-between mb-1.5">
-              <span className="text-[#9ca3af] text-xs">Proposals generated</span>
+              <span className="text-[#6b7280] text-xs">Proposals generated</span>
               <span className={`text-lg font-bold tabular-nums ${usagePct >= 80 ? 'text-red-400' : 'text-white'}`}>
                 {usage.pdfs_today}
-                <span className="text-[#9ca3af] text-xs font-normal ml-1">/ {usage.daily_limit}</span>
+                <span className="text-[#6b7280] text-xs font-normal ml-1">/ {usage.daily_limit}</span>
               </span>
             </div>
             <div className="w-full h-1.5 bg-[#eef0f5] rounded-full overflow-hidden">
@@ -198,11 +198,11 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3">
-              <p className="text-[#9ca3af] text-[10px] uppercase tracking-wider mb-1">Tokens Today</p>
+              <p className="text-[#6b7280] text-[10px] uppercase tracking-wider mb-1">Tokens Today</p>
               <p className="text-white font-bold tabular-nums text-sm">{usage.tokens_today.toLocaleString()}</p>
             </div>
             <div className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3">
-              <p className="text-[#9ca3af] text-[10px] uppercase tracking-wider mb-1">Remaining</p>
+              <p className="text-[#6b7280] text-[10px] uppercase tracking-wider mb-1">Remaining</p>
               <p className={`font-bold tabular-nums text-sm ${usagePct >= 80 ? 'text-red-400' : 'text-white'}`}>
                 {usage.remaining}
               </p>
@@ -210,7 +210,7 @@ export default async function DashboardPage() {
           </div>
 
           {usage.avg_tokens > 0 && (
-            <p className="text-[#9ca3af] text-xs">
+            <p className="text-[#6b7280] text-xs">
               Avg {usage.avg_tokens.toLocaleString()} tokens / proposal
             </p>
           )}
@@ -263,9 +263,9 @@ function StatCard({
       href={href}
       className={`bg-white border border-[#e5e9f0] border-l-2 ${accent} rounded-xl p-5 hover:bg-gray-100 transition-colors`}
     >
-      <p className="text-[#9ca3af] text-xs uppercase tracking-wider mb-2">{label}</p>
+      <p className="text-[#374151] text-xs uppercase tracking-wider mb-2">{label}</p>
       <p className={`text-3xl font-bold tabular-nums leading-none ${valueColor}`}>{value}</p>
-      {sub && <p className="text-[#9ca3af] text-xs mt-1.5">{sub}</p>}
+      {sub && <p className="text-[#6b7280] text-xs mt-1.5">{sub}</p>}
     </Link>
   );
 }

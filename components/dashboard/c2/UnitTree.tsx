@@ -40,9 +40,9 @@ function UnitNode({ unit, depth = 0 }: { unit: Unit & { children: Unit[] }, dept
               <span className={`text-xs font-mono uppercase ${typeColor}`}>{unit.unit_type || 'UNIT'}</span>
             </div>
             <p className="text-[#111827] font-medium">{unit.name}</p>
-            {unit.description && <p className="text-[#9ca3af] text-xs mt-0.5">{unit.description}</p>}
+            {unit.description && <p className="text-[#6b7280] text-xs mt-0.5">{unit.description}</p>}
           </div>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${unit.status === 'ACTIVE' ? 'bg-green-900/30 text-green-400' : 'bg-[#eef0f5] text-[#9ca3af]'}`}>
+          <span className={`text-xs px-2 py-0.5 rounded-full ${unit.status === 'ACTIVE' ? 'bg-green-900/30 text-green-400' : 'bg-[#eef0f5] text-[#6b7280]'}`}>
             {unit.status || 'ACTIVE'}
           </span>
         </div>
@@ -60,7 +60,7 @@ export default function UnitTree({ units }: { units: Unit[] }) {
   if (units.length === 0) {
     return (
       <div className="bg-white border border-[#e5e9f0] rounded-xl p-8 text-center">
-        <p className="text-[#9ca3af] text-sm">No units configured yet.</p>
+        <p className="text-[#6b7280] text-sm">No units configured yet.</p>
         <p className="text-[#333] text-xs mt-1">Units are the organisational structure — squads, teams, sections, departments.</p>
       </div>
     );

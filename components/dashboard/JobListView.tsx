@@ -28,19 +28,19 @@ export default function JobListView({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Status</th>
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Job #</th>
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium">Client</th>
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden md:table-cell">Address</th>
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Created</th>
-            <th className="px-4 py-3 text-left text-[#9ca3af] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Phone</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium">Status</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium">Job #</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium">Client</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium hidden md:table-cell">Address</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Created</th>
+            <th className="px-4 py-3 text-left text-[#374151] text-xs uppercase tracking-wider font-medium hidden lg:table-cell">Phone</th>
             <th className="px-4 py-3" />
           </tr>
         </thead>
         <tbody>
           {jobs.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-16 text-center text-[#9ca3af] text-sm">
+              <td colSpan={7} className="px-4 py-16 text-center text-[#6b7280] text-sm">
                 No jobs found
               </td>
             </tr>
@@ -78,7 +78,7 @@ function JobRow({
     <tr
       onClick={onClick}
       className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group ${
-        isEven ? 'bg-[#f0f2f7]' : 'bg-[#f5f7fb]'
+        isEven ? 'bg-[#f5f7fb]' : 'bg-[#f5f7fb]'
       } hover:bg-[#232323]`}
     >
       <td className="px-4 py-3">
@@ -93,7 +93,7 @@ function JobRow({
       <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell">
         <span className="block truncate max-w-[200px]">{job.address ?? '—'}</span>
       </td>
-      <td className="px-4 py-3 text-[#9ca3af] hidden lg:table-cell whitespace-nowrap">
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
         {job.createdDate ?? '—'}
       </td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
@@ -103,7 +103,7 @@ function JobRow({
         <div className="relative inline-block">
           <button
             onClick={() => setShowMove(!showMove)}
-            className="text-[#9ca3af] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
+            className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
           >
             Move ▾
           </button>

@@ -38,7 +38,7 @@ export default function DisciplineTable({ cases }: { cases: DisciplineCase[] }) 
   if (cases.length === 0) {
     return (
       <div className="bg-white border border-[#e5e9f0] rounded-xl p-8 text-center">
-        <p className="text-[#9ca3af] text-sm">No active discipline cases.</p>
+        <p className="text-[#6b7280] text-sm">No active discipline cases.</p>
       </div>
     );
   }
@@ -48,19 +48,19 @@ export default function DisciplineTable({ cases }: { cases: DisciplineCase[] }) 
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
-            <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Person</th>
-            <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Category</th>
-            <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Severity</th>
-            <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Status</th>
-            <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden md:table-cell">Opened</th>
+            <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Person</th>
+            <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden sm:table-cell">Category</th>
+            <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Severity</th>
+            <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Status</th>
+            <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden md:table-cell">Opened</th>
           </tr>
         </thead>
         <tbody>
           {cases.map((c, i) => (
-            <tr key={c.case_id} className={`border-b border-[#edf0f5] ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}>
+            <tr key={c.case_id} className={`border-b border-[#edf0f5] ${i % 2 === 0 ? '' : 'bg-[#f9fafb]'}`}>
               <td className="px-5 py-3">
                 <p className="text-[#111827]">{c.personName || c.person_id}</p>
-                {c.description && <p className="text-[#9ca3af] text-xs mt-0.5 truncate max-w-xs">{c.description}</p>}
+                {c.description && <p className="text-[#6b7280] text-xs mt-0.5 truncate max-w-xs">{c.description}</p>}
               </td>
               <td className="px-5 py-3 text-[#6b7280] text-xs hidden sm:table-cell">{(c.category || '').replace(/_/g, ' ')}</td>
               <td className="px-5 py-3">
@@ -73,7 +73,7 @@ export default function DisciplineTable({ cases }: { cases: DisciplineCase[] }) 
                   {(c.status || 'RAISED').replace(/_/g, ' ')}
                 </span>
               </td>
-              <td className="px-5 py-3 text-[#9ca3af] text-xs hidden md:table-cell">
+              <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell">
                 {c.created_at ? String(c.created_at).substring(0, 10) : '—'}
               </td>
             </tr>

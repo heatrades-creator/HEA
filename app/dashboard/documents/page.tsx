@@ -50,15 +50,15 @@ export default async function DocumentsPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Documents</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">
+        <p className="text-[#6b7280] text-sm mt-0.5">
           {sorted.length > 0 ? `${sorted.length} generated document${sorted.length !== 1 ? 's' : ''}` : 'All AI-generated proposals and documents'}
         </p>
       </div>
 
       {sorted.length === 0 ? (
         <div className="bg-white border border-[#e5e9f0] rounded-xl p-12 text-center">
-          <p className="text-[#9ca3af] text-sm mb-2">No documents yet.</p>
-          <p className="text-[#9ca3af] text-xs">
+          <p className="text-[#6b7280] text-sm mb-2">No documents yet.</p>
+          <p className="text-[#6b7280] text-xs">
             Generate a proposal from a job detail page. Documents will appear here once the GAS{' '}
             <code className="bg-[#eef0f5] px-1 py-0.5 rounded text-[#6b7280]">getAllDocuments</code> action is deployed.
           </p>
@@ -76,11 +76,11 @@ export default async function DocumentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
-                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Job #</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden sm:table-cell">Client</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Doc Type</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium hidden md:table-cell">Generated</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#9ca3af] uppercase tracking-widest font-medium">Links</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Job #</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden sm:table-cell">Client</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Doc Type</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden md:table-cell">Generated</th>
+                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Links</th>
               </tr>
             </thead>
             <tbody>
@@ -98,7 +98,7 @@ export default async function DocumentsPage() {
                         {doc.jobNumber}
                       </Link>
                     ) : (
-                      <span className="text-[#9ca3af] text-xs">—</span>
+                      <span className="text-[#6b7280] text-xs">—</span>
                     )}
                   </td>
                   <td className="px-5 py-3 text-[#111827] hidden sm:table-cell">{doc.clientName || '—'}</td>
@@ -107,7 +107,7 @@ export default async function DocumentsPage() {
                       {doc.docClass || 'Proposal'}
                     </span>
                   </td>
-                  <td className="px-5 py-3 text-[#9ca3af] text-xs hidden md:table-cell whitespace-nowrap">
+                  <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell whitespace-nowrap">
                     {doc.generatedAt || '—'}
                   </td>
                   <td className="px-5 py-3">
@@ -146,7 +146,7 @@ export default async function DocumentsPage() {
 
       {/* GAS snippet callout for Jesse */}
       <details className="mt-8 group">
-        <summary className="text-[#9ca3af] text-xs cursor-pointer hover:text-[#6b7280] transition-colors select-none">
+        <summary className="text-[#6b7280] text-xs cursor-pointer hover:text-[#6b7280] transition-colors select-none">
           GAS setup — <span className="group-open:hidden">show snippet</span><span className="hidden group-open:inline">hide snippet</span>
         </summary>
         <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5">
@@ -176,7 +176,7 @@ export default async function DocumentsPage() {
     .createTextOutput(JSON.stringify(docs))
     .setMimeType(ContentService.MimeType.JSON);
 }`}</pre>
-          <p className="text-[#9ca3af] text-xs mt-3">
+          <p className="text-[#6b7280] text-xs mt-3">
             After adding this, go to <strong className="text-[#6b7280]">Deploy → Manage Deployments → New Version → Deploy</strong>.
           </p>
         </div>

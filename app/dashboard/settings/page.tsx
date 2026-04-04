@@ -47,7 +47,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Settings</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">
+        <p className="text-[#6b7280] text-sm mt-0.5">
           Configuration reference for the HEA dashboard system
         </p>
       </div>
@@ -69,7 +69,7 @@ export default function SettingsPage() {
                   {style.label}
                 </span>
               </div>
-              <p className="text-[#9ca3af] text-xs leading-relaxed border-t border-[#e5e9f0] pt-2 mt-2">
+              <p className="text-[#6b7280] text-xs leading-relaxed border-t border-[#e5e9f0] pt-2 mt-2">
                 {section.note}
               </p>
               {'link' in section && section.link && (
@@ -89,27 +89,27 @@ export default function SettingsPage() {
         <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-3">System Info</p>
         <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-xs">
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">Stack</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">Stack</p>
             <p className="text-[#6b7280]">Next.js · TypeScript · Tailwind · NextAuth</p>
           </div>
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">Backend</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">Backend</p>
             <p className="text-[#6b7280]">Google Apps Script + Google Sheets</p>
           </div>
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">AI Engine</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">AI Engine</p>
             <p className="text-[#6b7280]">Gemini (via GAS pipeline)</p>
           </div>
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">Hosting</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">Hosting</p>
             <p className="text-[#6b7280]">Vercel · hea-group.com.au</p>
           </div>
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">Output Format</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">Output Format</p>
             <p className="text-[#6b7280]">Google Slides → PDF via Drive API</p>
           </div>
           <div>
-            <p className="text-[#9ca3af] uppercase tracking-wider text-[10px] mb-0.5">Auth</p>
+            <p className="text-[#6b7280] uppercase tracking-wider text-[10px] mb-0.5">Auth</p>
             <p className="text-[#6b7280]">Google OAuth · 3 whitelisted emails</p>
           </div>
         </div>

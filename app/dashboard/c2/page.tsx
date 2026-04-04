@@ -16,9 +16,9 @@ async function getOverview() {
 function StatCard({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
     <div className="bg-white border border-[#e5e9f0] rounded-xl p-5">
-      <p className="text-[#6b7280] text-xs uppercase tracking-wider mb-3">{label}</p>
+      <p className="text-[#374151] text-xs uppercase tracking-wider mb-3">{label}</p>
       <p className={`text-3xl font-bold ${color ?? 'text-[#111827]'}`}>{value}</p>
-      {sub && <p className="text-[#9ca3af] text-xs mt-1">{sub}</p>}
+      {sub && <p className="text-[#6b7280] text-xs mt-1">{sub}</p>}
     </div>
   );
 }
@@ -32,7 +32,7 @@ export default async function C2OverviewPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Command</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">Workforce overview — HEA Command & Control</p>
+        <p className="text-[#6b7280] text-sm mt-0.5">Workforce overview — HEA Command & Control</p>
       </div>
 
       {notConfigured && (
@@ -68,7 +68,7 @@ export default async function C2OverviewPage() {
       {/* Deployability breakdown */}
       {data && (
         <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 mb-6">
-          <p className="text-[#6b7280] text-xs uppercase tracking-wider mb-4">Deployability Breakdown</p>
+          <p className="text-[#374151] text-xs uppercase tracking-wider mb-4">Deployability Breakdown</p>
           <div className="flex items-center gap-4">
             <div className="flex-1 bg-[#f5f7fb] rounded-full h-2.5 overflow-hidden">
               {data.headcount > 0 && (
@@ -96,16 +96,16 @@ export default async function C2OverviewPage() {
             <Link href="/dashboard/c2/people" className="text-[#ffd100] text-xs hover:underline">View all →</Link>
           </div>
           {!data?.recent_people?.length ? (
-            <p className="px-5 py-8 text-center text-[#9ca3af] text-sm">No people yet</p>
+            <p className="px-5 py-8 text-center text-[#6b7280] text-sm">No people yet</p>
           ) : (
             <div className="divide-y divide-[#edf0f5]">
               {(data.recent_people || []).map((p: { person_id: string; full_name: string; employment_type?: string; status?: string; deployability?: string }) => (
                 <Link key={p.person_id} href={`/dashboard/c2/people/${p.person_id}`} className="flex items-center justify-between px-5 py-3 hover:bg-gray-100 transition-colors">
                   <div>
                     <p className="text-[#111827] text-sm">{p.full_name}</p>
-                    <p className="text-[#9ca3af] text-xs">{(p.employment_type || '').replace(/_/g, ' ')}</p>
+                    <p className="text-[#6b7280] text-xs">{(p.employment_type || '').replace(/_/g, ' ')}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${p.deployability === 'FULL' ? 'bg-green-900/40 text-green-400' : p.deployability === 'BLOCKED' ? 'bg-red-900/40 text-red-400' : 'bg-yellow-900/30 text-[#ffd100]'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${p.deployability === 'FULL' ? 'bg-green-100 text-green-700' : p.deployability === 'BLOCKED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
                     {p.deployability || 'FULL'}
                   </span>
                 </Link>
@@ -126,9 +126,9 @@ export default async function C2OverviewPage() {
               { href: '/dashboard/c2/tasks', label: 'Tasks', desc: 'Open actions' },
               { href: '/dashboard/c2/discipline', label: 'Discipline', desc: 'Cases & PIPs' },
             ].map(item => (
-              <Link key={item.href} href={item.href} className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3 hover:border-[#ffd100]/30 hover:bg-[#f0f2f7] transition-colors">
+              <Link key={item.href} href={item.href} className="bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-3 hover:border-[#ffd100]/30 hover:bg-[#f5f7fb] transition-colors">
                 <p className="text-[#111827] text-sm font-medium">{item.label}</p>
-                <p className="text-[#9ca3af] text-xs mt-0.5">{item.desc}</p>
+                <p className="text-[#6b7280] text-xs mt-0.5">{item.desc}</p>
               </Link>
             ))}
           </div>

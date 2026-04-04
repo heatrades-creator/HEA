@@ -25,7 +25,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="mb-4">
-        <Link href="/dashboard/c2/people" className="text-[#9ca3af] text-sm hover:text-[#6b7280] transition-colors">← People</Link>
+        <Link href="/dashboard/c2/people" className="text-[#6b7280] text-sm hover:text-[#6b7280] transition-colors">← People</Link>
       </div>
       <PersonDetail person={person} />
     </div>

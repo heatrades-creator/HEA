@@ -20,7 +20,7 @@ export default async function RecruitmentPage() {
     <div className="p-6">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Recruitment</h1>
-        <p className="text-[#9ca3af] text-sm mt-0.5">Candidate pipeline — from application to offer accepted</p>
+        <p className="text-[#6b7280] text-sm mt-0.5">Candidate pipeline — from application to offer accepted</p>
       </div>
       <CandidatePipeline initialCandidates={candidates} />
     </div>

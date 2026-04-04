@@ -59,7 +59,7 @@ export default function TaskList({ initialTasks }: { initialTasks: Task[] }) {
     <div>
       <div className="flex items-center gap-3 mb-4">
         {['OPEN','DONE','ALL'].map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${filter === f ? 'bg-[#ffd100]/15 text-[#ffd100] border border-[#ffd100]/30' : 'text-[#9ca3af] hover:text-[#6b7280] border border-transparent'}`}>
+          <button key={f} onClick={() => setFilter(f)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${filter === f ? 'bg-[#ffd100]/15 text-[#ffd100] border border-[#ffd100]/30' : 'text-[#6b7280] hover:text-[#6b7280] border border-transparent'}`}>
             {f === 'OPEN' ? `Open (${openCount})` : f}
           </button>
         ))}
@@ -68,7 +68,7 @@ export default function TaskList({ initialTasks }: { initialTasks: Task[] }) {
       <div className="space-y-2">
         {filtered.length === 0 && (
           <div className="bg-white border border-[#e5e9f0] rounded-xl p-8 text-center">
-            <p className="text-[#9ca3af] text-sm">{filter === 'OPEN' ? 'No open tasks — all clear.' : 'No tasks.'}</p>
+            <p className="text-[#6b7280] text-sm">{filter === 'OPEN' ? 'No open tasks — all clear.' : 'No tasks.'}</p>
           </div>
         )}
         {filtered.map(t => {
@@ -85,12 +85,12 @@ export default function TaskList({ initialTasks }: { initialTasks: Task[] }) {
                 {isDone && <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
               </button>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm ${isDone ? 'line-through text-[#9ca3af]' : 'text-[#111827]'}`}>{t.title}</p>
-                {t.description && <p className="text-[#9ca3af] text-xs mt-0.5 truncate">{t.description}</p>}
+                <p className={`text-sm ${isDone ? 'line-through text-[#6b7280]' : 'text-[#111827]'}`}>{t.title}</p>
+                {t.description && <p className="text-[#6b7280] text-xs mt-0.5 truncate">{t.description}</p>}
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span className={`text-xs px-1.5 py-0.5 rounded-full ${priorityStyle}`}>{t.priority || 'MEDIUM'}</span>
                   {t.due_date && (
-                    <span className={`text-xs ${isOverdue ? 'text-red-400' : 'text-[#9ca3af]'}`}>
+                    <span className={`text-xs ${isOverdue ? 'text-red-400' : 'text-[#6b7280]'}`}>
                       Due {String(t.due_date).substring(0, 10)}{isOverdue ? ' — OVERDUE' : ''}
                     </span>
                   )}

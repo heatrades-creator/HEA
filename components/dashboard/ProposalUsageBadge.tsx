@@ -38,7 +38,7 @@ export default async function ProposalUsageBadge() {
         <span className={`font-bold tabular-nums ${warn ? 'text-red-400' : 'text-white'}`}>
           {s.pdfs_today}
         </span>
-        <span className="text-[#9ca3af]">PDFs</span>
+        <span className="text-[#6b7280]">PDFs</span>
       </div>
 
       <span className="text-[#333]">·</span>
@@ -46,7 +46,7 @@ export default async function ProposalUsageBadge() {
       {/* Real token count */}
       <div className="flex items-baseline gap-1">
         <span className="text-[#6b7280] tabular-nums">{tokensStr}</span>
-        <span className="text-[#9ca3af]">tokens</span>
+        <span className="text-[#6b7280]">tokens</span>
       </div>
 
       {/* Progress bar */}
@@ -58,7 +58,7 @@ export default async function ProposalUsageBadge() {
       </div>
 
       {/* Remaining — real calculation: 500 − pdfs_today */}
-      <span className={`tabular-nums ${warn ? 'text-red-400' : 'text-[#9ca3af]'}`}>
+      <span className={`tabular-nums ${warn ? 'text-red-400' : 'text-[#6b7280]'}`}>
         {s.remaining} left
       </span>
     </div>

@@ -76,12 +76,12 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
       <aside className="w-48 flex-shrink-0 bg-[#f5f7fb] border-r border-[#e8ecf3] p-4 flex flex-col gap-5">
         <div className="pt-1">
           <div className="text-3xl font-bold text-[#111827] tabular-nums leading-none">{jobs.length}</div>
-          <div className="text-[#9ca3af] text-xs mt-1">Total Jobs</div>
+          <div className="text-[#6b7280] text-xs mt-1">Total Jobs</div>
         </div>
         <div className="border-t border-[#e8ecf3]" />
         <div>
-          <p className="text-[#9ca3af] text-[10px] uppercase tracking-widest font-semibold mb-2">Quick Filters</p>
-          <p className="text-[#9ca3af] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
+          <p className="text-[#6b7280] text-[10px] uppercase tracking-widest font-semibold mb-2">Quick Filters</p>
+          <p className="text-[#6b7280] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
               const count = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
@@ -96,7 +96,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
                 >
                   <span>{stage}</span>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${
-                    active ? 'bg-[#ffd100]/20 text-[#ffd100]' : 'bg-gray-100 text-[#9ca3af]'
+                    active ? 'bg-[#ffd100]/20 text-[#ffd100]' : 'bg-gray-100 text-[#6b7280]'
                   }`}>{count}</span>
                 </button>
               );
@@ -111,7 +111,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
         <div className="flex items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-xs">
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9ca3af] w-3.5 h-3.5 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280] w-3.5 h-3.5 pointer-events-none"
               fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             >
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -133,7 +133,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
         </div>
 
         {/* Count / pagination info */}
-        <p className="text-[#9ca3af] text-xs mb-3">
+        <p className="text-[#6b7280] text-xs mb-3">
           {sorted.length === 0
             ? 'No jobs found'
             : `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, sorted.length)} of ${sorted.length} jobs`}
@@ -159,7 +159,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
             <tbody>
               {pageJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-[#9ca3af] text-sm">
+                  <td colSpan={8} className="px-4 py-16 text-center text-[#6b7280] text-sm">
                     No jobs match the current filters.
                   </td>
                 </tr>
@@ -188,7 +188,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
             >
               ← Previous
             </button>
-            <span className="text-[#9ca3af] text-xs">Page {safePage} of {totalPages}</span>
+            <span className="text-[#6b7280] text-xs">Page {safePage} of {totalPages}</span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePage === totalPages}
@@ -229,7 +229,7 @@ function Th({
     <th
       onClick={sortable ? () => onSort!(sortKey!) : undefined}
       className={`px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest select-none ${
-        active ? 'text-[#ffd100]' : 'text-[#9ca3af]'
+        active ? 'text-[#ffd100]' : 'text-[#6b7280]'
       } ${sortable ? 'cursor-pointer hover:text-[#6b7280]' : ''} ${className}`}
     >
       {label}
@@ -257,7 +257,7 @@ function JobRow({
     <tr
       onClick={onClick}
       className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group ${
-        isEven ? 'bg-[#f0f2f7]' : 'bg-[#f5f7fb]'
+        isEven ? 'bg-[#f5f7fb]' : 'bg-[#f5f7fb]'
       } hover:bg-[#232323]`}
     >
       <td className="px-4 py-3">
@@ -272,10 +272,10 @@ function JobRow({
       <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell">
         <span className="block truncate max-w-[180px]">{job.address ?? '—'}</span>
       </td>
-      <td className="px-4 py-3 text-[#9ca3af] hidden lg:table-cell whitespace-nowrap text-xs">
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">
         {job.systemSize ? `${job.systemSize} kW` : '—'}
       </td>
-      <td className="px-4 py-3 text-[#9ca3af] hidden lg:table-cell whitespace-nowrap">
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
         {job.createdDate ?? '—'}
       </td>
       <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">
@@ -285,7 +285,7 @@ function JobRow({
         <div className="relative inline-block">
           <button
             onClick={() => setShowMove(!showMove)}
-            className="text-[#9ca3af] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
+            className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
           >
             Move ▾
           </button>

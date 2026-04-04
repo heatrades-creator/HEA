@@ -17,7 +17,7 @@ const STATUS_STYLES: Record<string, string> = {
   TERMINATED:        'bg-gray-100 text-gray-500',
   REDUNDANT:         'bg-gray-100 text-gray-500',
   INACTIVE:          'bg-gray-100 text-gray-500',
-  DECEASED:          'bg-gray-100 text-gray-400',
+  DECEASED:          'bg-gray-100 text-[#6b7280]',
 };
 
 const LABELS: Record<string, string> = {

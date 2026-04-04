@@ -65,7 +65,7 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
 
   return (
     <div className="border-t border-[#e5e9f0] pt-6">
-      <label className="block text-[#6b7280] text-xs uppercase tracking-wider mb-3">
+      <label className="block text-[#374151] text-xs uppercase tracking-wider mb-3">
         Documents
       </label>
 
@@ -81,7 +81,7 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
                 disabled={generating !== null}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all
                   ${generating !== null
-                    ? 'border-[#e5e9f0] text-[#9ca3af] cursor-not-allowed'
+                    ? 'border-[#e5e9f0] text-[#6b7280] cursor-not-allowed'
                     : 'border-[#ffd100]/40 text-[#ffd100] hover:bg-[#ffd100]/10 hover:border-[#ffd100]'
                   }`}
               >
@@ -118,7 +118,7 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
 
       {/* Document list */}
       {docs.length === 0 && !generating ? (
-        <p className="text-[#9ca3af] text-sm">No documents generated yet.</p>
+        <p className="text-[#6b7280] text-sm">No documents generated yet.</p>
       ) : (
         <div className="space-y-2">
           {docs.map((doc) => (
@@ -128,7 +128,7 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
             >
               <div>
                 <p className="text-[#111827] text-sm font-medium">{doc.template_display_name}</p>
-                <p className="text-[#9ca3af] text-xs mt-0.5">
+                <p className="text-[#6b7280] text-xs mt-0.5">
                   {doc.status === 'SUCCESS'
                     ? formatDate(doc.generated_at)
                     : doc.status === 'GENERATING'

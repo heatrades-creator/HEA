@@ -23,7 +23,7 @@ export default function OnboardingPage() {
         const p = (peopleList as { person_id: string; full_name?: string }[]).find(p => p.person_id === c.person_id);
         return { ...c, personName: p?.full_name ?? c.person_id };
       });
-      const active = enriched.filter((c: { status: string }) => c.status !== 'COMPLETE' && c.status !== 'CANCELLED');
+      const active = enriched.filter(c => c.status !== 'COMPLETE' && c.status !== 'CANCELLED');
       setCached('onboarding', { cases: active, people: peopleList });
       setCases(active);
       setLoading(false);

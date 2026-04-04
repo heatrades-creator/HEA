@@ -41,7 +41,7 @@ export default function RecruitmentPage() {
         <h1 className="text-[#111827] text-xl font-semibold">Recruitment</h1>
         <p className="text-[#6b7280] text-sm mt-0.5">Candidate pipeline — from application to offer accepted</p>
       </div>
-      <CandidatePipeline initialCandidates={candidates} />
+      <CandidatePipeline initialCandidates={candidates as never[]} />
     </div>
   );
 }

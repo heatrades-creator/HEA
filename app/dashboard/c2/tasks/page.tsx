@@ -47,7 +47,7 @@ export default function TasksPage() {
           {openCount > 0 ? `${openCount} open task${openCount !== 1 ? 's' : ''} — ${tasks.length} total` : 'All tasks — automated and manual'}
         </p>
       </div>
-      <TaskList initialTasks={tasks} />
+      <TaskList initialTasks={tasks as never[]} />
     </div>
   );
 }

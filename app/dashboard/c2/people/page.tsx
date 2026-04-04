@@ -46,7 +46,7 @@ export default function PeoplePage() {
           {people.length > 0 ? `${people.length} personnel record${people.length !== 1 ? 's' : ''}` : 'All HEA personnel'}
         </p>
       </div>
-      <PeopleTable initialPeople={people} />
+      <PeopleTable initialPeople={people as never[]} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db"
-import type { Lead } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 import { JobPipeline } from "@/components/admin/JobPipeline"
 
 export const dynamic = "force-dynamic"
@@ -11,7 +11,7 @@ export default async function JobsPage() {
   })
 
   // Serialize dates to strings for client component
-  const serialized = jobs.map((j: Lead) => ({
+  const serialized = jobs.map((j: Prisma.LeadGetPayload<object>) => ({
     ...j,
     createdAt:          j.createdAt.toISOString(),
     updatedAt:          j.updatedAt.toISOString(),

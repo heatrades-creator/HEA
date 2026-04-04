@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db"
-import type { AuditEntry, Lead } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 import { AuditLog } from "@/components/admin/AuditLog"
 
-type AuditEntryWithLead = AuditEntry & {
-  lead: Pick<Lead, "firstName" | "lastName">
-}
+type AuditEntryWithLead = Prisma.AuditEntryGetPayload<{
+  include: { lead: { select: { firstName: true; lastName: true } } }
+}>
 
 export const dynamic = "force-dynamic"
 

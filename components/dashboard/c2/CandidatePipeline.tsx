@@ -19,15 +19,15 @@ type Candidate = {
 const STAGES = ['NEW','SCREENING','PHONE_SCREEN','INTERVIEWED','REFERENCE_CHECK','OFFER_SENT','OFFER_ACCEPTED','OFFER_DECLINED','REJECTED'] as const;
 
 const STAGE_STYLES: Record<string, { header: string; badge: string }> = {
-  NEW:              { header: 'border-[#e5e9f0]', badge: 'bg-[#eef0f5] text-[#6b7280]' },
-  SCREENING:        { header: 'border-blue-800/60', badge: 'bg-blue-900/40 text-blue-300' },
-  PHONE_SCREEN:     { header: 'border-sky-800/60', badge: 'bg-sky-900/40 text-sky-300' },
-  INTERVIEWED:      { header: 'border-purple-800/60', badge: 'bg-purple-900/40 text-purple-300' },
-  REFERENCE_CHECK:  { header: 'border-indigo-800/60', badge: 'bg-indigo-900/40 text-indigo-300' },
-  OFFER_SENT:       { header: 'border-yellow-800/60', badge: 'bg-yellow-900/40 text-[#ffd100]' },
-  OFFER_ACCEPTED:   { header: 'border-green-800/60', badge: 'bg-green-900/40 text-green-400' },
-  OFFER_DECLINED:   { header: 'border-red-800/40', badge: 'bg-red-900/30 text-red-400' },
-  REJECTED:         { header: 'border-[#e5e9f0]', badge: 'bg-[#1e1e1e] text-[#6b7280]' },
+  NEW:              { header: 'border-gray-300',    badge: 'bg-gray-100 text-gray-600' },
+  SCREENING:        { header: 'border-blue-400',    badge: 'bg-blue-100 text-blue-700' },
+  PHONE_SCREEN:     { header: 'border-sky-400',     badge: 'bg-sky-100 text-sky-700' },
+  INTERVIEWED:      { header: 'border-purple-400',  badge: 'bg-purple-100 text-purple-700' },
+  REFERENCE_CHECK:  { header: 'border-indigo-400',  badge: 'bg-indigo-100 text-indigo-700' },
+  OFFER_SENT:       { header: 'border-yellow-400',  badge: 'bg-yellow-100 text-yellow-700' },
+  OFFER_ACCEPTED:   { header: 'border-green-400',   badge: 'bg-green-100 text-green-700' },
+  OFFER_DECLINED:   { header: 'border-red-400',     badge: 'bg-red-100 text-red-700' },
+  REJECTED:         { header: 'border-gray-300',    badge: 'bg-gray-100 text-gray-500' },
 };
 
 const MOVE_OPTIONS: Record<string, string[]> = {
@@ -97,9 +97,9 @@ export default function CandidatePipeline({ initialCandidates }: { initialCandid
                             className="text-[#6b7280] text-xs hover:text-[#ffd100] transition-colors"
                           >Move ▾</button>
                           {openMenu === c.candidate_id && (
-                            <div onClick={e => e.stopPropagation()} className="absolute top-5 left-0 z-20 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg py-1 w-44 shadow-xl">
+                            <div onClick={e => e.stopPropagation()} className="absolute top-5 left-0 z-20 bg-white border border-gray-200 rounded-lg py-1 w-44 shadow-lg">
                               {(MOVE_OPTIONS[stage] || []).map(target => (
-                                <button key={target} onClick={() => moveCandidate(c.candidate_id, target)} className="block w-full text-left px-3 py-1.5 text-xs text-[#aaa] hover:bg-[#333] hover:text-[#111827] transition-colors">
+                                <button key={target} onClick={() => moveCandidate(c.candidate_id, target)} className="block w-full text-left px-3 py-1.5 text-xs text-[#374151] hover:bg-gray-50 transition-colors">
                                   → {target.replace(/_/g, ' ')}
                                 </button>
                               ))}

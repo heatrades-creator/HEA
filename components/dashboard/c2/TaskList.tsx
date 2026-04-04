@@ -17,10 +17,10 @@ type Task = {
 };
 
 const PRIORITY_STYLES: Record<string, string> = {
-  URGENT: 'bg-red-900/40 text-red-400',
-  HIGH:   'bg-orange-900/40 text-orange-400',
-  MEDIUM: 'bg-yellow-900/30 text-[#ffd100]',
-  LOW:    'bg-[#eef0f5] text-[#6b7280]',
+  URGENT: 'bg-red-100 text-red-700',
+  HIGH:   'bg-orange-100 text-orange-700',
+  MEDIUM: 'bg-yellow-100 text-yellow-700',
+  LOW:    'bg-gray-100 text-gray-600',
 };
 
 export default function TaskList({ initialTasks }: { initialTasks: Task[] }) {
@@ -80,7 +80,7 @@ export default function TaskList({ initialTasks }: { initialTasks: Task[] }) {
             <div key={t.task_id} className={`bg-white border rounded-xl px-4 py-3 flex items-start gap-3 ${isDone ? 'border-[#edf0f5] opacity-50' : 'border-[#e5e9f0]'}`}>
               <button
                 onClick={() => isDone ? markOpen(t.task_id) : markDone(t.task_id)}
-                className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${isDone ? 'bg-green-900/60 border-green-700 text-green-400' : 'border-[#444] hover:border-[#ffd100]'}`}
+                className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${isDone ? 'bg-green-100 border-green-400 text-green-600' : 'border-gray-300 hover:border-[#ffd100]'}`}
               >
                 {isDone && <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
               </button>

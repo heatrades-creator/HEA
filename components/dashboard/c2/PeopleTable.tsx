@@ -82,7 +82,7 @@ export default function PeopleTable({ initialPeople }: { initialPeople: Person[]
                 </td>
               </tr>
             ) : filtered.map((p, i) => (
-              <tr key={p.person_id} className={`border-b border-[#edf0f5] hover:bg-[#232323] transition-colors cursor-pointer ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}>
+              <tr key={p.person_id} className={`border-b border-[#edf0f5] hover:bg-gray-50 transition-colors cursor-pointer ${i % 2 === 0 ? '' : 'bg-[#fafafa]'}`}>
                 <td className="px-5 py-3">
                   <Link href={`/dashboard/c2/people/${p.person_id}`} className="block">
                     <p className="text-[#111827] font-medium">{p.full_name || '—'}</p>

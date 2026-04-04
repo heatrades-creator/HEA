@@ -1,11 +1,12 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
-const ALLOWED_EMAILS = [
-  'hea.trades@gmail.com',
-  'jdmheff@gmail.com',
-  'sbjma.alexisflores@gmail.com',
-];
+// Manage staff access via ALLOWED_EMAILS env var in Vercel
+// Format: comma-separated list e.g. "hea.trades@gmail.com,jdmheff@gmail.com"
+const ALLOWED_EMAILS = (process.env.ALLOWED_EMAILS || 'hea.trades@gmail.com,jdmheff@gmail.com,sbjma.alexisflores@gmail.com')
+  .split(',')
+  .map(e => e.trim().toLowerCase())
+  .filter(Boolean);
 
 const handler = NextAuth({
   providers: [
@@ -16,7 +17,7 @@ const handler = NextAuth({
   ],
   callbacks: {
     async signIn({ user }) {
-      return ALLOWED_EMAILS.includes(user.email ?? '');
+      return ALLOWED_EMAILS.includes((user.email ?? '').toLowerCase());
     },
     async session({ session, token }) {
       return session;

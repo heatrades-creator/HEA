@@ -18,7 +18,7 @@ const schema = z.object({
   postcode:      z.string().regex(/^\d{4}$/, "Enter a 4-digit postcode"),
   annualBillAud: z.number().min(0).max(50000).optional(),
   roofType:      z.enum(["tile", "metal", "flat", "other"]).optional(),
-  storeys:       z.coerce.number().min(1).max(10).optional(),
+  storeys:       z.number().min(1).max(10).optional(),
   notes:         z.string().max(2000).optional(),
 })
 
@@ -172,7 +172,7 @@ export function QuoteForm() {
           <label className={labelClass}>
             Storeys <span className="text-[#555] font-normal">(optional)</span>
           </label>
-          <select {...register("storeys")} className={inputClass}>
+          <select {...register("storeys", { setValueAs: v => v === "" ? undefined : Number(v) })} className={inputClass}>
             <option value="">Select…</option>
             <option value="1">1 storey</option>
             <option value="2">2 storeys</option>

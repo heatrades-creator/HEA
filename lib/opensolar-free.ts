@@ -4,20 +4,14 @@
 // Reads, webhook registration, stage updates.
 // These may be called freely — they do not charge your wallet.
 
-const BASE  = process.env.OPENSOLAR_BASE_URL ?? "https://api.opensolar.com"
-const TOKEN = process.env.OPENSOLAR_TOKEN ?? ""
-const ORG   = process.env.OPENSOLAR_ORG_ID ?? ""
+import { openSolarHeaders } from "./opensolar-auth"
 
-function authHeaders() {
-  return {
-    Authorization: `Bearer ${TOKEN}`,
-    "Content-Type": "application/json",
-  }
-}
+const BASE = process.env.OPENSOLAR_BASE_URL ?? "https://api.opensolar.com"
+const ORG  = process.env.OPENSOLAR_ORG_ID ?? ""
 
 export async function getProject(projectId: number) {
   const res = await fetch(`${BASE}/api/orgs/${ORG}/projects/${projectId}/`, {
-    headers: authHeaders(),
+    headers: await openSolarHeaders(),
     cache: "no-store",
   })
   if (!res.ok) throw new Error(`getProject ${projectId} failed: ${res.status}`)
@@ -27,7 +21,7 @@ export async function getProject(projectId: number) {
 export async function getProjects(page = 1, limit = 50) {
   const res = await fetch(
     `${BASE}/api/orgs/${ORG}/projects/?page=${page}&limit=${limit}`,
-    { headers: authHeaders() }
+    { headers: await openSolarHeaders() }
   )
   if (!res.ok) throw new Error(`getProjects failed: ${res.status}`)
   return res.json()
@@ -40,7 +34,7 @@ export async function updateProjectStage(
 ) {
   const res = await fetch(`${BASE}/api/orgs/${ORG}/projects/${projectId}/`, {
     method: "PATCH",
-    headers: authHeaders(),
+    headers: await openSolarHeaders(),
     body: JSON.stringify({
       workflow: { active_stage_id: stageId, workflow_id: workflowId },
       active_stage_id: stageId,
@@ -54,7 +48,7 @@ export async function updateProjectStage(
 export async function registerWebhook(endpointUrl: string) {
   const res = await fetch(`${BASE}/api/orgs/${ORG}/webhooks/`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: await openSolarHeaders(),
     body: JSON.stringify({
       endpoint: endpointUrl,
       headers: JSON.stringify({
@@ -81,7 +75,7 @@ export async function registerWebhook(endpointUrl: string) {
 export async function verifyToken(): Promise<boolean> {
   try {
     const res = await fetch(`${BASE}/api/orgs/${ORG}/`, {
-      headers: authHeaders(),
+      headers: await openSolarHeaders(),
     })
     return res.ok
   } catch {

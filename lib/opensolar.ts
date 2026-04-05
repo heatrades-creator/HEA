@@ -12,17 +12,10 @@
 //   orderPermitPack()       — charges OPENSOLAR_PERMITTING_COST (stub)
 
 import { getCost, isSafeToFire, getCostSnapshot } from "./cost"
+import { openSolarHeaders } from "./opensolar-auth"
 
-const BASE  = process.env.OPENSOLAR_BASE_URL ?? "https://api.opensolar.com"
-const TOKEN = process.env.OPENSOLAR_TOKEN ?? ""
-const ORG   = process.env.OPENSOLAR_ORG_ID ?? ""
-
-function authHeaders() {
-  return {
-    Authorization: `Bearer ${TOKEN}`,
-    "Content-Type": "application/json",
-  }
-}
+const BASE = process.env.OPENSOLAR_BASE_URL ?? "https://api.opensolar.com"
+const ORG  = process.env.OPENSOLAR_ORG_ID ?? ""
 
 // Roof type ID map for AU (verify these IDs in your OpenSolar account)
 const ROOF_TYPE_MAP: Record<string, number> = {
@@ -60,13 +53,12 @@ export async function createProject(lead: {
     )
   }
 
-  if (!TOKEN || !ORG) {
-    throw new Error(
-      "create_project blocked: OPENSOLAR_TOKEN or OPENSOLAR_ORG_ID not configured."
-    )
+  if (!ORG) {
+    throw new Error("create_project blocked: OPENSOLAR_ORG_ID not configured.")
   }
 
   const cost = getCost("create_project")
+  const headers = await openSolarHeaders()
 
   const roofTypeUrl = lead.roofType
     ? `${BASE}/api/roof_types/${ROOF_TYPE_MAP[lead.roofType] ?? 1}/`
@@ -99,7 +91,7 @@ export async function createProject(lead: {
 
   const res = await fetch(`${BASE}/api/orgs/${ORG}/projects/`, {
     method: "POST",
-    headers: authHeaders(),
+    headers,
     body: JSON.stringify(body),
   })
 
@@ -129,17 +121,16 @@ export async function enablePremiumImagery(
     )
   }
 
-  if (!TOKEN || !ORG) {
-    throw new Error(
-      "premium_imagery blocked: OPENSOLAR_TOKEN or OPENSOLAR_ORG_ID not configured."
-    )
+  if (!ORG) {
+    throw new Error("premium_imagery blocked: OPENSOLAR_ORG_ID not configured.")
   }
 
   const cost = getCost("premium_imagery")
+  const headers = await openSolarHeaders()
 
   const res = await fetch(`${BASE}/api/orgs/${ORG}/projects/${projectId}/`, {
     method: "PATCH",
-    headers: authHeaders(),
+    headers,
     body: JSON.stringify({ activate_premium_imagery: true }),
   })
 

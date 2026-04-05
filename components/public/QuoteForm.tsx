@@ -13,7 +13,7 @@ const schema = z.object({
   address:       z.string().min(5, "Enter your street address").max(300),
   suburb:        z.string().min(2, "Required").max(100),
   state:         z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"], {
-    errorMap: () => ({ message: "Select a state" }),
+    message: "Select a state",
   }),
   postcode:      z.string().regex(/^\d{4}$/, "Enter a 4-digit postcode"),
   annualBillAud: z.number().min(0).max(50000).optional(),

@@ -1,356 +1,452 @@
 # HEA Dashboard — AI-to-AI Handover Document
-**Prepared for:** Next Claude Code session  
-**Date:** April 2026  
-**Repo:** `heatrades-creator/HEA`  
-**Active branch:** `claude/build-hea-doc-stack-GFIoP`  
+**Prepared for:** Next Claude Code session
+**Date:** April 2026
+**Repo:** `heatrades-creator/HEA`
+**Production URL:** https://www.hea-group.com.au
 **Deployed on:** Vercel (Next.js App Router)
 
 ---
 
 ## 1. Who Is This Client
 
-**Jesse Heffernan** — owner of **Heffernan Electrical Automation (HEA)**, a solar and battery installer based in Bendigo, Victoria, Australia. ABN holder, REC 37307. Non-technical operator. All work is done via Claude Code. The system must be simple to use and self-maintaining.
+**Jesse Heffernan** — owner of **Heffernan Electrical Automation (HEA)**, a solar and battery installer based in **Bendigo, Victoria, Australia**. ABN holder, REC 37307. Non-technical operator. All work is done via Claude Code on the web. The system must be simple to use and self-maintaining.
 
-**Business contact:** hea.trades@gmail.com  
+**Business contact:** hea.trades@gmail.com
 **Website:** hea-group.com.au
+
+**Prime Directive (from Jesse, non-negotiable):**
+> "you fit it rather than changing it to fit you"
+> "do not change any colour schemes from the current"
+> "we are adding capability not changing features that are out of your scope"
+> "$0 budget — be crafty with free methods. Paid features = deliberate nuke."
 
 ---
 
-## 2. Tech Stack
+## 2. The Two Systems in This Repo
+
+There are **two separate admin systems** coexisting in the same Next.js app:
+
+### System A — `/dashboard` (GAS Jobs CRM — EXISTING, LOCKED)
+The original HEA staff dashboard. Uses Google Sheets as database via Google Apps Script. **Do not change anything in `app/dashboard/` or `components/dashboard/` without explicit instruction.**
+
+### System B — `/admin` (OpenSolar Integration — NEW)
+A new human-in-the-loop admin dashboard for managing solar quote leads from the website. Uses Turso (SQLite) as database via Prisma. This is the active development area.
+
+---
+
+## 3. Full Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 16 App Router, TypeScript, Tailwind CSS v4 |
-| Auth | NextAuth v4 (credentials, Google) |
-| Backend | Google Apps Script (GAS) web app — acts as REST API |
-| Database | Google Sheets (via GAS) |
-| AI | Gemini 2.5 Flash (free tier, 500 req/day) |
-| Document generation | Google Slides + Google Drive (via GAS) |
-| CMS | Sanity (for public website — not dashboard) |
-| Deploy | Vercel |
-
-**Critical env vars (set in Vercel):**
-- `JOBS_GAS_URL` — URL of the deployed GAS web app (handles all data read/write)
-- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
+| Framework | Next.js 16.1.6 App Router, TypeScript, Tailwind CSS v4 |
+| Auth | NextAuth v4 — Google OAuth only |
+| Database (new system) | Turso (hosted libsql/SQLite) via Prisma 7 + `@prisma/adapter-libsql` |
+| Database (old system) | Google Sheets via Google Apps Script |
+| Email | Resend (domain: hea-group.com.au verified) |
+| Solar CRM | OpenSolar OS 3.0 API (Bearer token auth via email/password) |
+| Jobs CRM | Google Apps Script web app (`JOBS_GAS_URL`) |
+| Solar Analyser | Google Apps Script embedded iframe |
+| AI (old system) | Gemini 2.5 Flash (free tier, document generation) |
+| Deploy | Vercel — auto-deploys from `main` branch |
+| Build | `prisma generate && tsx scripts/db-setup.ts && next build --turbopack` |
 
 ---
 
-## 3. Architecture Overview
+## 4. All Environment Variables (set in Vercel)
 
-```
-Dashboard (Next.js on Vercel)
-    │
-    ▼
-/api/jobs/*  (Next.js API routes — thin proxy layer)
-    │
-    ▼
-JOBS_GAS_URL  (Google Apps Script web app)
-    │
-    ├── Google Sheets (all data storage)
-    │     ├── HEA Jobs (main CRM sheet: job records)
-    │     ├── DOCUMENT_JOBS (bridge: TS001 job ↔ GAS doc pipeline)
-    │     ├── EXPORT_LOG (document generation history + token usage)
-    │     ├── TEMPLATE_CONFIG (available doc types — drives UI dynamically)
-    │     ├── BRAND_CONFIG (company details)
-    │     ├── SETTINGS (designer info, config)
-    │     ├── NORMALISED_DATA, JOBS_REGISTER (pipeline internals)
-    │     └── ERROR_LOG, SIGNING_QUEUE, PROMPT_CONFIG, RAW_SUBMISSIONS
-    │
-    └── Google Drive (generated PDF outputs in job folders)
-```
-
-**GAS doGet actions:** `proposalStats`, `getDocuments`, `getAvailableTemplates`  
-**GAS doPost actions:** `createJob`, `updateJob`, `generateDocument`  
-**GAS also handles:** form submissions from public site → document pipeline trigger
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | `libsql://hea-production-heatrades.aws-ap-northeast-1.turso.io` |
+| `TURSO_AUTH_TOKEN` | Turso database auth token (secret) |
+| `NEXTAUTH_SECRET` | NextAuth session secret |
+| `NEXTAUTH_URL` | `https://www.hea-group.com.au` |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+| `ADMIN_EMAILS` | Comma-separated admin email addresses |
+| `ALLOWED_EMAILS` | Legacy compat — also grants access |
+| `OPENSOLAR_EMAIL` | OpenSolar login email |
+| `OPENSOLAR_PASSWORD` | OpenSolar login password |
+| `OPENSOLAR_ORG_ID` | `220067` (from OpenSolar URL) |
+| `OPENSOLAR_BASE_URL` | `https://api.opensolar.com` |
+| `OPENSOLAR_API_COST_PER_PROJECT` | AUD cost per project creation (disables confirm if unset) |
+| `OPENSOLAR_WEBHOOK_SECRET` | HMAC secret for webhook verification |
+| `RESEND_API_KEY` | Resend API key |
+| `EMAIL_FROM` | `alerts@hea-group.com.au` |
+| `EMAIL_ALERT_TO` | Staff email for alerts |
+| `JOBS_GAS_URL` | Google Apps Script web app URL (Jobs CRM) |
 
 ---
 
-## 4. Current Dashboard File Structure
+## 5. Architecture — New Admin System (`/admin`)
 
+```
+Visitor fills /quote form
+    → POST /api/leads
+    → Lead saved to Turso (SQLite) via Prisma
+    → sendNewLeadAlert() fires to staff (Resend, fire-and-forget)
+    → AWAIT GAS createJob call (JOBS_GAS_URL)
+         → Telegram notification fires automatically
+         → Google Drive folder created: "ClientName - DD-MM-YYYY"
+         → Returns { jobNumber, driveUrl }
+    → Lead updated with gasJobNumber + gasDriveUrl
+    → Response: { success, leadId, proposalToken }
+
+Admin opens /admin/leads (Google OAuth required, ADMIN_EMAILS)
+    → Sees pending lead cards with 5 action buttons:
+         ☀️ Solar Analyser  — opens /solar-analyser with customer URL params
+         📅 Book Meeting    — Calendly hardcoded link
+         📁 Customer Files  — Google Drive folder (from gasDriveUrl)
+         🔆 OpenSolar       — direct project link (if confirmed)
+         ⭐ Request Review  — emails customer Google review request
+
+Admin clicks "Confirm Lead →"
+    → ConfirmModal opens, shows cost or BLOCKED
+    → Admin types "CONFIRM" to enable button
+    → POST /api/admin/leads/[id]/confirm
+    → isSafeToFire() checked
+    → createProject() called in lib/opensolar.ts
+    → OpenSolar project created, projectId saved to Lead
+    → AuditEntry created with costAud
+    → Admin emailed share link (Resend)
+
+OpenSolar fires webhook events
+    → POST /api/webhooks/opensolar
+    → HMAC verified
+    → Lead milestones updated (free, no API calls back)
+    → AuditEntry created (costAud = null always)
+```
+
+---
+
+## 6. Database Schema (Prisma / Turso)
+
+Three models: **Lead**, **AuditEntry**, **SystemConfig**
+
+Key Lead fields:
+```
+id, createdAt, updatedAt
+firstName, lastName, email, phone
+address, suburb, state, postcode
+annualBillAud?, roofType?, storeys?, notes?
+leadSource, status
+openSolarProjectId?, openSolarCreatedAt?, openSolarShareLink?
+openSolarStage?, openSolarSystemKw?, openSolarPriceAud?
+gasJobNumber?   ← GAS job number (e.g. "TS001-0042")
+gasDriveUrl?    ← Google Drive folder URL for customer files
+apiCostAud?, apiCostSnapshot?
+proposalSentAt?, soldAt?, installedAt? (webhook milestones)
+proposalToken   (unique, for /proposal/[token] page)
+```
+
+**Important:** `prisma db push` does NOT work with `libsql://` URLs. DB creation is handled by `scripts/db-setup.ts` using `@libsql/client` directly. This runs on every deploy — it's safe to re-run (CREATE TABLE IF NOT EXISTS + ALTER TABLE in try/catch).
+
+---
+
+## 7. File Structure — What Matters
+
+### Public-facing
 ```
 app/
-  dashboard/
-    layout.tsx          ← dark nav bar + ProposalUsageBadge + SignOut
-    page.tsx            ← KanbanBoard (server component, fetches jobs)
-    jobs/[id]/
-      page.tsx          ← Job detail page (server, fetches single job)
-      JobDetail.tsx     ← client component: edit status/notes/drive URL + JobDocuments
-    login/
-      page.tsx          ← login page
-      LoginButton.tsx
-    SignOutButton.tsx
+  page.tsx                      ← Public homepage (LOCKED)
+  quote/page.tsx                ← Public solar quote form
+  proposal/[token]/page.tsx     ← Customer proposal view
+  solar-analyser/page.tsx       ← Solar analyser (embedded GAS iframe + customer params)
+  book/page.tsx                 ← Booking page (LOCKED)
 
-components/dashboard/
-  KanbanBoard.tsx       ← 5-column kanban: Lead→Quoted→Booked→In Progress→Complete
-  NewJobModal.tsx       ← modal form to create a new job
-  JobDocuments.tsx      ← client component: generate PDFs + list generated docs
-  ProposalUsageBadge.tsx← server component: Gemini usage stats in nav bar
+components/
+  Nav.tsx                       ← Main nav (has Staff Tools panel)
+  Footer.tsx, Hero.tsx, etc.    ← Public site (LOCKED)
+  public/
+    QuoteForm.tsx               ← The quote form component
+    AdaWidget.tsx               ← OpenSolar Ada widget (DISABLED, ADA_WIDGET_ENABLED=false)
+```
+
+### New Admin System (`/admin`)
+```
+app/admin/
+  layout.tsx                    ← Dark sidebar nav + auth gate
+  page.tsx                      ← Admin home / feature overview
+  leads/page.tsx                ← Lead queue (pending_review)
+  jobs/page.tsx                 ← Jobs pipeline (opensolar_created)
+  audit/page.tsx                ← Full audit log
+
+components/admin/
+  LeadCard.tsx                  ← Lead card with 5 action buttons
+  ConfirmModal.tsx              ← Cost confirmation modal (types CONFIRM)
+  CostBadge.tsx                 ← Shows API cost
+  JobPipeline.tsx               ← Jobs pipeline view
+  AuditLog.tsx                  ← Audit log table
+  FeaturePanel.tsx              ← Admin feature overview
 
 app/api/
-  jobs/route.ts         ← GET (all jobs), POST (create job)
-  jobs/[id]/route.ts    ← GET (single job), PATCH (update job)
-  jobs/[id]/documents/route.ts  ← GET (list docs), POST (generate doc) maxDuration=60
-  jobs/[id]/templates/route.ts  ← GET (available template types from GAS)
-  auth/[...nextauth]/route.ts
-  contact/route.js      ← public contact form
+  leads/route.ts                ← POST: receive lead, call GAS, save to DB
+  admin/leads/route.ts          ← GET: list leads (auth required)
+  admin/leads/[id]/confirm/     ← POST: create OpenSolar project (PAID, auth)
+  admin/leads/[id]/reject/      ← POST: reject lead (free, auth)
+  admin/leads/[id]/review/      ← POST: email customer review request (free, auth)
+  admin/cost/route.ts           ← GET: current API cost config
+  admin/config/route.ts         ← GET: system config
+  admin/setup/webhook/          ← POST: register OpenSolar webhook
+  webhooks/opensolar/route.ts   ← POST: receive OpenSolar events
+  auth/[...nextauth]/route.ts   ← NextAuth handler
+```
+
+### Library
+```
+lib/
+  auth.ts             ← NextAuth config (ADMIN_EMAILS + ALLOWED_EMAILS)
+  db.ts               ← Prisma client with Turso adapter
+  email.ts            ← Resend helpers (staff alerts + customer review request)
+  cost.ts             ← isSafeToFire(), cost config
+  cost-client.ts      ← Client-side cost helpers
+  opensolar-auth.ts   ← Bearer token auth (email/password → cached JWT)
+  opensolar.ts        ← PAID OpenSolar calls ONLY (createProject, etc.)
+  opensolar-free.ts   ← Free OpenSolar reads (getProject, updateStage, etc.)
+  webhooks.ts         ← Webhook event processing
+  sanity.ts           ← Sanity CMS client (public site only, NOT dashboard)
+```
+
+### Old Dashboard System (`/dashboard`)
+```
+app/dashboard/
+  layout.tsx, page.tsx          ← Kanban board (LOCKED)
+  jobs/[id]/page.tsx            ← Job detail (LOCKED)
+  login/page.tsx                ← Login (LOCKED)
+
+components/dashboard/
+  KanbanBoard.tsx, NewJobModal.tsx, JobDocuments.tsx
+  ProposalUsageBadge.tsx, JobListView.tsx
+
+app/api/jobs/
+  route.ts                      ← GET/POST jobs (proxies to JOBS_GAS_URL)
+  [id]/route.ts                 ← GET/PATCH single job
+  [id]/documents/route.ts       ← GET/POST documents (Gemini → Slides → PDF)
+  [id]/templates/route.ts       ← GET available templates
 ```
 
 ---
 
-## 5. Job Data Model
+## 8. Services Integrated
 
-```typescript
-type Job = {
-  jobNumber: string;      // e.g. "TS001-0042" — human-readable CRM ID
-  clientName: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  status: 'Lead' | 'Quoted' | 'Booked' | 'In Progress' | 'Complete';
-  driveUrl?: string;      // Google Drive folder URL for this job
-  notes?: string;
-  createdDate?: string;   // display string e.g. "3 Apr 2026"
-};
-```
+### OpenSolar OS 3.0
+- **Auth:** Email/password → Bearer JWT token cached in SystemConfig DB (6-day TTL)
+- **Auth file:** `lib/opensolar-auth.ts` → `getOpenSolarToken()`
+- **Org ID:** `220067`
+- **Webhook:** Registered at `/api/webhooks/opensolar` (HMAC verified)
+- **PAID calls:** Only in `lib/opensolar.ts`, always behind `isSafeToFire()` + auth
+- **Free calls:** `lib/opensolar-free.ts`
 
-Jobs are stored in Google Sheets ("HEA Jobs" tab), read/written via GAS. The `jobNumber` is the primary key used in all API calls.
+### GAS Jobs System (Google Apps Script)
+- **Used for:** Jobs CRM (Google Sheets + Drive), Telegram alerts, document generation
+- **Key action:** `createJob` POST → creates Drive folder + Sheets entry + Telegram alert → returns `{ jobNumber, driveUrl }`
+- **Drive folder naming:** `{ClientName} - {DD-MM-YYYY}` under "1) Jobs"
+- **Important:** GAS code in `/hea-doc-stack/src/*.gs` must be manually synced by Jesse (copy/paste into GAS editor, re-deploy)
 
----
+### Turso (SQLite)
+- **URL:** `libsql://hea-production-heatrades.aws-ap-northeast-1.turso.io`
+- **DB creation:** `scripts/db-setup.ts` (NOT prisma db push — doesn't work with libsql://)
 
-## 6. Document Generation System
+### Resend (Email)
+- **Domain:** hea-group.com.au (verified)
+- **FROM:** `alerts@hea-group.com.au`
+- **Staff alerts:** new lead, job confirmed
+- **Customer emails:** Google review request (`sendReviewRequest()` in `lib/email.ts`)
 
-A full Gemini AI → Google Slides → PDF pipeline. When a user clicks "Generate Solar & Battery Proposal" on the job detail page:
+### NextAuth (Google OAuth)
+- **Access control:** `ADMIN_EMAILS` env var + `ALLOWED_EMAILS` for compat
+- **isAdminEmail()** in `lib/auth.ts` is the gate for all admin routes
 
-1. Dashboard POSTs `{ jobNumber, docClass }` to `/api/jobs/[id]/documents`
-2. Next.js proxies to GAS with `action=generateDocument`
-3. GAS: looks up job in "HEA Jobs" sheet, builds normalised data
-4. GAS: calls Gemini 2.5 Flash (free tier) with a structured prompt
-5. Gemini returns JSON with all 20 template placeholder values
-6. GAS: copies the Google Slides master template, fills all `{Variable_Name}` placeholders using `presentation.replaceAllText()`
-7. GAS: exports as PDF, saves both to Drive
-8. GAS: writes to DOCUMENT_JOBS + EXPORT_LOG (including real token count)
-9. Response: `{ success, outputLink, pdfLink }`
-10. Dashboard refreshes document list showing "Open Draft ↗" + "PDF ↗"
-
-**Generation takes ~40 seconds.** The Vercel route has `export const maxDuration = 60` and `AbortSignal.timeout(58_000)`.
-
-**Template variables (20 total) for the Solar Proposal template:**
-`Customer_Name`, `Customer_Address`, `Solar_Size`, `Battery_Size`, `Net_Price`, `Yearly_Savings`, `25_Y_Value`, `Pay_BP`, `C02_S`, `Trees_Planted25`, `Generation_Date`, `Expiery_Date`, `Quote_Number`, `Hea_Mobile`, `Hea_Email`, `Hea_Address`, `Designers_Name`, `Designers_Mobile_Number`, `Designers_Email_Address`, `Page_Number`
-
-**Template file ID:** `1INXF_5V9wrQMfqL51HKRuexJmVLM5Jf9puI6gKkN2W4` (Google Slides)
-
-**Adding new document types:** Zero code changes needed. Just add a row to the TEMPLATE_CONFIG sheet with `active=TRUE` and it appears as a button in the dashboard automatically.
+### Hardcoded External Links (do not change without user permission)
+- **Calendly:** `https://calendly.com/hea-trades/free-solar-consultation-hea`
+- **Google Review:** `https://g.page/r/CSOEwnVc3aFIEAE/review`
+- **Powercor NMI lookup:** `https://myenergy.powercor.com.au/s/nmi-register`
+- **Solar Analyser GAS app:** `https://script.google.com/macros/s/AKfycbwYbZHXmEguJJFmGT0hd94M5heR8TUJFVConEBwcEI5x-DTgLUibdN5dlLp-VKr5tQ/exec`
 
 ---
 
-## 7. Existing Design System
-
-Dark theme. Professional. Restrained. **Never** add emoji or light backgrounds to the dashboard.
+## 9. Design System (Dark Theme — Never Change)
 
 ```
-Background layers:
-  #181818  — page background
+Backgrounds:
+  #181818  — page
   #202020  — cards, nav, modals
   #2a2a2a  — inputs, secondary surfaces
-  #2e2e2e  — borders (light)
-  #333     — borders (medium)
-  #3a3a3a  — borders (heavy) / badges
+  #2e2e2e  — borders light
+  #3a3a3a  — borders heavy
 
 Text:
-  #ffffff  — primary headings
-  #d6d6d6  — nav links
-  #aaa     — secondary text
-  #888     — labels, metadata
-  #666     — tertiary
+  #ffffff  — headings
+  #aaa     — secondary
+  #888     — labels
   #555     — dimmed
   #444     — placeholders
-  #333     — very dim
 
 Accent:
-  #ffd100  — HEA yellow (primary CTA, active states, job numbers)
+  #ffd100  — HEA yellow (CTAs, active, job numbers)
   #e6bc00  — yellow hover
 
-Status colours (badge style: bg-X/40 text-X):
-  Lead:        bg-[#3a3a3a]    text-[#aaa]
-  Quoted:      bg-blue-900/40  text-blue-300
-  Booked:      bg-purple-900/40 text-purple-300
-  In Progress: bg-yellow-900/40 text-[#ffd100]
-  Complete:    bg-green-900/40  text-green-400
+Status colours (bg-X/40 text-X):
+  pending_review:     bg-[#3a3a3a] text-[#aaa]
+  opensolar_created:  bg-blue-900/40 text-blue-300
+  rejected:           bg-red-900/40 text-red-400
+  duplicate:          bg-yellow-900/40 text-[#ffd100]
 
-Border radius:
-  rounded-lg  — inputs, buttons, small elements
-  rounded-xl  — cards, modals, column containers
-
-Typography:
-  text-xs uppercase tracking-wider  — section labels
-  font-mono                         — job numbers
-  font-semibold                     — headings, buttons
-  tabular-nums                      — numbers/stats
-
-Standard input class:
-  "bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm 
-   placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
-
-Primary button:
-  "bg-[#ffd100] text-[#202020] font-semibold px-4 py-2 rounded-lg 
-   hover:bg-[#e6bc00] transition-colors"
-
-Secondary button:
-  "border border-[#333] text-[#888] rounded-lg hover:border-[#555] hover:text-white"
+Standard input: "bg-[#2a2a2a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder:text-[#444] focus:outline-none focus:border-[#ffd100]"
+Primary button: "bg-[#ffd100] text-[#202020] font-semibold px-4 py-2 rounded-lg hover:bg-[#e6bc00] transition-colors"
+Action button:  "text-xs px-3 py-2 rounded-lg bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa] hover:text-white hover:border-[#555] transition-colors"
 ```
 
 ---
 
-## 8. What To Build — Dashboard Expansion
+## 10. Known Gotchas & TypeScript Rules
 
-**Target GUI style:** Enterprise-grade data management UI inspired by **Qualys Patch Management** dashboard. Qualys uses a tri-pane layout with a fixed top bar, collapsible left sidebar TOC, and dense main content. Key UI patterns to adapt to HEA's dark theme:
+1. **Prisma 7 types:** Never `import { Lead, AuditEntry, Prisma } from "@prisma/client"` — these don't export in Prisma 7. Use TypeScript inference from query results (`entries.map(e => ...)` not typed explicitly).
 
-### Qualys Design Patterns To Implement (adapted to HEA dark theme)
+2. **Zod v4:** `z.coerce.number()` returns `ZodPipe` with `unknown` output — breaks hookform resolver. Use `z.number()` + `setValueAs: v => v === "" ? undefined : Number(v)` on `register()` calls instead.
 
-**Layout:**
-- Fixed top bar (~56px) — logo left, search center, user/stats right
-- Left sidebar (~260px) — collapsible, independent scroll, active item has left border accent
-- Main content area — max-width ~1100px, padded, scrolls independently
+3. **Prisma config:** `prisma.config.ts` uses `defineConfig`. Valid top-level keys: `schema`, `migrations`, `datasource`, `experimental`. The key `migrate` does NOT exist and causes build failures.
 
-**Sidebar navigation:**
-- Section headers in uppercase tracking-wider (like current label style)
-- Active item: `border-l-2 border-[#ffd100] bg-[#ffd100]/5 text-white`
-- Inactive item: `text-[#666] hover:text-[#aaa] hover:bg-[#252525]`
-- Expand/collapse chevrons for grouped sections
-- Item height: ~36px, px-4, text-sm
+4. **`libsql://` URLs:** `prisma db push` only supports `file:` SQLite. Never add it to build scripts. Use `scripts/db-setup.ts`.
 
-**Data tables:**
-- Header row: `bg-[#252525] border-b border-[#333]` — sticky, col labels text-[#888] text-xs uppercase tracking-wider
-- Body rows: `border-b border-[#2a2a2a] hover:bg-[#252525]` — height ~48px
-- Zebra striping optional (subtle: every other row `bg-[#1e1e1e]`)
-- Checkbox column (16px) for bulk selection
-- Sortable columns: up/down chevron icon next to header label, active sort highlights column header
-- Row click → navigate to detail page
-- Actions column: icon buttons (…) or inline text links
+5. **`"use client"` + `metadata`:** These cannot coexist in the same file. Move metadata to a `layout.tsx` or remove it.
 
-**Status badges (Qualys-style pills, adapted):**
-- Rounded pill: `px-2.5 py-0.5 rounded-full text-xs font-medium`
-- Same palette as current STAGE_STYLES but used inline in table cells
+6. **`useSearchParams()`:** Must be wrapped in `<Suspense>` in Next.js App Router. Always wrap the component that calls it.
 
-**Filter/search bar above tables:**
-- Search input (left), filter dropdowns (status, date), results count (right)
-- `bg-[#202020] border-b border-[#2e2e2e] px-4 py-3 flex items-center gap-3`
+7. **OpenSolar auth endpoint:** `POST https://api.opensolar.com/api-token-auth/` with `{ username: email, password }` → returns `{ token }`. NOT `/api/auth/`.
 
-**Stat cards (metrics panels):**
-- `bg-[#202020] border border-[#2e2e2e] rounded-xl p-5`
-- Large number in white (text-3xl font-bold), label below in text-[#555] text-sm
-- Subtle coloured left border accent per metric type
-- 4 cards in a row: `grid grid-cols-2 lg:grid-cols-4 gap-4`
+8. **Ada widget:** `ADA_WIDGET_ENABLED` defaults to `false`. Do NOT enable until OpenSolar confirms whether lead submission creates a paid project or free contact.
 
-**Note/callout boxes:**
-- Info: `bg-blue-950/30 border-l-4 border-blue-500 rounded-r-lg px-4 py-3`
-- Warning: `bg-yellow-950/30 border-l-4 border-[#ffd100] rounded-r-lg px-4 py-3`
+9. **No `lib/opensolar.ts` outside `/app/api/admin/`** — it's PAID calls only. Import `lib/opensolar-free.ts` for reads.
 
-**General characteristics from Qualys:**
-- Left **sidebar navigation** (not just top nav) with iconified menu items
-- Dense **data table view** as the primary jobs view (with sortable columns, search, filters)
-- **Stats/metrics panels** at the top of the main view
-- **Inline row actions** on table rows (open, move stage, generate doc)
-- **Filter bar** above tables (filter by status, date range, suburb)
-- Professional **status pill badges** in table cells
-- **Pagination** (25 per page)
-- **Quick search** that filters the job table in real time
-
-**Specific pages/features to add:**
-
-### 8a. Sidebar Navigation (replace top nav links)
-The nav currently has only "Jobs" as a link. Build a proper left sidebar:
-- Dashboard (overview/metrics)
-- Jobs (table view)  
-- Kanban (existing board)
-- Documents (generated PDFs across all jobs)
-- Settings (brand config, designer info — reads/writes SETTINGS/BRAND_CONFIG sheets)
-
-### 8b. Jobs Table View (`/dashboard/jobs`)
-Replace or complement the Kanban with a proper data table:
-- Columns: Job #, Client Name, Address, Status (badge), Created, System Size, Quote Value, Drive (icon link), Actions
-- Client-side search/filter by name, address, status
-- Click row → navigate to job detail
-- Inline "Move Stage" dropdown per row
-- Sortable columns (client side sort — data already loaded)
-- Pagination (25 per page)
-
-### 8c. Dashboard Home — Metrics Overview
-Replace the Kanban as the home page, or add above it:
-- Stat cards: Total Jobs, Active Jobs (not Complete), In Progress, Completed This Month
-- Pipeline value if quote data available
-- Recent activity feed (last 5 jobs updated)
-- AI usage widget (expand ProposalUsageBadge into a proper card)
-
-### 8d. Documents Page (`/dashboard/documents`)
-A view across all jobs showing every generated document:
-- Table: Job #, Client Name, Doc Type, Status, Generated At, Open Draft, PDF
-- Filter by doc type, date range
-- Fetches from GAS `action=getAllDocuments` (new GAS action needed)
-
-### 8e. Job Detail Improvements
-The current job detail (`JobDetail.tsx`) is minimal. Expand:
-- Add fields: system_size_kw, battery_size_kwh, total_price, estimated_annual_bill, finance_required
-- These map to the document generation data — more fields = better AI output
-- The GAS `updateJob` action should accept and save these additional fields
+10. **Jesse is non-technical** — all instructions to him must be "copy this → paste here → click deploy". No CLI, no JSON editing.
 
 ---
 
-## 9. GAS Backend Context
+## 11. Cost Protection Architecture
 
-The GAS project is called **"HEA Document Stack"**. It's a separate Apps Script project from "HEA Solar Analyser" (which is a different older system).
+```
+lib/cost.ts — isSafeToFire()
+    ↓
+app/api/admin/leads/[id]/confirm/route.ts
+    ↓
+lib/opensolar.ts — createProject() (only place paid calls are made)
+```
 
-**Important:** When the next Claude needs new GAS functionality, the code must be provided as a snippet for Jesse to paste into Code.gs in the Document Stack Apps Script editor and re-deploy. The GAS files in `/home/user/HEA/hea-doc-stack/src/*.gs` are the source of truth in the repo, but Jesse manually syncs them.
-
-**GAS deployment:** Every time Code.gs or other GAS files change, Jesse must: Deploy → Manage Deployments → New version → Deploy. The JOBS_GAS_URL does not change between deployments (it's the permanent web app URL).
+- `OPENSOLAR_API_COST_PER_PROJECT` not set = confirm button DISABLED
+- Admin must type `"CONFIRM"` (all caps) in modal before button enables
+- Every paid action creates `AuditEntry` with `costAud` set
+- Free actions always have `costAud = null`
+- Webhook handler **never** calls any function in `lib/opensolar.ts`
 
 ---
 
-## 10. Git Workflow
+## 12. What Has Been Successfully Completed
 
-All work goes on: **`claude/build-hea-doc-stack-GFIoP`**
+### Infrastructure
+- [x] All Vercel build failures resolved (Prisma types, Zod coerce, prisma.config.ts, prisma db push)
+- [x] Turso database live and connected
+- [x] All 15+ Vercel environment variables configured
+- [x] Resend domain verified (hea-group.com.au)
+- [x] NextAuth Google OAuth working
+- [x] OpenSolar webhook registered at `/api/webhooks/opensolar`
+
+### Lead Flow
+- [x] Public `/quote` form captures leads to Turso DB
+- [x] `/api/leads` calls GAS `createJob` → Telegram fires → Drive folder created → `gasDriveUrl` saved
+- [x] Staff email alert on new lead (Resend)
+- [x] Duplicate detection (same email within 7 days → status: "duplicate")
+
+### Admin Dashboard
+- [x] `/admin/leads` — lead queue with confirm/reject
+- [x] `/admin/jobs` — jobs pipeline (confirmed leads)
+- [x] `/admin/audit` — full audit log
+- [x] ConfirmModal with cost display and CONFIRM typing gate
+- [x] OpenSolar project creation (human-in-the-loop)
+- [x] 5 action buttons on each lead card:
+  - ☀️ Solar Analyser (prefills customer data via URL params)
+  - 📅 Book Meeting (Calendly)
+  - 📁 Customer Files (Google Drive folder — from `gasDriveUrl`)
+  - 🔆 OpenSolar (direct project link, dimmed until confirmed)
+  - ⭐ Request Review (emails customer Google review link)
+
+### Other Features
+- [x] `/solar-analyser` — embedded GAS iframe with floating customer info card when opened from lead card
+- [x] Customer review request email (`sendReviewRequest()` — emails customer, not staff)
+- [x] `POST /api/admin/leads/[id]/review` — auth-gated review request route
+- [x] Powercor NMI lookup link in `/quote` form and `/solar-analyser`
+- [x] OpenSolar auth via email/password (dynamic JWT, cached in SystemConfig 6 days)
+- [x] Webhook event processing for project milestones
+
+### Old Dashboard (Untouched but Working)
+- [x] `/dashboard` Kanban board (GAS → Google Sheets)
+- [x] Job detail with document generation (Gemini → Slides → PDF)
+- [x] Solar Analyser link in Staff Tools nav panel
+
+---
+
+## 13. What Is Still In Progress / Next Steps
+
+### Immediate
+1. **Test end-to-end flow** — submit a test `/quote` and verify:
+   - Lead appears in `/admin/leads`
+   - Telegram fires
+   - Google Drive folder appears in lead card
+   - All 5 action buttons work
+2. **Verify GAS `driveUrl` field name** — confirm the GAS `createJob` response uses `driveUrl` (not `driveFolderUrl` or similar). Check GAS script if Drive folder not appearing.
+3. **Merge `claude/opensolar-integration-hea-oQk6f` into `main`** for production deploy.
+
+### Pending Features
+4. **Dashboard jobs table view** — enterprise-style sortable/filterable table (Qualys-inspired) for `/dashboard/jobs`
+5. **Dashboard metrics home** — stat cards (total jobs, active, this month revenue)
+6. **Dashboard left sidebar** — upgrade from top nav to proper sidebar nav
+7. **Job detail expanded fields** — add `system_size_kw`, `battery_size_kwh`, `total_price` to GAS job detail
+8. **Ada widget** — HOLD until OpenSolar confirms whether it creates paid project or free contact
+9. **`OPENSOLAR_MFA_TOKEN`** — spotted in code but not confirmed if required
+
+---
+
+## 14. Git Workflow
+
+**Active branch:** `claude/opensolar-integration-hea-oQk6f`
+**Production branch:** `main` (Vercel auto-deploys)
 
 ```bash
-git add <files>
+# Always develop on the feature branch
+git add <specific files>
 git commit -m "feat: description"
-git push -u origin claude/build-hea-doc-stack-GFIoP
+git push -u origin claude/opensolar-integration-hea-oQk6f
+# Then merge to main when ready for production
 ```
 
-Vercel auto-deploys from this branch (or from main — check Vercel project settings).
+**Build command (in Vercel + package.json):**
+```
+prisma generate && tsx scripts/db-setup.ts && next build --turbopack
+```
 
 ---
 
-## 11. Important Constraints & Gotchas
+## 15. GAS Jobs System Reference
 
-1. **No breaking API changes** — the GAS web app URL is fixed and Jesse uses it. Never change the action parameter names in doGet/doPost without updating both sides.
+**doPost actions:**
+- `createJob` — `{ action, clientName, phone, email, address, notes, estAnnualBill }` → `{ jobNumber, driveUrl, ... }`
+- `updateJob` — updates job fields
+- `generateDocument` — triggers Gemini → Slides → PDF pipeline
 
-2. **Google Slides placeholder format** — placeholders are `{Variable_Name}` (single curly brace, mixed case). Replacement uses `presentation.replaceAllText('{' + key + '}', value)`. The old `{{DOUBLE_CURLY}}` format is NOT used in this template.
+**GAS deployment note:** Every time GAS code changes, Jesse must manually: Deploy → Manage Deployments → New version → Deploy. The `JOBS_GAS_URL` does NOT change between deployments.
 
-3. **Gemini rate limits** — free tier: 500 requests/day, 10 requests/minute. Never add logic that batches or loops Gemini calls without a rate limit check.
-
-4. **Vercel function timeout** — document generation takes ~40s. Routes that call GAS for generation must have `export const maxDuration = 60` and use `AbortSignal.timeout(58_000)`.
-
-5. **No Sanity CMS in dashboard** — Sanity is used for the public website (hea-group.com.au). The dashboard reads/writes only from GAS/Sheets. Never import Sanity client in dashboard components.
-
-6. **Design discipline** — Jesse is proud of the dark premium aesthetic. Don't add light backgrounds, rounded-2xl cards that look "app-like", or anything that looks like a consumer SaaS tool. Keep it professional/enterprise.
-
-7. **Jesse is non-technical** — all instructions must be "copy this → paste here → click deploy". Never ask him to run CLI commands or edit JSON config files.
-
----
-
-## 12. Immediate Next Steps (Priority Order)
-
-1. **Expand JobDetail form fields** — add solar system size, battery size, quote value, annual bill fields to the edit form. These are the data inputs that make AI-generated proposals accurate.
-
-2. **Jobs table view** — enterprise-style sortable/filterable table as primary view. Dense data layout like the Qualys reference screenshot.
-
-3. **Left sidebar navigation** — upgrade layout from top-nav-only to proper sidebar.
-
-4. **Metrics home page** — stat cards above the job list.
-
-5. **Documents page** — cross-job view of all generated PDFs.
+**Drive folder structure per job:**
+```
+1) Jobs/
+  {ClientName} - {DD-MM-YYYY}/
+    01_Quotes/
+    02_Proposals/
+    03_Signed/
+    04_Installed/
+    {Name} - Electricity Bill.pdf   (customer uploads)
+    {Name} - Job Card - HEA.pdf
+    {Name} - NMI Consent - HEA.pdf
+```
 
 ---
 
-*End of handover. All code is committed and pushed on `claude/build-hea-doc-stack-GFIoP`.*
+*Last updated: April 2026. All code on `claude/opensolar-integration-hea-oQk6f` branch.*

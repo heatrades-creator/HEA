@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQLite database files (regenerated via: npx prisma db push && npx tsx prisma/seed.ts)
+*.db
+*.db-shm
+*.db-wal

@@ -91,6 +91,15 @@ async function main() {
     await db.execute(sql)
   }
 
+  // Add new columns — SQLite doesn't support IF NOT EXISTS on ALTER TABLE,
+  // so wrap each in try/catch (error = column already exists, which is fine)
+  for (const col of [
+    `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber" TEXT`,
+    `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl" TEXT`,
+  ]) {
+    try { await db.execute(col) } catch { /* column already exists */ }
+  }
+
   console.log("✔ Database tables ready")
   process.exit(0)
 }

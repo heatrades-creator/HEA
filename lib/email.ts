@@ -57,6 +57,30 @@ export async function sendJobConfirmedAlert(
   })
 }
 
+const REVIEW_URL = "https://g.page/r/CSOEwnVc3aFIEAE/review"
+
+/** Send a Google review request to the customer */
+export async function sendReviewRequest(
+  lead: Pick<Lead, "firstName" | "lastName" | "email">
+) {
+  await resend.emails.send({
+    from:    FROM,
+    to:      lead.email,
+    subject: `How did we go? — Leave us a review`,
+    html: `
+      <h2>Hi ${lead.firstName},</h2>
+      <p>Thank you for choosing HEA Group for your solar journey.</p>
+      <p>We'd love to hear about your experience — it only takes 30 seconds and helps other families make the switch to solar.</p>
+      <p>
+        <a href="${REVIEW_URL}" style="background:#ffd100;color:#000;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;display:inline-block;">
+          Leave a Google Review ⭐
+        </a>
+      </p>
+      <p style="color:#888;font-size:12px;">HEA Group — Bendigo's Solar Specialists</p>
+    `,
+  })
+}
+
 /** Alert staff when a significant milestone is reached (sold, installed, etc.) */
 export async function sendMilestoneAlert(
   lead: Pick<Lead, "firstName" | "lastName" | "id">,

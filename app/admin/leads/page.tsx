@@ -21,6 +21,9 @@ interface Lead {
   leadSource: string
   status: string
   createdAt: string
+  openSolarProjectId: number | null
+  gasJobNumber: string | null
+  gasDriveUrl: string | null
 }
 
 export default function LeadsPage() {

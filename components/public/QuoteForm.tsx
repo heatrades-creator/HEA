@@ -139,6 +139,19 @@ export function QuoteForm() {
         </div>
       </div>
 
+      {/* Powercor NMI lookup helper */}
+      <p className="text-xs text-[#888]">
+        Need your NMI number?{" "}
+        <a
+          href="https://myenergy.powercor.com.au/s/nmi-register"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#ffd100] hover:underline"
+        >
+          Look it up on Powercor →
+        </a>
+      </p>
+
       {/* Row 5: Annual power bill */}
       <div>
         <label className={labelClass}>

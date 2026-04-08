@@ -84,11 +84,26 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS "AuditEntry_leadId_idx" ON "AuditEntry"("leadId")`,
 ]
 
+// Columns added after initial schema — safe to run on existing databases
+const migrations = [
+  `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber" TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl"  TEXT`,
+]
+
 async function main() {
   console.log("Setting up database tables...")
 
   for (const sql of statements) {
     await db.execute(sql)
+  }
+
+  // Run migrations — ignore "duplicate column" errors (column already exists)
+  for (const sql of migrations) {
+    try {
+      await db.execute(sql)
+    } catch {
+      // Column already exists — safe to ignore
+    }
   }
 
   console.log("✔ Database tables ready")

@@ -180,26 +180,26 @@ export default function HEAEstimator() {
             Indicative Estimate
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <p className="text-xs text-slate-400 mb-1">System Size</p>
-              <p className="text-2xl font-bold text-slate-900">~{estimate.systemKw} kW</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">~{estimate.systemKw} kW</p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 mb-1">Est. Payback</p>
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">{estimate.paybackYears}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-1">Price Range</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">
                 ${fmt(estimate.priceMin)}–${fmt(estimate.priceMax)}
               </p>
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-1">Est. Annual Savings</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-xl sm:text-2xl font-bold text-slate-900">
                 ${fmt(estimate.savingsMin)}–${fmt(estimate.savingsMax)}
               </p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Est. Payback</p>
-              <p className="text-2xl font-bold text-slate-900">{estimate.paybackYears}</p>
             </div>
           </div>
 

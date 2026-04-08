@@ -74,11 +74,11 @@ export default function HEARoutingBar() {
             const isYellow = route.color === "yellow";
             const inner = (
               <>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isYellow ? "bg-yellow-400 text-slate-900" : "bg-slate-100 text-slate-600"}`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-2 ${isYellow ? "bg-yellow-400 text-slate-900" : "bg-slate-100 text-slate-600"}`}>
                   {route.icon}
                 </div>
-                <p className="font-bold text-slate-900 text-sm mb-1">{route.label}</p>
-                <p className="text-slate-500 text-xs leading-snug">{route.description}</p>
+                <p className="font-bold text-slate-900 text-sm mb-0.5">{route.label}</p>
+                <p className="text-slate-500 text-xs leading-snug hidden sm:block">{route.description}</p>
               </>
             );
 

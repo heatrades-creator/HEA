@@ -359,7 +359,7 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
 
   return (
     <div
-      className="fixed bottom-6 right-6 z-50 w-[340px] max-w-[calc(100vw-2rem)]"
+      className="fixed z-40 w-[calc(100vw-1rem)] left-2 right-2 bottom-[74px] sm:bottom-6 sm:left-auto sm:right-6 sm:w-[340px]"
       role="dialog"
       aria-label="HEA System Advisor"
       aria-live="polite"

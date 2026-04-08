@@ -1,37 +1,79 @@
+import type { Metadata } from "next";
 import React from "react";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
+import SocialProofBar from "@/components/SocialProofBar";
 import Services from "@/components/Services";
 import WhyChooseUs from "@/components/WhyChooseUs";
-import About from "@/components/About";
-import GoogleReviews from "@/components/GoogleReviews";
+import HowItWorks from "@/components/HowItWorks";
+import PricingPreview from "@/components/PricingPreview";
+import CaseStudies from "@/components/CaseStudies";
+import LearningHub from "@/components/LearningHub";
+import FAQAccordion from "@/components/FAQAccordion";
 import Contact from "@/components/Contact";
-import Footer from "@/components/Footer";
 import ModernContactForm from "@/components/Form";
+import Footer from "@/components/Footer";
 import { getSiteContent } from "@/lib/sanity";
 
-export const revalidate = 60; // Revalidate every 60 seconds
+export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: "HEA | Bendigo Solar & Battery Specialists",
+  description:
+    "Bendigo's direct solar and battery installers. We design right-sized systems from your actual Powercor NEM12 usage data — targeting payback under 10 years, every time. REC 37307.",
+  alternates: { canonical: "https://hea-group.com.au" },
+};
 
 export default async function Home() {
-  // Fetch content from Google Sheets
   const content = await getSiteContent();
 
   return (
     <>
       <Nav />
+
+      {/* 1. Hero */}
       <Hero data={content?.hero} />
-      <Services data={content?.services} />
+
+      {/* 2. Social Proof */}
+      <SocialProofBar />
+
+      {/* 3. Why HEA */}
       <WhyChooseUs data={content?.whyChooseUs} />
-      <GoogleReviews />
-      <About data={content?.about} />
+
+      {/* 4. Services */}
+      <Services data={content?.services?.length ? content.services : null} />
+
+      {/* 5. How It Works */}
+      <HowItWorks />
+
+      {/* 6. Pricing Preview */}
+      <PricingPreview />
+
+      {/* 7. Case Studies */}
+      <CaseStudies />
+
+      {/* 8. Learning Hub */}
+      <LearningHub />
+
+      {/* 9. FAQ */}
+      <FAQAccordion limit={6} />
+
+      {/* 10. Final CTA */}
       <Contact />
-      <section id="general-enquiry" className="py-20 px-4 bg-gradient-to-b from-slate-50 to-white">
+
+      {/* General Enquiries (non-solar) */}
+      <section id="general-enquiry" className="py-20 px-4 bg-white">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-2">General Enquiries</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">Got other electrical needs?</h2>
+            <p className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-2">
+              General Enquiries
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+              Got other electrical needs?
+            </h2>
             <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              Not looking for solar? Send Jesse a message about EV chargers, general electrical, smart home, or anything else.
+              Not looking for solar? Send Jesse a message about EV chargers,
+              general electrical, smart home, or anything else.
             </p>
           </div>
           <div className="flex justify-center">
@@ -39,6 +81,7 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
       <Footer data={content?.footer} />
     </>
   );

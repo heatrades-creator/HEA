@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 
 interface HeroData {
   tagline?: string;
@@ -118,22 +117,17 @@ const Hero = ({ data }: HeroProps) => {
             {heroData.description}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mx-auto ">
-            <Link
-              href="/book"
+            <a
+              href="https://script.google.com/macros/s/AKfycbyU_ACYess2XPKmBkuMAyZkNiMjym0B4hqCOmkugDxbUs0B8hZoRXraPornmOiR9Kg/exec"
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-heff px-8 py-4 font-semibold hover:shadow-xl
                 transition-all ease-in-out duration-200 flex items-center justify-center group rounded-2xl text-lg md:px-4
                 border-2 border-transparent hover:border-black/75 hover:scale-105 hover:-translate-y-1 text-black cursor-pointer"
             >
               {heroData.ctaText}
               <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <button
-              onClick={() => scrollToSection("services")}
-              className="bg-white text-black px-8 py-4 rounded-lg text-lg font-semibold hover:shadow-lg
-              hover:scale-105 hover:-translate-y-1 transition-all border-2 border-transparent hover:border-heff/75 cursor-pointer"
-            >
-              {heroData.secondaryCtaText}
-            </button>
+            </a>
           </div>
         </div>
         {/* Stats */}

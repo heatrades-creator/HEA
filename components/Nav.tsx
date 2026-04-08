@@ -74,12 +74,14 @@ const Nav = () => {
             >
               Solar Quote
             </Link>
-            <Link
-              href="/book"
+            <a
+              href="https://script.google.com/macros/s/AKfycbyU_ACYess2XPKmBkuMAyZkNiMjym0B4hqCOmkugDxbUs0B8hZoRXraPornmOiR9Kg/exec"
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-heffdarkgray text-white px-6 py-2 rounded-lg transition-all duration-200 hover:shadow-lg hover:bg-heffdark hover:scale-105"
             >
               Book a Consultation
-            </Link>
+            </a>
             {session && (
               <button
                 onClick={() => setIsStaffOpen(true)}
@@ -136,13 +138,15 @@ const Nav = () => {
             >
               Solar Quote
             </Link>
-            <Link
-              href="/book"
+            <a
+              href="https://script.google.com/macros/s/AKfycbyU_ACYess2XPKmBkuMAyZkNiMjym0B4hqCOmkugDxbUs0B8hZoRXraPornmOiR9Kg/exec"
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setIsMenuOpen(false)}
               className="block w-full text-left py-2 text-blue-600 font-semibold"
             >
               Book a Consultation
-            </Link>
+            </a>
             {session && (
               <button
                 onClick={() => {

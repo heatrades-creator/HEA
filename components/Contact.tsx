@@ -1,6 +1,5 @@
 "use client";
 import React from "react";
-import Link from "next/link";
 import { Phone, Mail, ChevronRight } from "lucide-react";
 
 const Contact = () => {
@@ -24,14 +23,16 @@ const Contact = () => {
               your actual usage data from Powercor, then walk you through exactly
               what solar and battery looks like for your home — with real payback numbers.
             </p>
-            <Link
-              href="/book"
+            <a
+              href="https://script.google.com/macros/s/AKfycbyU_ACYess2XPKmBkuMAyZkNiMjym0B4hqCOmkugDxbUs0B8hZoRXraPornmOiR9Kg/exec"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-heffdark text-heffblack font-bold px-10 py-4 rounded-xl text-lg
                 hover:scale-105 hover:shadow-xl transition-all duration-200 group"
             >
               Start Your Consultation
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
+            </a>
             <p className="text-slate-600 text-sm mt-5">
               No obligation · Takes about 5 minutes · We do the analysis before your call
             </p>

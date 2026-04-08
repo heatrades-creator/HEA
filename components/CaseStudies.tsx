@@ -2,16 +2,18 @@ import React from "react";
 import { MapPin, ChevronRight, Zap, Battery } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
 
-// TODO_REAL_DATA: Jesse to provide 3 real jobs with: suburb, home type, goal,
-// system chosen, and outcome. Until then, cards show "coming soon" state.
-const CASE_STUDIES: {
+type CaseStudy = {
   location: string;
   homeType: string;
   goal: string;
   system: string;
   outcome: string;
+  photo?: string | null;
   ready: boolean;
-}[] = [
+};
+
+// Fallback data until Jesse provides real job details in Sanity
+const FALLBACK_CASE_STUDIES: CaseStudy[] = [
   {
     location: "Golden Square",
     homeType: "4-bed family home",
@@ -38,7 +40,13 @@ const CASE_STUDIES: {
   },
 ];
 
-const CaseStudies = () => {
+interface CaseStudiesProps {
+  caseStudies?: CaseStudy[];
+}
+
+const CaseStudies = ({ caseStudies }: CaseStudiesProps) => {
+  const CASE_STUDIES =
+    caseStudies && caseStudies.length > 0 ? caseStudies : FALLBACK_CASE_STUDIES;
   const hasRealData = CASE_STUDIES.some((c) => c.ready);
 
   return (

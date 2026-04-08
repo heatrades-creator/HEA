@@ -3,7 +3,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-const FAQS = [
+type FAQ = { q: string; a: string };
+
+// Fallback FAQs used until content is populated in Sanity
+const FALLBACK_FAQS: FAQ[] = [
   {
     q: "Do I need a battery?",
     a: "Not necessarily. A battery makes the most sense if you're away during the day (so can't self-consume solar), have a high overnight usage, or want backup power during outages. We'll model your actual usage data and show you the payback difference between solar-only and solar-plus-battery before you decide.",
@@ -41,11 +44,21 @@ const FAQS = [
 interface FAQAccordionProps {
   limit?: number;
   showLink?: boolean;
+  /** Sanity-sourced FAQs — falls back to hardcoded set if empty */
+  faqItems?: { question: string; answer: string }[];
 }
 
-const FAQAccordion = ({ limit, showLink = true }: FAQAccordionProps) => {
+const FAQAccordion = ({ limit, showLink = true, faqItems }: FAQAccordionProps) => {
   const [open, setOpen] = useState<number | null>(null);
-  const faqs = limit ? FAQS.slice(0, limit) : FAQS;
+
+  const source: FAQ[] =
+    faqItems && faqItems.length > 0
+      ? faqItems.map((f) => ({ q: f.question, a: f.answer }))
+      : FALLBACK_FAQS;
+
+  const faqs = limit ? source.slice(0, limit) : source;
+  // Always use source (not display-limited faqs) for JSON-LD so all FAQs are indexed
+  const allFaqs = source;
 
   return (
     <section className="py-20 px-4 bg-white">
@@ -107,7 +120,7 @@ const FAQAccordion = ({ limit, showLink = true }: FAQAccordionProps) => {
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "FAQPage",
-              mainEntity: FAQS.map((faq) => ({
+              mainEntity: allFaqs.map((faq) => ({
                 "@type": "Question",
                 name: faq.q,
                 acceptedAnswer: {

@@ -3,14 +3,22 @@ import Link from "next/link";
 import { ChevronRight, Check } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
 
-// TODO_REAL_DATA: Jesse must confirm "from" price ranges before going live.
-// These are structural placeholders only.
-const PACKAGES = [
+type Package = {
+  name: string;
+  tagline: string;
+  specs: string;
+  fromPrice?: string;
+  features: string[];
+  highlight: boolean;
+};
+
+// Fallback packages until Jesse confirms real prices in Sanity
+const FALLBACK_PACKAGES: Package[] = [
   {
     name: "Solar Starter",
     tagline: "Minimise your bill",
     specs: "6.6 kW solar · grid-connect",
-    fromPrice: "TODO_REAL_DATA",
+    fromPrice: undefined,
     features: [
       "6.6 kW panel array",
       "5 kW hybrid inverter",
@@ -24,7 +32,7 @@ const PACKAGES = [
     name: "Solar + Battery",
     tagline: "Replace your bill",
     specs: "10 kW solar · 10 kWh battery",
-    fromPrice: "TODO_REAL_DATA",
+    fromPrice: undefined,
     features: [
       "10 kW panel array",
       "Battery storage system",
@@ -38,7 +46,7 @@ const PACKAGES = [
     name: "Full System",
     tagline: "Build an energy asset",
     specs: "13.2 kW solar · 13.5 kWh+ battery",
-    fromPrice: "TODO_REAL_DATA",
+    fromPrice: undefined,
     features: [
       "Maximum panel array",
       "Large battery system",
@@ -50,7 +58,13 @@ const PACKAGES = [
   },
 ];
 
-const PricingPreview = () => {
+interface PricingPreviewProps {
+  packages?: Package[];
+}
+
+const PricingPreview = ({ packages }: PricingPreviewProps) => {
+  const PACKAGES =
+    packages && packages.length > 0 ? packages : FALLBACK_PACKAGES;
   return (
     <section className="py-20 px-4 bg-slate-50">
       <div className="max-w-7xl mx-auto">
@@ -92,7 +106,7 @@ const PricingPreview = () => {
 
               <div className="mb-6">
                 <p className="text-sm text-slate-400 mb-0.5">From</p>
-                {pkg.fromPrice === "TODO_REAL_DATA" ? (
+                {!pkg.fromPrice ? (
                   <p className="text-2xl font-bold text-slate-400 italic">
                     Price on request
                   </p>

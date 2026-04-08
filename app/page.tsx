@@ -52,16 +52,16 @@ export default async function Home() {
       <HowItWorks />
 
       {/* 6. Pricing Preview */}
-      <PricingPreview />
+      <PricingPreview packages={content?.pricingPackages} />
 
       {/* 7. Case Studies */}
-      <CaseStudies />
+      <CaseStudies caseStudies={content?.caseStudies} />
 
       {/* 8. Learning Hub */}
-      <LearningHub />
+      <LearningHub articles={content?.articles} />
 
       {/* 9. FAQ */}
-      <FAQAccordion limit={6} />
+      <FAQAccordion limit={6} faqItems={content?.faqItems} />
 
       {/* 10. Final CTA */}
       <Contact />

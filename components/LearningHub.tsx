@@ -1,8 +1,17 @@
 import React from "react";
 import Link from "next/link";
-import { BookOpen, ChevronRight, Clock } from "lucide-react";
+import { ChevronRight, Clock } from "lucide-react";
 
-const ARTICLES = [
+type Article = {
+  slug: string;
+  title: string;
+  excerpt: string;
+  readTime: string;
+  category: string;
+};
+
+// Fallback articles pointing at the pre-built static pages
+const FALLBACK_ARTICLES: Article[] = [
   {
     slug: "how-we-size-systems",
     title: "How HEA Sizes Solar Systems Using Real Usage Data",
@@ -29,7 +38,14 @@ const ARTICLES = [
   },
 ];
 
-const LearningHub = () => {
+interface LearningHubProps {
+  /** Sanity-sourced articles — falls back to hardcoded set if empty */
+  articles?: Article[];
+}
+
+const LearningHub = ({ articles }: LearningHubProps) => {
+  const ARTICLES =
+    articles && articles.length > 0 ? articles : FALLBACK_ARTICLES;
   return (
     <section className="py-20 px-4 bg-slate-900">
       <div className="max-w-7xl mx-auto">

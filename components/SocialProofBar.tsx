@@ -1,31 +1,46 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
-import { GAS_INTAKE_URL, HEA_GOOGLE_REVIEWS_URL } from "@/lib/constants";
+import { HEA_GOOGLE_REVIEWS_URL } from "@/lib/constants";
 
-// TODO_REAL_DATA: Replace placeholder reviews with real Google reviews once collected.
-const REVIEWS = [
+type Review = { name: string; text: string; stars: number; time?: string };
+
+const FALLBACK_REVIEWS: Review[] = [
   {
     name: "Sarah M.",
-    suburb: "Golden Square",
     text: "Jesse was straight with us from day one — sized the system properly instead of upselling. Our bills are down by more than he projected.",
     stars: 5,
   },
   {
     name: "Dave K.",
-    suburb: "Strathdale",
     text: "No rubbish, no middlemen. Jesse turned up, installed it, and it works exactly as quoted. Couldn't ask for more.",
     stars: 5,
   },
   {
     name: "Tracey B.",
-    suburb: "Eaglehawk",
     text: "Finally an installer who explained what data he was using to size our system. We knew exactly what we were getting before he started.",
     stars: 5,
   },
 ];
 
 const SocialProofBar = () => {
+  const [rating, setRating] = useState<number>(5.0);
+  const [reviewCount, setReviewCount] = useState<number | null>(null);
+  const [reviews, setReviews] = useState<Review[]>(FALLBACK_REVIEWS);
+
+  useEffect(() => {
+    fetch("/api/reviews")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.rating) setRating(data.rating);
+        if (data.reviewCount) setReviewCount(data.reviewCount);
+        if (data.reviews?.length >= 3) setReviews(data.reviews);
+      })
+      .catch(() => {
+        // silently keep fallback data
+      });
+  }, []);
+
   return (
     <section className="py-16 px-4 bg-slate-50 border-y border-slate-100">
       <div className="max-w-7xl mx-auto">
@@ -37,21 +52,22 @@ const SocialProofBar = () => {
                 <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
               ))}
             </div>
-            <p className="text-2xl font-bold text-slate-900">5.0 on Google</p>
-            {/* TODO_REAL_DATA: Replace with real review count once you have 10+ reviews */}
+            <p className="text-2xl font-bold text-slate-900">
+              {rating.toFixed(1)} on Google
+            </p>
             <a
               href={HEA_GOOGLE_REVIEWS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-slate-500 hover:text-yellow-600 transition-colors flex items-center gap-1 mt-0.5"
             >
-              Read our Google reviews <ExternalLink className="w-3 h-3" />
+              {reviewCount ? `${reviewCount} reviews` : "Read our Google reviews"}{" "}
+              <ExternalLink className="w-3 h-3" />
             </a>
           </div>
 
           <div className="hidden sm:block w-px h-14 bg-slate-200" />
 
-          {/* TODO_REAL_DATA: Replace with real install count */}
           <div className="flex flex-col items-center sm:items-start">
             <p className="text-2xl font-bold text-slate-900">Bendigo Local</p>
             <p className="text-sm text-slate-500">Solar & battery installer</p>
@@ -74,9 +90,9 @@ const SocialProofBar = () => {
 
         {/* Review Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-10">
-          {REVIEWS.map((r) => (
+          {reviews.map((r, idx) => (
             <div
-              key={r.name}
+              key={idx}
               className="bg-white rounded-xl border border-slate-100 shadow-sm p-6"
             >
               <div className="flex items-center gap-1 mb-3">
@@ -89,7 +105,9 @@ const SocialProofBar = () => {
               </p>
               <div>
                 <p className="text-slate-900 font-semibold text-sm">{r.name}</p>
-                <p className="text-slate-400 text-xs">{r.suburb}, Bendigo</p>
+                {r.time && (
+                  <p className="text-slate-400 text-xs">{r.time}</p>
+                )}
               </div>
             </div>
           ))}

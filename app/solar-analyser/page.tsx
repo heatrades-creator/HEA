@@ -1,19 +1,23 @@
-import type { Metadata } from "next";
-import Nav from "@/components/Nav";
+"use client"
 
-export const metadata: Metadata = {
-  title: "Solar Analyser | HEA",
-  description:
-    "Upload your NEM12 data for a personalised solar and battery proposal",
-};
+import { Suspense } from "react"
+import { useSearchParams } from "next/navigation"
+import Nav from "@/components/Nav"
 
-export default function SolarAnalyserPage() {
+function SolarAnalyserContent() {
+  const params = useSearchParams()
+  const name       = params.get("name")
+  const address    = params.get("address")
+  const phone      = params.get("phone")
+  const email      = params.get("email")
+  const annualBill = params.get("annualBill")
+
   return (
     <>
       <Nav />
       <div
-        className="w-full bg-heffgray2 border-t-4 border-heffdark flex items-center justify-center"
-        style={{ marginTop: "80px", height: "calc(100vh - 80px)" }}
+        className="w-full bg-heffgray2 border-t-4 border-heffdark relative"
+        style={{ marginTop: "80px", height: "calc(100vh - 80px)", overflow: "hidden" }}
       >
         <div className="text-center px-6">
           <div className="mb-6">
@@ -35,7 +39,49 @@ export default function SolarAnalyserPage() {
           </a>
           <p className="text-gray-400 text-sm mt-4">Opens in a new tab</p>
         </div>
+
+        {/* Floating customer info card — shown when opened from admin lead card */}
+        {name && (
+          <div className="absolute top-4 right-4 z-10 p-3 rounded-xl bg-yellow-50 border border-yellow-200 shadow-lg max-w-xs">
+            <p className="text-xs font-semibold text-yellow-800 mb-1.5 uppercase tracking-wide">Customer</p>
+            <p className="text-sm text-gray-700 font-medium">{name}</p>
+            {address && <p className="text-xs text-gray-600 mt-0.5">{address}</p>}
+            {phone && <p className="text-xs text-gray-600">{phone}</p>}
+            {email && <p className="text-xs text-gray-600">{email}</p>}
+            {annualBill && <p className="text-xs text-gray-600">Bill: ${annualBill}/yr</p>}
+            <a
+              href="https://myenergy.powercor.com.au/s/nmi-register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-yellow-700 hover:underline mt-2 block"
+            >
+              NMI lookup (Powercor) →
+            </a>
+          </div>
+        )}
+
+        {/* Powercor NMI link — shown when no customer params (standalone access) */}
+        {!name && (
+          <div className="absolute bottom-4 right-4 z-10">
+            <a
+              href="https://myenergy.powercor.com.au/s/nmi-register"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs bg-black/60 text-[#ffd100] hover:text-white px-3 py-1.5 rounded-lg backdrop-blur-sm"
+            >
+              NMI lookup (Powercor) →
+            </a>
+          </div>
+        )}
       </div>
     </>
-  );
+  )
+}
+
+export default function SolarAnalyserPage() {
+  return (
+    <Suspense fallback={null}>
+      <SolarAnalyserContent />
+    </Suspense>
+  )
 }

@@ -66,6 +66,47 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget — don't block the response if email fails
   sendNewLeadAlert(lead).catch(console.error)
 
+  // Call GAS createJob — creates Google Drive folder + Sheets entry + Telegram alert
+  if (process.env.JOBS_GAS_URL) {
+    try {
+      const notesLines = [
+        "📋 Solar Quote Lead (website)",
+        lead.roofType ? `🏠 Roof: ${lead.roofType}${lead.storeys ? ` | ${lead.storeys} storey` : ""}` : null,
+        lead.annualBillAud ? `💡 Annual bill: $${lead.annualBillAud}` : null,
+        lead.notes ? `📝 ${lead.notes}` : null,
+      ].filter(Boolean).join("\n")
+
+      const gasRes = await fetch(process.env.JOBS_GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action:        "createJob",
+          clientName:    `${lead.firstName} ${lead.lastName}`,
+          phone:         lead.phone,
+          email:         lead.email,
+          address:       `${lead.address}, ${lead.suburb} ${lead.state} ${lead.postcode}`,
+          notes:         notesLines,
+          estAnnualBill: lead.annualBillAud ?? "",
+        }),
+      })
+      if (gasRes.ok) {
+        const gasData = await gasRes.json()
+        if (gasData.jobNumber || gasData.driveUrl) {
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: {
+              gasJobNumber: gasData.jobNumber ?? null,
+              gasDriveUrl:  gasData.driveUrl  ?? null,
+            },
+          })
+        }
+      }
+    } catch (err) {
+      console.error("GAS createJob failed:", err)
+      // Don't fail the request — lead is already saved in Prisma
+    }
+  }
+
   return NextResponse.json(
     { success: true, leadId: lead.id, proposalToken: lead.proposalToken },
     { status: 201 }

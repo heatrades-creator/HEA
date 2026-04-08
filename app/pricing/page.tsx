@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TrustStrip from "@/components/TrustStrip";
 import HEAEstimator from "@/components/HEAEstimator";
+import HEAAdvisor from "@/components/HEAAdvisor";
 import { Check, ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
-
-const HEAAdvisor = dynamic(() => import("@/components/HEAAdvisor"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "Solar & Battery Pricing Bendigo | HEA Group",

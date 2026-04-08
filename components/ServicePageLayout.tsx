@@ -1,16 +1,14 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TrustStrip from "@/components/TrustStrip";
 import FAQAccordion from "@/components/FAQAccordion";
 import HEAComparison from "@/components/HEAComparison";
+import HEAAdvisor from "@/components/HEAAdvisor";
 import Link from "next/link";
 import { ChevronRight, Check } from "lucide-react";
 import { GAS_INTAKE_URL, HEA_PHONE } from "@/lib/constants";
-
-const HEAAdvisor = dynamic(() => import("@/components/HEAAdvisor"), { ssr: false });
 
 interface FAQ {
   q: string;

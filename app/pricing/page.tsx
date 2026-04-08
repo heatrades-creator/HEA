@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TrustStrip from "@/components/TrustStrip";
+import HEAEstimator from "@/components/HEAEstimator";
 import { Check, ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
+
+const HEAAdvisor = dynamic(() => import("@/components/HEAAdvisor"), { ssr: false });
 
 export const metadata: Metadata = {
   title: "Solar & Battery Pricing Bendigo | HEA Group",
@@ -158,6 +162,13 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Interactive Estimator */}
+        <section className="py-20 px-4 bg-slate-50">
+          <div className="max-w-4xl mx-auto">
+            <HEAEstimator />
+          </div>
+        </section>
+
         {/* EV + What changes price */}
         <section className="py-20 px-4 bg-white">
           <div className="max-w-4xl mx-auto">
@@ -216,6 +227,7 @@ export default function PricingPage() {
         </section>
       </main>
       <Footer />
+      <HEAAdvisor pageContext="pricing" />
     </>
   );
 }

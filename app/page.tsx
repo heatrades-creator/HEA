@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import React from "react";
+import dynamic from "next/dynamic";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import SocialProofBar from "@/components/SocialProofBar";
+import HEARoutingBar from "@/components/HEARoutingBar";
 import Services from "@/components/Services";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import HowItWorks from "@/components/HowItWorks";
@@ -14,6 +16,8 @@ import Contact from "@/components/Contact";
 import ModernContactForm from "@/components/Form";
 import Footer from "@/components/Footer";
 import { getSiteContent } from "@/lib/sanity";
+
+const HEAAdvisor = dynamic(() => import("@/components/HEAAdvisor"), { ssr: false });
 
 export const revalidate = 60;
 
@@ -36,6 +40,9 @@ export default async function Home() {
 
       {/* 2. Social Proof */}
       <SocialProofBar />
+
+      {/* 2b. Routing — "What are you here for?" */}
+      <HEARoutingBar />
 
       {/* 3. Why HEA */}
       <WhyChooseUs data={content?.whyChooseUs} />
@@ -83,6 +90,9 @@ export default async function Home() {
       </section>
 
       <Footer data={content?.footer} />
+
+      {/* Interactive advisor widget — lazy loaded, triggers after 8s or 30% scroll */}
+      <HEAAdvisor pageContext="homepage" />
     </>
   );
 }

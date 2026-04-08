@@ -1,12 +1,16 @@
 "use client";
 import React from "react";
+import dynamic from "next/dynamic";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import TrustStrip from "@/components/TrustStrip";
 import FAQAccordion from "@/components/FAQAccordion";
+import HEAComparison from "@/components/HEAComparison";
 import Link from "next/link";
 import { ChevronRight, Check } from "lucide-react";
 import { GAS_INTAKE_URL, HEA_PHONE } from "@/lib/constants";
+
+const HEAAdvisor = dynamic(() => import("@/components/HEAAdvisor"), { ssr: false });
 
 interface FAQ {
   q: string;
@@ -176,6 +180,15 @@ const ServicePageLayout = ({
           </div>
         </section>
 
+        {/* How HEA Compares */}
+        <section className="py-16 px-4 bg-white">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2 text-center">Comparison</p>
+            <h2 className="text-2xl font-bold text-slate-900 mb-8 text-center">How HEA Compares</h2>
+            <HEAComparison />
+          </div>
+        </section>
+
         {/* Final CTA */}
         <section className="py-20 px-4 bg-slate-900 text-white text-center">
           <div className="max-w-2xl mx-auto">
@@ -196,6 +209,7 @@ const ServicePageLayout = ({
         </section>
       </main>
       <Footer />
+      <HEAAdvisor pageContext="default" />
     </>
   );
 };

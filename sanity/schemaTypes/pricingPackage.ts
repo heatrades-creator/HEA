@@ -28,7 +28,8 @@ export const pricingPackage = defineType({
   ],
   preview: {
     select: { title: 'name', subtitle: 'fromPrice' },
-    prepare({ title, subtitle }: { title: string; subtitle: string }) {
+    prepare(selection) {
+      const { title, subtitle } = selection as { title: string; subtitle: string };
       return { title, subtitle: subtitle ? `From $${subtitle}` : 'Price on request' }
     },
   },

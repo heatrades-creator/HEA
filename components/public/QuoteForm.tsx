@@ -257,7 +257,7 @@ export function QuoteForm({ prefill }: { prefill?: QuoteFormPrefill }) {
       })
       if (!r.success) {
         const e: Record<string, string> = {}
-        r.error.errors.forEach(err => { e[err.path[0] as string] = err.message })
+        r.error.issues.forEach(err => { e[err.path[0] as string] = err.message })
         setErrors(e)
         return false
       }
@@ -272,7 +272,7 @@ export function QuoteForm({ prefill }: { prefill?: QuoteFormPrefill }) {
       })
       if (!r.success) {
         const e: Record<string, string> = {}
-        r.error.errors.forEach(err => { e[err.path[0] as string] = err.message })
+        r.error.issues.forEach(err => { e[err.path[0] as string] = err.message })
         setErrors(e)
         return false
       }

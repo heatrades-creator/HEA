@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Zap, ChevronRight, ArrowLeft } from "lucide-react";
-import { GAS_INTAKE_URL } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -495,7 +494,13 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
           )}
 
           {/* ── STATE: output ───────────────────────────────── */}
-          {state === "output" && recommendation && (
+          {state === "output" && recommendation && (() => {
+            const qp = new URLSearchParams()
+            if (userData.goal)      qp.set("goal", userData.goal)
+            if (userData.billRange) qp.set("bill", userData.billRange)
+            qp.set("advisorAnswers", JSON.stringify(userData))
+            const quoteUrl = `/quote?${qp.toString()}`
+            return (
             <>
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-yellow-700 mb-1">Recommended System</p>
@@ -507,18 +512,14 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
 
               <div className="space-y-2 pt-1">
                 <a
-                  href={GAS_INTAKE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={quoteUrl}
                   className="flex items-center justify-center gap-2 w-full bg-yellow-400 text-slate-900 font-bold text-sm py-3 rounded-xl hover:bg-yellow-300 transition-colors"
                 >
                   Get Exact Design <ChevronRight className="w-4 h-4" />
                 </a>
                 <div className="flex gap-2">
                   <a
-                    href={GAS_INTAKE_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={quoteUrl}
                     className="flex-1 text-center border-2 border-slate-200 text-slate-700 font-semibold text-xs py-2.5 rounded-xl hover:border-yellow-400 transition-colors"
                   >
                     Book a Call
@@ -538,7 +539,8 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
                 </button>
               </div>
             </>
-          )}
+            )
+          })()}
 
           {/* ── STATE: ai_explain ───────────────────────────── */}
           {state === "ai_explain" && (

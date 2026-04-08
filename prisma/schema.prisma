@@ -48,6 +48,12 @@ model Lead {
   gasJobNumber  String?
   gasDriveUrl   String?
 
+  // NMI consent (signed on /quote — required to pull Powercor NEM12 data)
+  nmiNumber       String?    // 10–11 digit National Meter Identifier
+  nmiConsentAt    DateTime?  // when the customer signed the consent
+  nmiSignatureB64 String?    // base64 PNG data URL of their signature
+  advisorAnswers  String?    // JSON of HEAAdvisor answers (goal, bill, etc.)
+
   // Cost tracking
   apiCostAud      Float?
   apiCostSnapshot String?   // JSON snapshot of env vars at time of API call

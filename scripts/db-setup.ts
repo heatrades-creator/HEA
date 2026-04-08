@@ -86,8 +86,12 @@ const statements = [
 
 // Columns added after initial schema — safe to run on existing databases
 const migrations = [
-  `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber" TEXT`,
-  `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl"  TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber"    TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl"     TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiNumber"       TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiConsentAt"    DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiSignatureB64" TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "advisorAnswers"  TEXT`,
 ]
 
 async function main() {

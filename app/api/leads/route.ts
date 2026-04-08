@@ -7,18 +7,22 @@ import { prisma } from "@/lib/db"
 import { sendNewLeadAlert } from "@/lib/email"
 
 const Schema = z.object({
-  firstName:     z.string().min(1).max(100),
-  lastName:      z.string().min(1).max(100),
-  email:         z.string().email(),
-  phone:         z.string().min(8).max(20),
-  address:       z.string().min(5).max(300),
-  suburb:        z.string().min(2).max(100),
-  state:         z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"]),
-  postcode:      z.string().regex(/^\d{4}$/),
-  annualBillAud: z.number().min(0).max(50000).optional(),
-  roofType:      z.enum(["tile", "metal", "flat", "other"]).optional(),
-  storeys:       z.number().min(1).max(10).optional(),
-  notes:         z.string().max(2000).optional(),
+  firstName:       z.string().min(1).max(100),
+  lastName:        z.string().min(1).max(100),
+  email:           z.string().email(),
+  phone:           z.string().min(8).max(20),
+  address:         z.string().min(5).max(300),
+  suburb:          z.string().min(2).max(100),
+  state:           z.enum(["NSW", "VIC", "QLD", "SA", "WA", "TAS", "ACT", "NT"]),
+  postcode:        z.string().regex(/^\d{4}$/),
+  annualBillAud:   z.number().min(0).max(50000).optional(),
+  roofType:        z.enum(["tile", "metal", "flat", "other"]).optional(),
+  storeys:         z.number().min(1).max(10).optional(),
+  notes:           z.string().max(2000).optional(),
+  nmiNumber:       z.string().regex(/^\d{10,11}$/).optional(),
+  nmiConsentAt:    z.string().datetime().optional(),
+  nmiSignatureB64: z.string().max(200_000).optional(),
+  advisorAnswers:  z.string().max(5000).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -48,8 +52,9 @@ export async function POST(req: NextRequest) {
   const lead = await prisma.lead.create({
     data: {
       ...parsed.data,
-      status:     recentDuplicate ? "duplicate" : "pending_review",
-      leadSource: "website",
+      nmiConsentAt: parsed.data.nmiConsentAt ? new Date(parsed.data.nmiConsentAt) : undefined,
+      status:       recentDuplicate ? "duplicate" : "pending_review",
+      leadSource:   "website",
       auditLog: {
         create: {
           action: "lead_received",
@@ -57,6 +62,7 @@ export async function POST(req: NextRequest) {
           detail: JSON.stringify({
             ip:          req.headers.get("x-forwarded-for") ?? "unknown",
             isDuplicate: !!recentDuplicate,
+            hasNmiConsent: !!parsed.data.nmiConsentAt,
           }),
         },
       },
@@ -73,6 +79,8 @@ export async function POST(req: NextRequest) {
         "📋 Solar Quote Lead (website)",
         lead.roofType ? `🏠 Roof: ${lead.roofType}${lead.storeys ? ` | ${lead.storeys} storey` : ""}` : null,
         lead.annualBillAud ? `💡 Annual bill: $${lead.annualBillAud}` : null,
+        lead.nmiNumber ? `🔌 NMI: ${lead.nmiNumber} (consent: ${lead.nmiConsentAt ? "YES ✅" : "NO"})` : null,
+        lead.advisorAnswers ? `🤖 Advisor: ${lead.advisorAnswers}` : null,
         lead.notes ? `📝 ${lead.notes}` : null,
       ].filter(Boolean).join("\n")
 

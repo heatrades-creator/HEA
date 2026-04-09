@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { X, Zap, ChevronRight, ArrowLeft } from "lucide-react";
+import { GAS_INTAKE_URL } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -337,20 +338,9 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
     setAiLoading(false);
   };
 
-  const submitLead = async () => {
+  const submitLead = () => {
     if (!leadValue.trim()) return;
-    const isEmail = leadValue.includes("@");
-    try {
-      await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          [isEmail ? "email" : "phone"]: leadValue.trim(),
-          leadSource: "advisor_widget",
-          notes: `Advisor recommendation: ${recommendation?.system}. Inputs: ${summariseInputs(userData)}`,
-        }),
-      });
-    } catch { /* non-critical */ }
+    window.open(GAS_INTAKE_URL, "_blank", "noopener,noreferrer");
     setLeadSubmitted(true);
   };
 
@@ -495,11 +485,6 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
 
           {/* ── STATE: output ───────────────────────────────── */}
           {state === "output" && recommendation && (() => {
-            const qp = new URLSearchParams()
-            if (userData.goal)      qp.set("goal", userData.goal)
-            if (userData.billRange) qp.set("bill", userData.billRange)
-            qp.set("advisorAnswers", JSON.stringify(userData))
-            const quoteUrl = `/quote?${qp.toString()}`
             return (
             <>
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3">
@@ -512,14 +497,18 @@ export default function HEAAdvisor({ pageContext = "default" }: HEAAdvisorProps)
 
               <div className="space-y-2 pt-1">
                 <a
-                  href={quoteUrl}
+                  href={GAS_INTAKE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full bg-yellow-400 text-slate-900 font-bold text-sm py-3 rounded-xl hover:bg-yellow-300 transition-colors"
                 >
                   Get Exact Design <ChevronRight className="w-4 h-4" />
                 </a>
                 <div className="flex gap-2">
                   <a
-                    href={quoteUrl}
+                    href={GAS_INTAKE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex-1 text-center border-2 border-slate-200 text-slate-700 font-semibold text-xs py-2.5 rounded-xl hover:border-yellow-400 transition-colors"
                   >
                     Book a Call

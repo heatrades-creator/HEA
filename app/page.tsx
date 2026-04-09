@@ -13,9 +13,9 @@ import CaseStudies from "@/components/CaseStudies";
 import LearningHub from "@/components/LearningHub";
 import FAQAccordion from "@/components/FAQAccordion";
 import Contact from "@/components/Contact";
-import ModernContactForm from "@/components/Form";
 import Footer from "@/components/Footer";
 import { getSiteContent } from "@/lib/sanity";
+import { GAS_INTAKE_URL } from "@/lib/constants";
 
 export const revalidate = 60;
 
@@ -66,24 +66,27 @@ export default async function Home() {
       {/* 10. Final CTA */}
       <Contact />
 
-      {/* General Enquiries (non-solar) */}
+      {/* General Enquiries */}
       <section id="general-enquiry" className="py-20 px-4 bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-2">
-              General Enquiries
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-              Got other electrical needs?
-            </h2>
-            <p className="text-slate-500 text-lg max-w-xl mx-auto">
-              Not looking for solar? Send Jesse a message about EV chargers,
-              general electrical, smart home, or anything else.
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <ModernContactForm />
-          </div>
+        <div className="max-w-xl mx-auto text-center">
+          <p className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-2">
+            General Enquiries
+          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+            Got other electrical needs?
+          </h2>
+          <p className="text-slate-500 text-lg max-w-xl mx-auto mb-8">
+            EV chargers, general electrical, smart home, or anything else — use our enquiry form and Jesse will be in touch.
+          </p>
+          <a
+            href={GAS_INTAKE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-yellow-400 text-slate-900 font-bold px-10 py-4 rounded-xl text-lg hover:bg-yellow-300 hover:shadow-xl transition-all duration-200"
+          >
+            Open Enquiry Form
+          </a>
+          <p className="text-slate-400 text-sm mt-4">No obligation · opens in a new tab</p>
         </div>
       </section>
 

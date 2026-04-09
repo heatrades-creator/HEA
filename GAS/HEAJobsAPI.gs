@@ -16,6 +16,9 @@
  */
 
 const SHEET_NAME = 'HEA Jobs';
+
+// Unified client folder — all intake docs, bills, NMI data, and job files live here
+const CLIENTS_FOLDER_ID = '12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-';
 const COL = {
   JOB_NUMBER:       1,
   CLIENT_NAME:      2,
@@ -154,12 +157,13 @@ function createJob(sheet, data) {
   const jobNumber = getNextJobNumber(sheet);
   const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
 
-  // Auto-create or reuse Drive folder keyed on clientName + address (no jobId = same client reuses folder)
+  // Find or create unified client folder inside CLIENTS_FOLDER_ID.
+  // If the client already submitted the intake form, their folder exists — reuse it.
+  // If not, create one in the same format: "ClientName - DD-MM-YYYY"
   let driveUrl = '';
   try {
-    const safeName = safeString_(data.clientName || 'Unknown') + '_' + safeString_(data.address || '');
-    const root = getOrCreateDriveFolder_(DriveApp.getRootFolder(), 'HEA Jobs');
-    const clientFolder = getOrCreateDriveFolder_(root, safeName);
+    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+    const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
     ['01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
       getOrCreateDriveFolder_(clientFolder, sub);
     });
@@ -285,6 +289,27 @@ function safeString_(input) {
 function getOrCreateDriveFolder_(parent, name) {
   const iter = parent.getFoldersByName(name);
   return iter.hasNext() ? iter.next() : parent.createFolder(name);
+}
+
+// Finds an existing client folder (created by the intake form) or creates a new one.
+// Looks inside CLIENTS_FOLDER_ID for any folder whose name starts with the client's name.
+// This ensures intake docs, bill, NMI data, and all job files share one folder per client.
+function findOrCreateClientFolder_(clientName, dateStr) {
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const searchName = clientName.trim().toLowerCase();
+
+  // Search for an existing folder for this client
+  const iter = parent.getFolders();
+  while (iter.hasNext()) {
+    const folder = iter.next();
+    if (folder.getName().toLowerCase().startsWith(searchName)) {
+      return folder;
+    }
+  }
+
+  // No existing folder — create one in standard format: "ClientName - DD-MM-YYYY"
+  const safeName = clientName.trim().replace(/[/\\'"<>|*?:@]/g, '').substring(0, 80);
+  return parent.createFolder(safeName + ' - ' + dateStr);
 }
 
 // ---------------------------------------------------------------------------

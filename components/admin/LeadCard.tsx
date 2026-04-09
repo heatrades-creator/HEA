@@ -68,13 +68,13 @@ export function LeadCard({ lead, costAud, blockedReason, onConfirmed, onRejected
   const fullAddress = `${lead.address}, ${lead.suburb} ${lead.state} ${lead.postcode}`
   const analyserUrl = `/solar-analyser?name=${encodeURIComponent(fullName)}&email=${encodeURIComponent(lead.email)}&phone=${encodeURIComponent(lead.phone)}&address=${encodeURIComponent(fullAddress)}&annualBill=${lead.annualBillAud ?? ""}`
 
-  const actionBtnClass = "text-xs px-3 py-2 rounded-lg bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa] hover:text-white hover:border-[#555] transition-colors text-center"
-  const dimBtnClass = "text-xs px-3 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-[#444] text-center cursor-not-allowed"
+  const actionBtnClass = "text-xs px-3 py-2.5 rounded-lg bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa] hover:text-white hover:border-[#555] transition-colors text-center"
+  const dimBtnClass = "text-xs px-3 py-2.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-[#444] text-center cursor-not-allowed"
 
   return (
     <>
       <div className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors">
-        <div className="flex items-start justify-between gap-4 mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
           <div>
             <h3 className="text-white font-semibold text-base">
               {lead.firstName} {lead.lastName}
@@ -82,9 +82,9 @@ export function LeadCard({ lead, costAud, blockedReason, onConfirmed, onRejected
             <p className="text-[#aaa] text-sm mt-0.5">{lead.email}</p>
             <p className="text-[#aaa] text-sm">{lead.phone}</p>
           </div>
-          <div className="text-right flex-shrink-0">
+          <div className="sm:text-right flex-shrink-0 flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0">
             <p className="text-[#555] text-xs">{createdDate}</p>
-            <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa]">
+            <span className="inline-block sm:mt-1 text-xs px-2 py-0.5 rounded-full bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa]">
               {lead.leadSource}
             </span>
           </div>
@@ -131,7 +131,7 @@ export function LeadCard({ lead, costAud, blockedReason, onConfirmed, onRejected
         </div>
 
         {/* Action buttons */}
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#2e2e2e]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-[#2e2e2e]">
           <a
             href={analyserUrl}
             target="_blank"
@@ -179,7 +179,7 @@ export function LeadCard({ lead, costAud, blockedReason, onConfirmed, onRejected
           <button
             onClick={handleRequestReview}
             disabled={reviewSending || reviewSent}
-            className="col-span-2 text-xs px-3 py-2 rounded-lg bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa] hover:text-white hover:border-[#555] transition-colors disabled:opacity-50"
+            className="col-span-2 text-xs px-3 py-2.5 rounded-lg bg-[#2a2a2a] border border-[#3a3a3a] text-[#aaa] hover:text-white hover:border-[#555] transition-colors disabled:opacity-50"
           >
             {reviewSending ? "Sending…" : reviewSent ? "✅ Review Sent" : "⭐ Request Review"}
           </button>

@@ -61,13 +61,13 @@ export function ConfirmModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70">
       <div className="bg-[#202020] border border-[#2e2e2e] rounded-2xl w-full max-w-md shadow-2xl">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-[#2e2e2e]">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[#2e2e2e]">
           <h2 className="text-white font-semibold text-lg">
             {isBlocked ? "Cannot Confirm Lead" : `Confirm Lead — ${lead.firstName} ${lead.lastName}`}
           </h2>
         </div>
 
-        <div className="px-6 py-5 space-y-5">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-5">
           {/* Customer summary */}
           <div className="bg-[#181818] rounded-lg p-4 space-y-1">
             <p className="text-white font-medium">{lead.firstName} {lead.lastName}</p>
@@ -119,7 +119,7 @@ export function ConfirmModal({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-[#2e2e2e] flex gap-3 justify-end">
+        <div className="px-4 sm:px-6 py-4 border-t border-[#2e2e2e] flex flex-wrap gap-3 justify-end">
           <button
             onClick={onClose}
             disabled={loading}

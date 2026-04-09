@@ -56,7 +56,7 @@ export function JobPipeline({ jobs }: JobPipelineProps) {
     <div className="space-y-4">
       {jobs.map(job => (
         <div key={job.id} className="bg-[#202020] border border-[#2e2e2e] rounded-xl p-5 hover:border-[#3a3a3a] transition-colors">
-          <div className="flex items-start justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-4">
             <div>
               <h3 className="text-white font-semibold">
                 {job.firstName} {job.lastName}
@@ -69,7 +69,7 @@ export function JobPipeline({ jobs }: JobPipelineProps) {
                 </p>
               )}
             </div>
-            <div className="text-right flex-shrink-0 space-y-1">
+            <div className="sm:text-right flex-shrink-0 flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 sm:space-y-1">
               {job.openSolarProjectId && (
                 <p className="text-[#555] text-xs font-mono">#{job.openSolarProjectId}</p>
               )}
@@ -102,7 +102,7 @@ export function JobPipeline({ jobs }: JobPipelineProps) {
           )}
 
           {/* Milestones */}
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 mb-4">
+          <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-1.5 mb-4">
             <Milestone label="Proposal sent"    date={fmt(job.proposalSentAt)} />
             <Milestone label="Contract signed"  date={fmt(job.contractSignedAt)} />
             <Milestone label="Deposit paid"     date={fmt(job.depositPaidAt)} />

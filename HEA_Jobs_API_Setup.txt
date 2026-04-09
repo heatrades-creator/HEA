@@ -1,0 +1,498 @@
+===============================================================
+  HEA JOBS API — GOOGLE APPS SCRIPT SETUP GUIDE
+  Created: April 2026
+===============================================================
+
+This sets up the Jobs API that powers your /dashboard on hea-group.com.au
+It tracks all jobs, creates client folders in your Drive, and sends
+Telegram alerts when jobs are created or updated.
+
+---------------------------------------------------------------
+STEP 1 — CREATE THE GOOGLE SHEET
+---------------------------------------------------------------
+
+1. Go to: https://sheets.google.com
+2. Click "+ Blank"
+3. Name the sheet: "HEA Jobs"
+   (Click "Untitled spreadsheet" at the top and type the name)
+4. Note the Sheet ID from the URL — it looks like:
+   https://docs.google.com/spreadsheets/d/SHEET_ID_IS_HERE/edit
+   You won't need to enter this anywhere, but keep the tab open.
+
+
+---------------------------------------------------------------
+STEP 2 — OPEN APPS SCRIPT (FROM THE SHEET)
+---------------------------------------------------------------
+
+In your "HEA Jobs" Google Sheet:
+1. Click "Extensions" in the top menu
+2. Click "Apps Script"
+3. This opens the script editor linked to your sheet
+
+
+---------------------------------------------------------------
+STEP 3 — PASTE THE CODE
+---------------------------------------------------------------
+
+In the script editor:
+1. Delete everything already in the "Code.gs" file
+2. Paste the entire block below (starting at the === line):
+
+=== PASTE FROM HERE ===
+
+/**
+ * HEA Jobs API — Google Apps Script
+ * ===================================
+ * Deploy this as a Web App:
+ *   Execute as: Me (hea.trades@gmail.com)
+ *   Who has access: Anyone
+ *
+ * Sheet columns (Row 1 = headers, auto-created):
+ *   A: Job Number  B: Client Name  C: Phone     D: Email
+ *   E: Address     F: Status       G: Drive URL  H: Notes  I: Created Date
+ *   J: System Size (kW)  K: Battery Size (kWh)  L: Quote Value ($)
+ *   M: Est. Annual Bill ($)  N: Finance Required
+ */
+
+const SHEET_NAME = 'HEA Jobs';
+
+// Unified client folder — all intake docs, bills, NMI data, and job files live here
+const CLIENTS_FOLDER_ID = '12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-';
+
+const COL = {
+  JOB_NUMBER:       1,
+  CLIENT_NAME:      2,
+  PHONE:            3,
+  EMAIL:            4,
+  ADDRESS:          5,
+  STATUS:           6,
+  DRIVE_URL:        7,
+  NOTES:            8,
+  CREATED_DATE:     9,
+  SYSTEM_SIZE:      10,
+  BATTERY_SIZE:     11,
+  TOTAL_PRICE:      12,
+  ANNUAL_BILL:      13,
+  FINANCE_REQUIRED: 14,
+};
+
+// ---------------------------------------------------------------------------
+// GET — return all jobs, single job (?id=TS001), or action endpoints
+// ---------------------------------------------------------------------------
+function doGet(e) {
+  const sheet = getSheet();
+  const id = e && e.parameter && e.parameter.id;
+
+  if (e.parameter.action === 'proposalStats') {
+    return jsonResponse(getProposalStats_());
+  }
+
+  if (e.parameter.action === 'getAllDocuments') {
+    return jsonResponse(getAllDocuments_());
+  }
+
+  if (e.parameter.action === 'getAvailableTemplates') {
+    return jsonResponse(getAvailableTemplates_());
+  }
+
+  if (e.parameter.action === 'getDocuments' && e.parameter.jobNumber) {
+    return jsonResponse(getDocumentsForJob_(e.parameter.jobNumber));
+  }
+
+  if (id) {
+    const job = findJobByNumber(sheet, id);
+    if (!job) return jsonResponse({ error: 'Not found' }, 404);
+    return jsonResponse(job);
+  }
+
+  return jsonResponse(getAllJobs(sheet));
+}
+
+// ---------------------------------------------------------------------------
+// POST — action: 'createJob' | 'updateJob' | 'generateDocument'
+// ---------------------------------------------------------------------------
+function doPost(e) {
+  const sheet = getSheet();
+  let body;
+
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch {
+    return jsonResponse({ error: 'Invalid JSON' }, 400);
+  }
+
+  const action = body.action;
+
+  if (action === 'createJob') {
+    const job = createJob(sheet, body);
+    sendTelegramAlert_(
+      '🆕 <b>New Job #' + job.jobNumber + '</b>\n' +
+      '👤 ' + (job.clientName || 'Unknown') + '\n' +
+      '📍 ' + (job.address || 'No address')
+    );
+    return jsonResponse(job);
+  }
+
+  if (action === 'updateJob') {
+    const prevJob = findJobByNumber(sheet, body.jobNumber);
+    const job = updateJob(sheet, body);
+    if (!job) return jsonResponse({ error: 'Job not found' }, 404);
+    if (body.status && prevJob && body.status !== prevJob.status) {
+      sendTelegramAlert_(
+        '📋 <b>Job #' + job.jobNumber + ' updated</b>\n' +
+        '👤 ' + job.clientName + '\n' +
+        '🔄 ' + prevJob.status + ' → <b>' + job.status + '</b>'
+      );
+    }
+    return jsonResponse(job);
+  }
+
+  return jsonResponse({ error: 'Unknown action' }, 400);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function getSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(SHEET_NAME);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow([
+      'Job Number', 'Client Name', 'Phone', 'Email',
+      'Address', 'Status', 'Drive URL', 'Notes', 'Created Date',
+      'System Size (kW)', 'Battery Size (kWh)', 'Quote Value ($)',
+      'Est. Annual Bill ($)', 'Finance Required',
+    ]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, 14).setFontWeight('bold');
+  }
+
+  return sheet;
+}
+
+function getNextJobNumber(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return 'TS001';
+  const values = sheet.getRange(2, COL.JOB_NUMBER, lastRow - 1, 1).getValues();
+  let max = 0;
+  values.forEach(([val]) => {
+    const match = String(val).match(/^TS(\d+)$/);
+    if (match) max = Math.max(max, parseInt(match[1]));
+  });
+  return 'TS' + String(max + 1).padStart(3, '0');
+}
+
+function createJob(sheet, data) {
+  const jobNumber = getNextJobNumber(sheet);
+  const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
+
+  // Find or create unified client folder inside CLIENTS_FOLDER_ID.
+  // If the client already submitted the intake form, their folder exists — reuse it.
+  // If not, create one in the same format: "ClientName - DD-MM-YYYY"
+  let driveUrl = '';
+  try {
+    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+    const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
+    ['01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
+      getOrCreateDriveFolder_(clientFolder, sub);
+    });
+    driveUrl = clientFolder.getUrl();
+  } catch (e) {
+    Logger.log('Drive folder error: ' + e);
+  }
+
+  sheet.appendRow([
+    jobNumber,
+    data.clientName      || '',
+    data.phone           || '',
+    data.email           || '',
+    data.address         || '',
+    data.status          || 'Lead',
+    driveUrl,
+    data.notes           || '',
+    createdDate,
+    data.systemSize      || '',
+    data.batterySize     || '',
+    data.totalPrice      || '',
+    data.annualBill      || '',
+    data.financeRequired || false,
+  ]);
+
+  return {
+    jobNumber,
+    clientName:      data.clientName      || '',
+    phone:           data.phone           || '',
+    email:           data.email           || '',
+    address:         data.address         || '',
+    status:          data.status          || 'Lead',
+    driveUrl,
+    notes:           data.notes           || '',
+    createdDate,
+    systemSize:      data.systemSize      || '',
+    batterySize:     data.batterySize     || '',
+    totalPrice:      data.totalPrice      || '',
+    annualBill:      data.annualBill      || '',
+    financeRequired: data.financeRequired || false,
+  };
+}
+
+function updateJob(sheet, data) {
+  const row = findRowByJobNumber(sheet, data.jobNumber);
+  if (!row) return null;
+
+  if (data.status          !== undefined) sheet.getRange(row, COL.STATUS).setValue(data.status);
+  if (data.driveUrl        !== undefined) sheet.getRange(row, COL.DRIVE_URL).setValue(data.driveUrl);
+  if (data.notes           !== undefined) sheet.getRange(row, COL.NOTES).setValue(data.notes);
+  if (data.systemSize      !== undefined) sheet.getRange(row, COL.SYSTEM_SIZE).setValue(data.systemSize);
+  if (data.batterySize     !== undefined) sheet.getRange(row, COL.BATTERY_SIZE).setValue(data.batterySize);
+  if (data.totalPrice      !== undefined) sheet.getRange(row, COL.TOTAL_PRICE).setValue(data.totalPrice);
+  if (data.annualBill      !== undefined) sheet.getRange(row, COL.ANNUAL_BILL).setValue(data.annualBill);
+  if (data.financeRequired !== undefined) sheet.getRange(row, COL.FINANCE_REQUIRED).setValue(data.financeRequired);
+
+  return rowToJob(sheet.getRange(row, 1, 1, 14).getValues()[0]);
+}
+
+function findJobByNumber(sheet, jobNumber) {
+  const row = findRowByJobNumber(sheet, jobNumber);
+  if (!row) return null;
+  return rowToJob(sheet.getRange(row, 1, 1, 14).getValues()[0]);
+}
+
+function findRowByJobNumber(sheet, jobNumber) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return null;
+  const values = sheet.getRange(2, COL.JOB_NUMBER, lastRow - 1, 1).getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0]) === String(jobNumber)) return i + 2;
+  }
+  return null;
+}
+
+function getAllJobs(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return [];
+  const values = sheet.getRange(2, 1, lastRow - 1, 14).getValues();
+  return values
+    .filter(row => row[0])
+    .map(rowToJob)
+    .reverse();
+}
+
+function rowToJob(row) {
+  return {
+    jobNumber:       String(row[0]),
+    clientName:      String(row[1]),
+    phone:           String(row[2]),
+    email:           String(row[3]),
+    address:         String(row[4]),
+    status:          String(row[5]),
+    driveUrl:        String(row[6]),
+    notes:           String(row[7]),
+    createdDate:     String(row[8]),
+    systemSize:      String(row[9]  || ''),
+    batterySize:     String(row[10] || ''),
+    totalPrice:      String(row[11] || ''),
+    annualBill:      String(row[12] || ''),
+    financeRequired: row[13] === true || String(row[13]).toLowerCase() === 'true',
+  };
+}
+
+function jsonResponse(data) {
+  const output = ContentService.createTextOutput(JSON.stringify(data));
+  output.setMimeType(ContentService.MimeType.JSON);
+  return output;
+}
+
+// ---------------------------------------------------------------------------
+// Drive folder helpers
+// ---------------------------------------------------------------------------
+
+function safeString_(input) {
+  return String(input || '').trim()
+    .replace(/[/\\'"<>|*?:@]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .substring(0, 50);
+}
+
+function getOrCreateDriveFolder_(parent, name) {
+  const iter = parent.getFoldersByName(name);
+  return iter.hasNext() ? iter.next() : parent.createFolder(name);
+}
+
+// Finds an existing client folder (created by the intake form) or creates a new one.
+// Looks inside CLIENTS_FOLDER_ID for any folder whose name starts with the client's name.
+// This ensures intake docs, bill, NMI data, and all job files share one folder per client.
+function findOrCreateClientFolder_(clientName, dateStr) {
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const searchName = clientName.trim().toLowerCase();
+
+  const iter = parent.getFolders();
+  while (iter.hasNext()) {
+    const folder = iter.next();
+    if (folder.getName().toLowerCase().startsWith(searchName)) {
+      return folder;
+    }
+  }
+
+  const safeName = clientName.trim().replace(/[/\\'"<>|*?:@]/g, '').substring(0, 80);
+  return parent.createFolder(safeName + ' - ' + dateStr);
+}
+
+// ---------------------------------------------------------------------------
+// Telegram notifications
+// ---------------------------------------------------------------------------
+
+function sendTelegramAlert_(message) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const token = props.getProperty('TELEGRAM_BOT_TOKEN');
+    const chatId = props.getProperty('TELEGRAM_CHAT_ID');
+    if (!token || !chatId) return;
+    UrlFetchApp.fetch(
+      'https://api.telegram.org/bot' + token + '/sendMessage',
+      {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+        muteHttpExceptions: true,
+      }
+    );
+  } catch (e) {
+    Logger.log('Telegram error: ' + e);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Proposal / Document stubs (used by dashboard — safe to leave as-is)
+// ---------------------------------------------------------------------------
+function getAllDocuments_() { return []; }
+function getProposalStats_() {
+  return { pdfs_today: 0, tokens_today: 0, avg_tokens: 0, remaining: 500, daily_limit: 500 };
+}
+function getAvailableTemplates_() { return []; }
+function getDocumentsForJob_(jobNumber) { return []; }
+
+=== PASTE UP TO HERE ===
+
+
+---------------------------------------------------------------
+STEP 4 — ADD TELEGRAM CREDENTIALS (OPTIONAL)
+---------------------------------------------------------------
+
+Skip this if you don't want Telegram alerts.
+If you do want alerts when a new job comes in:
+
+1. In the script editor, click "Project Settings" (gear icon, left sidebar)
+2. Scroll down to "Script Properties"
+3. Click "Add script property"
+4. Add TWO properties:
+
+   Property name: TELEGRAM_BOT_TOKEN
+   Value: [your bot token from @BotFather]
+
+   Property name: TELEGRAM_CHAT_ID
+   Value: [your chat ID]
+
+5. Click "Save script properties"
+
+
+---------------------------------------------------------------
+STEP 5 — DEPLOY AS WEB APP
+---------------------------------------------------------------
+
+1. Click "Deploy" (top right) → "New deployment"
+2. Click the gear icon next to "Type" → select "Web app"
+3. Set:
+   - Description: HEA Jobs API v1
+   - Execute as: Me (hea.trades@gmail.com)
+   - Who has access: Anyone
+4. Click "Deploy"
+5. Click "Authorize access" → choose your Google account → Allow
+6. COPY THE WEB APP URL — it looks like:
+   https://script.google.com/macros/s/AKfycb.../exec
+
+   YOU NEED THIS URL FOR THE NEXT STEPS.
+
+
+---------------------------------------------------------------
+STEP 6 — ADD THE URL TO YOUR HEA SOLAR INTAKE FORM SCRIPT
+---------------------------------------------------------------
+
+1. Go to: https://script.google.com
+2. Open "HEA Solar Intake Form"
+3. Find the file "IntakeFormJobCreation" (or create it if missing)
+4. Paste this code into that file:
+
+=== PASTE FROM HERE ===
+
+// Replace the URL below with the one you got in Step 5
+const JOBS_API_URL = 'PASTE_YOUR_JOBS_API_URL_HERE';
+
+function createJobFromIntake(formData) {
+  try {
+    UrlFetchApp.fetch(JOBS_API_URL, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify({
+        action: 'createJob',
+        clientName: formData.name || '',
+        phone:      formData.phone || '',
+        email:      formData.email || '',
+        address:    formData.address || '',
+        status:     'Lead',
+        notes:      'Auto-created from intake form submission.',
+      }),
+      muteHttpExceptions: true,
+    });
+  } catch (err) {
+    Logger.log('Job creation failed: ' + err.message);
+  }
+}
+
+=== PASTE UP TO HERE ===
+
+5. Replace PASTE_YOUR_JOBS_API_URL_HERE with the URL from Step 5
+6. In your main Code.gs file, add this line inside processSubmission(),
+   just before the final "return { success: true };" line:
+
+   createJobFromIntake(data);
+
+7. Redeploy the HEA Solar Intake Form:
+   Deploy → Manage Deployments → Edit (pencil) → New version → Deploy
+
+
+---------------------------------------------------------------
+STEP 7 — ADD THE URL TO VERCEL (for the dashboard)
+---------------------------------------------------------------
+
+1. Go to: https://vercel.com → your HEA project → Settings → Environment Variables
+2. Find the variable named: JOBS_GAS_URL
+3. Update its value to the URL you got in Step 5
+4. Click Save → Redeploy the project
+
+
+---------------------------------------------------------------
+WHAT YOU NOW HAVE
+---------------------------------------------------------------
+
+When a client submits the intake form:
+  → Consent PDF generated + saved to their Drive folder
+  → Electricity bill saved to their Drive folder
+  → Job automatically created in your "HEA Jobs" Sheet (TS001, TS002...)
+  → Client folder created in your main Drive folder (if not already there)
+     with subfolders: 01_Quotes / 02_Proposals / 03_Signed / 04_Installed
+  → Telegram alert sent to your phone
+  → Client shown Calendly booking link
+
+When you view /dashboard on hea-group.com.au:
+  → All jobs pulled from the Sheet
+  → Kanban board with drag-drop status updates
+  → Document generation per job
+
+---------------------------------------------------------------
+END OF SETUP GUIDE
+---------------------------------------------------------------

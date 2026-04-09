@@ -1,23 +1,293 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import type { Job, Stage } from './KanbanBoard';
 
 const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
 
-const STAGE_STYLES: Record<Stage, { badge: string }> = {
-  Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]' },
-  Quoted:        { badge: 'bg-blue-900/40 text-blue-300' },
-  Booked:        { badge: 'bg-purple-900/40 text-purple-300' },
-  'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]' },
-  Complete:      { badge: 'bg-green-900/40 text-green-400' },
+const STAGE_STYLES: Record<Stage, { badge: string; pill: string }> = {
+  Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]',         pill: 'border-[#555] text-[#aaa]' },
+  Quoted:        { badge: 'bg-blue-900/40 text-blue-300',       pill: 'border-blue-700 text-blue-300' },
+  Booked:        { badge: 'bg-purple-900/40 text-purple-300',   pill: 'border-purple-700 text-purple-300' },
+  'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]',    pill: 'border-yellow-600 text-[#ffd100]' },
+  Complete:      { badge: 'bg-green-900/40 text-green-400',     pill: 'border-green-700 text-green-400' },
 };
 
 const PAGE_SIZE = 25;
-
 type SortKey = 'jobNumber' | 'clientName' | 'createdDate';
+
+// ── localStorage helpers for follow-up tracking ──────────────────────────────
+
+function getFollowups(jobNumber: string): string[] {
+  try {
+    const raw = localStorage.getItem(`hea_followup_${jobNumber}`);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveFollowup(jobNumber: string, iso: string) {
+  try {
+    const prev = getFollowups(jobNumber);
+    localStorage.setItem(`hea_followup_${jobNumber}`, JSON.stringify([...prev, iso]));
+  } catch {}
+}
+
+function daysAgo(iso: string): string {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return '1 day ago';
+  return `${diff} days ago`;
+}
+
+// ── Mobile job card ───────────────────────────────────────────────────────────
+
+function MobileJobCard({
+  job,
+  onMove,
+}: {
+  job: Job & { systemSize?: string };
+  onMove: (jobNumber: string, newStatus: Stage) => void;
+}) {
+  const router = useRouter();
+  const [followups, setFollowups] = useState<string[]>([]);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [completing, setCompleting] = useState(false);
+
+  useEffect(() => {
+    setFollowups(getFollowups(job.jobNumber));
+  }, [job.jobNumber]);
+
+  const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
+  const fullName    = job.clientName;
+  const fullAddress = job.address ?? '';
+
+  const analyserUrl = `/solar-analyser?${new URLSearchParams({
+    name:       fullName,
+    email:      job.email      ?? '',
+    phone:      job.phone      ?? '',
+    address:    fullAddress,
+    annualBill: '',
+  }).toString()}`;
+
+  async function sendFollowup() {
+    if (!job.email) { setEmailError('No email on file for this client'); return; }
+    setSendingEmail(true);
+    setEmailError('');
+    try {
+      const res = await fetch(`/api/jobs/${job.jobNumber}/followup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientName:    job.clientName,
+          email:         job.email,
+          phone:         job.phone,
+          address:       job.address,
+          jobNumber:     job.jobNumber,
+          followupCount: followups.length + 1,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.sentAt) {
+        saveFollowup(job.jobNumber, data.sentAt);
+        setFollowups(getFollowups(job.jobNumber));
+        setEmailSent(true);
+        setTimeout(() => setEmailSent(false), 3000);
+      } else {
+        setEmailError(data.error ?? 'Email failed — check Resend config');
+      }
+    } catch {
+      setEmailError('Network error');
+    }
+    setSendingEmail(false);
+  }
+
+  async function markComplete() {
+    setCompleting(true);
+    await onMove(job.jobNumber, 'Complete');
+    setCompleting(false);
+  }
+
+  const btnBase = 'flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl border text-xs font-medium transition-colors min-h-[64px] text-center leading-tight';
+
+  return (
+    <div className="bg-white border border-[#e5e9f0] rounded-2xl overflow-hidden shadow-sm">
+
+      {/* ── Header ────────────────────────────────────────── */}
+      <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="text-[#ffd100] font-mono font-bold text-sm">{job.jobNumber}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles.badge}`}>
+              {job.status}
+            </span>
+          </div>
+          <h3 className="text-[#111827] font-semibold text-base leading-snug">{job.clientName}</h3>
+          {job.address && (
+            <p className="text-[#6b7280] text-xs mt-0.5 leading-snug">{job.address}</p>
+          )}
+        </div>
+        <p className="text-[#9ca3af] text-xs whitespace-nowrap flex-shrink-0">{job.createdDate}</p>
+      </div>
+
+      {/* ── Contact quick access ───────────────────────────── */}
+      {(job.phone || job.email) && (
+        <div className="px-4 pb-3 flex flex-wrap gap-3">
+          {job.phone && (
+            <a
+              href={`tel:${job.phone}`}
+              className="flex items-center gap-1.5 text-sm text-[#111827] font-medium bg-[#f5f7fa] rounded-lg px-3 py-1.5 hover:bg-[#ffd100]/10 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5 text-[#ffd100]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              {job.phone}
+            </a>
+          )}
+          {job.email && (
+            <a
+              href={`mailto:${job.email}`}
+              className="flex items-center gap-1.5 text-xs text-[#6b7280] bg-[#f5f7fa] rounded-lg px-3 py-1.5 hover:bg-[#f5f7fa] transition-colors truncate max-w-[180px]"
+            >
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {job.email}
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* ── Follow-up history ─────────────────────────────── */}
+      {followups.length > 0 && (
+        <div className="mx-4 mb-3 bg-[#f5f7fa] rounded-xl px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] mb-1">
+            Follow-up history
+          </p>
+          <div className="space-y-0.5">
+            {followups.map((iso, i) => (
+              <p key={iso} className="text-xs text-[#6b7280]">
+                #{i + 1} — {new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                <span className="text-[#9ca3af] ml-1">({daysAgo(iso)})</span>
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Action buttons ────────────────────────────────── */}
+      <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+
+        {/* 1. Solar Analyser */}
+        <a
+          href={analyserUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`${btnBase} border-[#ffd100]/40 bg-[#ffd100]/5 text-[#111827] hover:bg-[#ffd100]/15`}
+        >
+          <span className="text-lg">☀️</span>
+          <span>Solar Analyser</span>
+        </a>
+
+        {/* 2. Drive Folder */}
+        {job.driveUrl ? (
+          <a
+            href={job.driveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${btnBase} border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100`}
+          >
+            <span className="text-lg">📁</span>
+            <span>Client Files</span>
+          </a>
+        ) : (
+          <span className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed`}>
+            <span className="text-lg">📁</span>
+            <span>No Drive Folder</span>
+          </span>
+        )}
+
+        {/* 3. Follow-up Email */}
+        <button
+          onClick={sendFollowup}
+          disabled={sendingEmail || !job.email}
+          className={`${btnBase} ${
+            emailSent
+              ? 'border-green-300 bg-green-50 text-green-700'
+              : !job.email
+              ? 'border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed'
+              : 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 active:bg-purple-200'
+          } disabled:opacity-60`}
+        >
+          <span className="text-lg">{emailSent ? '✅' : '📧'}</span>
+          <span>
+            {sendingEmail ? 'Sending…' : emailSent ? 'Email Sent!' : 'Follow-up Email'}
+          </span>
+          {followups.length > 0 && !emailSent && (
+            <span className="text-[10px] opacity-70">#{followups.length + 1}</span>
+          )}
+        </button>
+
+        {/* 4. Full Job Details */}
+        <button
+          onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
+          className={`${btnBase} border-[#e5e9f0] bg-[#f5f7fa] text-[#374151] hover:bg-[#eef0f5]`}
+        >
+          <span className="text-lg">📋</span>
+          <span>Full Details</span>
+        </button>
+
+        {/* 5. Complete — full width */}
+        {job.status !== 'Complete' ? (
+          <button
+            onClick={markComplete}
+            disabled={completing}
+            className={`${btnBase} col-span-2 border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-60`}
+          >
+            <span className="text-lg">{completing ? '⏳' : '✅'}</span>
+            <span>{completing ? 'Marking complete…' : 'Mark as Complete'}</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onMove(job.jobNumber, 'Lead')}
+            className={`${btnBase} col-span-2 border-[#e5e9f0] bg-[#f5f7fa] text-[#6b7280] hover:bg-[#eef0f5]`}
+          >
+            <span className="text-lg">↩️</span>
+            <span>Reopen Job</span>
+          </button>
+        )}
+      </div>
+
+      {/* Email error */}
+      {emailError && (
+        <div className="mx-4 mb-4 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+          <p className="text-xs text-red-600">{emailError}</p>
+        </div>
+      )}
+
+      {/* ── Stage mover ───────────────────────────────────── */}
+      <div className="border-t border-[#f0f0f0] px-4 py-3 flex items-center gap-2 overflow-x-auto">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] whitespace-nowrap flex-shrink-0">
+          Move to:
+        </span>
+        {STAGES.filter((s) => s !== job.status).map((s) => (
+          <button
+            key={s}
+            onClick={() => onMove(job.jobNumber, s)}
+            className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap ${STAGE_STYLES[s].pill} bg-transparent hover:opacity-80`}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
   const router = useRouter();
@@ -47,8 +317,8 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
   });
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const pageJobs = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const safePage   = Math.min(page, totalPages);
+  const pageJobs   = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortAsc((a) => !a);
@@ -70,9 +340,114 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
     setShowNewJob(false);
   }
 
-  return (
-    <div className="flex min-h-[calc(100vh-56px)]">
-      {/* ── Sidebar ── */}
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE VIEW
+  // ─────────────────────────────────────────────────────────────────────────
+  const mobileView = (
+    <div className="md:hidden flex flex-col min-h-[calc(100vh-56px-64px)] bg-[#f5f7fa]">
+
+      {/* Sticky top bar */}
+      <div className="sticky top-0 z-10 bg-[#f5f7fa] border-b border-[#e8ecf3] px-4 pt-3 pb-2 space-y-2">
+        {/* Search + New Job */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Search jobs…"
+              className="w-full bg-white border border-[#e5e9f0] rounded-xl pl-9 pr-3 py-2.5 text-[#111827] text-sm placeholder:text-[#9ca3af] focus:outline-none focus:border-[#ffd100]"
+            />
+          </div>
+          <button
+            onClick={() => setShowNewJob(true)}
+            className="bg-[#ffd100] text-[#181818] font-semibold px-4 py-2.5 rounded-xl text-sm whitespace-nowrap"
+          >
+            + New
+          </button>
+        </div>
+
+        {/* Filter pills — horizontal scroll */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+          {(['All', ...STAGES] as const).map((stage) => {
+            const count  = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
+            const active = filterStage === stage;
+            return (
+              <button
+                key={stage}
+                onClick={() => { setFilterStage(stage as Stage | 'All'); setPage(1); }}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
+                  active
+                    ? 'bg-[#ffd100] text-[#111827] border-[#ffd100]'
+                    : 'bg-white text-[#6b7280] border-[#e5e9f0] hover:border-[#ffd100]/50'
+                }`}
+              >
+                {stage}
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${
+                  active ? 'bg-[#111827]/10 text-[#111827]' : 'bg-[#f5f7fa] text-[#9ca3af]'
+                }`}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Count */}
+        <p className="text-[#9ca3af] text-xs">
+          {sorted.length === 0 ? 'No jobs found' : `${sorted.length} job${sorted.length !== 1 ? 's' : ''}`}
+          {filterStage !== 'All' && ` · ${filterStage}`}
+          {search && ` · "${search}"`}
+        </p>
+      </div>
+
+      {/* Job cards */}
+      <div className="px-4 py-4 space-y-4">
+        {pageJobs.length === 0 ? (
+          <div className="text-center py-16 text-[#9ca3af]">
+            <p className="text-4xl mb-3">📋</p>
+            <p className="font-medium text-[#6b7280]">No jobs match the current filters</p>
+          </div>
+        ) : (
+          pageJobs.map((job) => (
+            <MobileJobCard
+              key={job.jobNumber}
+              job={job}
+              onMove={moveJob}
+            />
+          ))
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="text-xs text-[#6b7280] px-4 py-2 border border-[#e5e9f0] rounded-xl bg-white disabled:opacity-30"
+            >
+              ← Prev
+            </button>
+            <span className="text-[#9ca3af] text-xs">Page {safePage} of {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="text-xs text-[#6b7280] px-4 py-2 border border-[#e5e9f0] rounded-xl bg-white disabled:opacity-30"
+            >
+              Next →
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DESKTOP VIEW (unchanged)
+  // ─────────────────────────────────────────────────────────────────────────
+  const desktopView = (
+    <div className="hidden md:flex min-h-[calc(100vh-56px)]">
+      {/* Sidebar */}
       <aside className="w-48 flex-shrink-0 bg-[#f5f7fb] border-r border-[#e8ecf3] p-4 flex flex-col gap-5">
         <div className="pt-1">
           <div className="text-3xl font-bold text-[#111827] tabular-nums leading-none">{jobs.length}</div>
@@ -84,7 +459,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
           <p className="text-[#6b7280] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
-              const count = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
+              const count  = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
               const active = filterStage === stage;
               return (
                 <button
@@ -105,17 +480,12 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
         </div>
       </aside>
 
-      {/* ── Main ── */}
+      {/* Main */}
       <div className="flex-1 flex flex-col p-6 min-w-0">
-        {/* Toolbar */}
         <div className="flex items-center gap-3 mb-3">
           <div className="relative flex-1 max-w-xs">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280] w-3.5 h-3.5 pointer-events-none"
-              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round"
-                d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6b7280] w-3.5 h-3.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
             </svg>
             <input
               value={search}
@@ -132,36 +502,30 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
           </button>
         </div>
 
-        {/* Count / pagination info */}
         <p className="text-[#6b7280] text-xs mb-3">
-          {sorted.length === 0
-            ? 'No jobs found'
-            : `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, sorted.length)} of ${sorted.length} jobs`}
+          {sorted.length === 0 ? 'No jobs found' : `${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, sorted.length)} of ${sorted.length} jobs`}
           {filterStage !== 'All' && ` · ${filterStage}`}
           {search && ` · "${search}"`}
         </p>
 
-        {/* Table */}
         <div className="overflow-x-auto rounded-xl border border-[#e5e9f0]">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
                 <Th label="Status" />
-                <Th label="Job #"    sortKey="jobNumber"   current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                <Th label="Client"   sortKey="clientName"  current={sortKey} asc={sortAsc} onSort={toggleSort} />
-                <Th label="Address"  className="hidden md:table-cell" />
-                <Th label="System"   className="hidden lg:table-cell" />
-                <Th label="Created"  sortKey="createdDate" current={sortKey} asc={sortAsc} onSort={toggleSort} className="hidden lg:table-cell" />
-                <Th label="Phone"    className="hidden xl:table-cell" />
+                <Th label="Job #"   sortKey="jobNumber"   current={sortKey} asc={sortAsc} onSort={toggleSort} />
+                <Th label="Client"  sortKey="clientName"  current={sortKey} asc={sortAsc} onSort={toggleSort} />
+                <Th label="Address" className="hidden md:table-cell" />
+                <Th label="System"  className="hidden lg:table-cell" />
+                <Th label="Created" sortKey="createdDate" current={sortKey} asc={sortAsc} onSort={toggleSort} className="hidden lg:table-cell" />
+                <Th label="Phone"   className="hidden xl:table-cell" />
                 <th className="px-4 py-3 w-20" />
               </tr>
             </thead>
             <tbody>
               {pageJobs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-16 text-center text-[#6b7280] text-sm">
-                    No jobs match the current filters.
-                  </td>
+                  <td colSpan={8} className="px-4 py-16 text-center text-[#6b7280] text-sm">No jobs match the current filters.</td>
                 </tr>
               ) : (
                 pageJobs.map((job, i) => (
@@ -178,59 +542,37 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between mt-4">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="text-xs text-[#6b7280] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-3 py-1.5 border border-[#e5e9f0] rounded-lg"
-            >
-              ← Previous
-            </button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1} className="text-xs text-[#6b7280] hover:text-[#aaa] disabled:opacity-30 transition-colors px-3 py-1.5 border border-[#e5e9f0] rounded-lg">← Previous</button>
             <span className="text-[#6b7280] text-xs">Page {safePage} of {totalPages}</span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="text-xs text-[#6b7280] hover:text-[#aaa] disabled:opacity-30 disabled:cursor-not-allowed transition-colors px-3 py-1.5 border border-[#e5e9f0] rounded-lg"
-            >
-              Next →
-            </button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className="text-xs text-[#6b7280] hover:text-[#aaa] disabled:opacity-30 transition-colors px-3 py-1.5 border border-[#e5e9f0] rounded-lg">Next →</button>
           </div>
         )}
       </div>
-
-      {showNewJob && (
-        <NewJobModal onClose={() => setShowNewJob(false)} onCreated={onJobCreated} />
-      )}
     </div>
+  );
+
+  return (
+    <>
+      {mobileView}
+      {desktopView}
+      {showNewJob && <NewJobModal onClose={() => setShowNewJob(false)} onCreated={onJobCreated} />}
+    </>
   );
 }
 
-/* ── Table header cell ── */
-function Th({
-  label,
-  sortKey,
-  current,
-  asc,
-  onSort,
-  className = '',
-}: {
-  label: string;
-  sortKey?: SortKey;
-  current?: string;
-  asc?: boolean;
-  onSort?: (k: SortKey) => void;
-  className?: string;
+/* ── Desktop table header cell ── */
+function Th({ label, sortKey, current, asc, onSort, className = '' }: {
+  label: string; sortKey?: SortKey; current?: string; asc?: boolean;
+  onSort?: (k: SortKey) => void; className?: string;
 }) {
   const sortable = !!sortKey && !!onSort;
-  const active = sortable && current === sortKey;
+  const active   = sortable && current === sortKey;
   return (
     <th
       onClick={sortable ? () => onSort!(sortKey!) : undefined}
-      className={`px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest select-none ${
-        active ? 'text-[#ffd100]' : 'text-[#6b7280]'
-      } ${sortable ? 'cursor-pointer hover:text-[#6b7280]' : ''} ${className}`}
+      className={`px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest select-none ${active ? 'text-[#ffd100]' : 'text-[#6b7280]'} ${sortable ? 'cursor-pointer hover:text-[#6b7280]' : ''} ${className}`}
     >
       {label}
       {active && <span className="ml-1 text-[#ffd100]">{asc ? '▲' : '▼'}</span>}
@@ -238,71 +580,33 @@ function Th({
   );
 }
 
-/* ── Table row ── */
-function JobRow({
-  job,
-  isEven,
-  onMove,
-  onClick,
-}: {
-  job: Job & { systemSize?: string };
-  isEven: boolean;
-  onMove: (jobNumber: string, newStatus: Stage) => void;
-  onClick: () => void;
+/* ── Desktop table row ── */
+function JobRow({ job, isEven, onMove, onClick }: {
+  job: Job & { systemSize?: string }; isEven: boolean;
+  onMove: (jobNumber: string, newStatus: Stage) => void; onClick: () => void;
 }) {
   const [showMove, setShowMove] = useState(false);
   const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
-
   return (
-    <tr
-      onClick={onClick}
-      className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group ${
-        isEven ? 'bg-[#f5f7fb]' : 'bg-[#f5f7fb]'
-      } hover:bg-[#232323]`}
-    >
+    <tr onClick={onClick} className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group bg-[#f5f7fb] hover:bg-[#232323]`}>
       <td className="px-4 py-3">
-        <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${styles.badge}`}>
-          {job.status}
-        </span>
+        <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${styles.badge}`}>{job.status}</span>
       </td>
-      <td className="px-4 py-3 font-mono text-[#ffd100] text-xs font-bold whitespace-nowrap">
-        {job.jobNumber}
-      </td>
+      <td className="px-4 py-3 font-mono text-[#ffd100] text-xs font-bold whitespace-nowrap">{job.jobNumber}</td>
       <td className="px-4 py-3 text-[#111827] font-medium">{job.clientName}</td>
-      <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell">
-        <span className="block truncate max-w-[180px]">{job.address ?? '—'}</span>
-      </td>
-      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">
-        {job.systemSize ? `${job.systemSize} kW` : '—'}
-      </td>
-      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
-        {job.createdDate ?? '—'}
-      </td>
-      <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">
-        {job.phone ?? '—'}
-      </td>
+      <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell"><span className="block truncate max-w-[180px]">{job.address ?? '—'}</span></td>
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">{(job as any).systemSize ? `${(job as any).systemSize} kW` : '—'}</td>
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">{job.createdDate ?? '—'}</td>
+      <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">{job.phone ?? '—'}</td>
       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
         <div className="relative inline-block">
-          <button
-            onClick={() => setShowMove(!showMove)}
-            className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
-          >
-            Move ▾
-          </button>
+          <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5">Move ▾</button>
           {showMove && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
               <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
                 {STAGES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${
-                      s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'
-                    }`}
-                  >
-                    {s}
-                  </button>
+                  <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'}`}>{s}</button>
                 ))}
               </div>
             </>

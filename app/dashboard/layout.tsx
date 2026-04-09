@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import SignOutButton from './SignOutButton';
 import ProposalUsageBadge from '@/components/dashboard/ProposalUsageBadge';
 import DashboardNav from '@/components/dashboard/DashboardNav';
+import { DashboardMobileNav } from '@/components/dashboard/DashboardMobileNav';
 
 export const metadata = { title: 'Dashboard | HEA' };
 
@@ -33,16 +34,19 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
       {/* ── Body: sidebar + main ── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar — dark navy */}
-        <aside className="w-52 flex-shrink-0 bg-[#111827] flex flex-col overflow-y-auto">
+        {/* Left sidebar — desktop only */}
+        <aside className="hidden md:flex w-52 flex-shrink-0 bg-[#111827] flex-col overflow-y-auto">
           <DashboardNav />
         </aside>
 
-        {/* Main content — light gray */}
-        <main className="flex-1 overflow-y-auto bg-[#f5f7fa]">
+        {/* Main content — add bottom padding on mobile for tab bar */}
+        <main className="flex-1 overflow-y-auto bg-[#f5f7fa] pb-16 md:pb-0">
           {children}
         </main>
       </div>
+
+      {/* ── Mobile bottom nav — hidden on desktop ── */}
+      <DashboardMobileNav />
     </div>
   );
 }

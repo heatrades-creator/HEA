@@ -305,9 +305,78 @@
 
   .privacy { text-align: center; font-size: 12px; color: #bbb; margin-top: 20px; }
 
-  @media (max-width: 480px) {
-    .card { padding: 28px 20px; }
-    h2 { font-size: 21px; }
+  @media (max-width: 600px) {
+    /* Tighter outer wrapper */
+    .main { padding: 12px 10px 32px; }
+
+    /* Header slimmer */
+    .header { padding: 10px 16px; }
+    .logo-text { font-size: 13px; }
+    .logo-sub  { font-size: 10px; }
+
+    /* Card fills screen edge-to-edge with small margin */
+    .card {
+      padding: 24px 18px 28px;
+      border-radius: 12px;
+    }
+
+    /* Headings */
+    h2 { font-size: 20px; letter-spacing: -.3px; margin-bottom: 6px; }
+    .sub { font-size: 13px; margin-bottom: 20px; }
+
+    /* Dots closer together */
+    .dots { gap: 5px; margin-bottom: 20px; }
+
+    /* Inputs: 16px prevents iOS auto-zoom on focus */
+    input[type=text], input[type=email], input[type=tel] {
+      font-size: 16px;
+      padding: 13px 14px;
+    }
+
+    /* Bill dropzone */
+    .dropzone { padding: 32px 16px; }
+
+    /* Consent big button */
+    .btn-consent {
+      font-size: 15px;
+      padding: 16px 18px;
+    }
+
+    /* Nav bar */
+    .nav { margin-top: 20px; padding-top: 16px; }
+
+    /* Continue button — full width on mobile, easy to tap */
+    .btn-next {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    /* Back button stays left, smaller */
+    .btn-back { font-size: 13px; }
+
+    /* Done screen */
+    .done-screen { padding: 4px 0; }
+    .done-estimate { padding: 16px; }
+    .est-row { padding: 5px 0; }
+
+    /* Questions / pills */
+    .question { margin-bottom: 20px; }
+    .q-label  { font-size: 14px; }
+    .pill     { padding: 10px 16px; font-size: 14px; }
+
+    /* Compare card */
+    .compare-inner { padding: 18px 16px; }
+    .compare-footer { padding: 14px 16px; }
+    .compare-card h3 { font-size: 17px; }
+
+    /* Consent box */
+    .consent-body { padding: 16px 18px; font-size: 12px; }
+    .consent-sign { padding: 16px 18px; }
+
+    /* Privacy footer */
+    .privacy { font-size: 11px; margin-top: 14px; }
   }
 </style>
 </head>

@@ -1,0 +1,68 @@
+name: Deploy Google Apps Scripts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'HEA INTAKE/**'
+      - 'GAS/**'
+
+jobs:
+  # ── Deploy HEA Solar Intake Form ──────────────────────────────────────────
+  deploy-intake:
+    name: Push HEA Solar Intake Form
+    runs-on: ubuntu-latest
+    if: |
+      contains(toJson(github.event.commits.*.modified), 'HEA INTAKE/') ||
+      contains(toJson(github.event.commits.*.added), 'HEA INTAKE/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+
+      - name: Push to Google Apps Script
+        working-directory: 'HEA INTAKE'
+        run: clasp push --force
+
+  # ── Deploy HEA Jobs API ───────────────────────────────────────────────────
+  deploy-jobs-api:
+    name: Push HEA Jobs API
+    runs-on: ubuntu-latest
+    if: |
+      contains(toJson(github.event.commits.*.modified), 'GAS/') ||
+      contains(toJson(github.event.commits.*.added), 'GAS/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Authenticate clasp
+        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+
+      - name: Check script ID is set
+        working-directory: GAS
+        run: |
+          if grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
+            echo "⚠️  Jobs API script ID not set in GAS/.clasp.json — skipping push"
+            exit 0
+          fi
+
+      - name: Push to Google Apps Script
+        working-directory: GAS
+        run: |
+          if ! grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
+            clasp push --force
+          fi

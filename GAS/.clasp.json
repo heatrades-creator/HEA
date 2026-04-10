@@ -1,0 +1,5 @@
+{
+  "scriptId": "REPLACE_WITH_JOBS_API_SCRIPT_ID",
+  "rootDir": ".",
+  "filePushOrder": ["HEAJobsAPI.gs"]
+}

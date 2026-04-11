@@ -1,6 +1,7 @@
 // ============================================================
 //  HEA Solar Intake Form — Google Apps Script Backend v2.1
 //  Includes: PDF Consent with logo, Client Folders, PV Estimate
+//  Last deployed: via clasp auto-deploy
 // ============================================================
 //  SETUP: Fill in the 4 constants below, then deploy.
 // ============================================================

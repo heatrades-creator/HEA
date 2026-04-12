@@ -12,9 +12,6 @@ jobs:
   deploy-intake:
     name: Push HEA Solar Intake Form
     runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified), 'HEA INTAKE/') ||
-      contains(toJson(github.event.commits.*.added), 'HEA INTAKE/')
     steps:
       - uses: actions/checkout@v4
 
@@ -36,9 +33,6 @@ jobs:
   deploy-jobs-api:
     name: Push HEA Jobs API
     runs-on: ubuntu-latest
-    if: |
-      contains(toJson(github.event.commits.*.modified), 'GAS/') ||
-      contains(toJson(github.event.commits.*.added), 'GAS/')
     steps:
       - uses: actions/checkout@v4
 
@@ -56,7 +50,7 @@ jobs:
         working-directory: GAS
         run: |
           if grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
-            echo "⚠️  Jobs API script ID not set in GAS/.clasp.json — skipping push"
+            echo "Jobs API script ID not set in GAS/.clasp.json — skipping push"
             exit 0
           fi
 

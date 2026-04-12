@@ -239,8 +239,8 @@ app/api/jobs/
 ### GAS Jobs System (Google Apps Script)
 - **Used for:** Jobs CRM (Google Sheets + Drive), Telegram alerts, document generation
 - **Key action:** `createJob` POST → creates Drive folder + Sheets entry + Telegram alert → returns `{ jobNumber, driveUrl }`
-- **Drive folder naming:** `{ClientName} - {DD-MM-YYYY}` under "1) Jobs"
-- **Important:** GAS code in `/hea-doc-stack/src/*.gs` must be manually synced by Jesse (copy/paste into GAS editor, re-deploy)
+- **Drive folder naming:** `{ClientName} - {DD-MM-YYYY}` inside unified client folder (`CLIENTS_FOLDER_ID`)
+- **Auto-deploy:** Clasp + GitHub Actions pushes code changes automatically on every push to `main` — see Section 16
 
 ### Turso (SQLite)
 - **URL:** `libsql://hea-production-heatrades.aws-ap-northeast-1.turso.io`
@@ -425,14 +425,124 @@ prisma generate && tsx scripts/db-setup.ts && next build --turbopack
 
 ---
 
-## 15. GAS Jobs System Reference
+## 16. Google Apps Script Ecosystem — Complete Reference
+
+### How Code Changes Work (CRITICAL — READ FIRST)
+
+Claude Code edits files in the GitHub repo. Clasp + GitHub Actions automatically pushes those changes to the correct Apps Script project on every merge to `main`. **Jesse no longer copy-pastes code.**
+
+However, after every auto-push, Jesse must still create a **new deployment version** in Apps Script to make it live:
+> Deploy → Manage Deployments → pencil icon → New version → Deploy
+
+The web app URL **never changes** between versions — only the code behind it updates.
+
+---
+
+### All Apps Script Projects + Script IDs
+
+| Project | Script ID | Web App URL |
+|---------|-----------|-------------|
+| HEA Solar Intake Form | `1HEU7U3D6a13rkW7vXykhnPqNCXYI5Bxt6Wa9CO1yn9RGTolFXa5M-MfR` | `https://script.google.com/macros/s/AKfycbxftHfxNKrWKR9rC0QqNz7cIxkjK6whCz-KXKxBoaQODmHmuP8GrCeO6PmE6s43KZ8/exec` |
+| HEA Jobs API | `1w0iY9HgLKZBcfQW1tfxpzwutWdikuwvIavk1fvKCwB1AhMmgxW1cTPyM` | `https://script.google.com/macros/s/AKfycbxJqoUxjad6W6KWx2-NxPqIUafCJA7hrOK3jRfK8HGc9irZEVAA9khPF2tUpbQ05qjz/exec` |
+| HEA Solar Analyser | `13uiUqOX_ko4Lliwccdi2S0x4KdKtZ5Q_MJYZGw08MvsBgXeXdBaMooM0` | (not yet clasp-connected) |
+| HEA C2 | `1H-SRlwpYOTi4ervlMX0hkctZx0EalJVXJUaEOv8eytTjdYa17zGEeMFu` | (not yet clasp-connected) |
+| HEA Document Stack | `1ZZ7_IxoKYPYHPzH4G8j34OsQzumHJxRE7mXgJqPbA8iLes6tTa-3SvmL` | (not yet clasp-connected) |
+
+---
+
+### Repo Folders → Apps Script Projects
+
+| Repo folder | → | Apps Script project | Clasp status |
+|-------------|---|---------------------|--------------|
+| `HEA INTAKE/` | → | HEA Solar Intake Form | ✅ Auto-deploys on push to `main` |
+| `GAS/` | → | HEA Jobs API | ✅ Auto-deploys on push to `main` |
+| `HEA SA/` | → | HEA Solar Analyser | ⏳ Not yet wired |
+| `hea-doc-stack/` | → | HEA Document Stack | ⏳ Not yet wired |
+
+---
+
+### How Clasp Auto-Deploy Works
+
+**Workflow file:** `.github/workflows/deploy-gas.yml`
+
+Triggers when files inside `HEA INTAKE/**` or `GAS/**` are pushed to `main`. Runs two jobs:
+1. **Push HEA Solar Intake Form** — installs clasp, writes `CLASPRC_JSON` secret to `~/.clasprc.json`, runs `clasp push --force` in `HEA INTAKE/`
+2. **Push HEA Jobs API** — same, but in `GAS/`
+
+**Secret required:** `CLASPRC_JSON` — the full contents of Jesse's `~/.clasprc.json` after running `clasp login`. Stored in GitHub → Settings → Secrets → Actions. The token format is:
+```json
+{
+  "tokens": {
+    "default": {
+      "client_id": "...",
+      "client_secret": "...",
+      "type": "authorized_user",
+      "refresh_token": "...",
+      "access_token": "..."
+    }
+  }
+}
+```
+
+**Clasp config files:**
+- `HEA INTAKE/.clasp.json` — links folder to HEA Solar Intake Form script ID
+- `GAS/.clasp.json` — links folder to HEA Jobs API script ID
+
+**File extension rules (clasp is strict):**
+- Backend code must be `.gs` (not `.txt`)
+- HTML templates must be `.html` (not `.txt`)
+- Manifest must be `appsscript.json`
+
+---
+
+### Key Google Drive IDs
+
+| Resource | ID |
+|----------|----|
+| Unified client folder (all intake docs, bills, job files) | `12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-` |
+| HEA Jobs Google Sheet | `1oXPSL4cZAuaAognet7NNfgaLPs3OgvGONvxZZNs5LRU` |
+
+---
+
+### Intake Form → Jobs API Chain
+
+When a client submits the HEA Solar Intake Form, `processSubmission()` in `HEA INTAKE/Code.gs` runs 8 steps:
+1. Creates client Drive folder
+2. Saves electricity bill to Drive
+3. Generates consent PDF
+4. Generates job card PDF
+5. Logs to intake Sheet
+6. Emails client
+7. Emails HEA staff
+8. **Calls `createJobFromIntake(data)`** → `HEA INTAKE/IntakeFormJobCreation.gs` → POSTs to Jobs API → creates row in HEA Jobs Sheet + Drive subfolders
+
+The `JOBS_API_URL` constant in `HEA INTAKE/IntakeFormJobCreation.gs` must match the deployed web app URL of HEA Jobs API.
+
+---
+
+### Adding a New Script to Clasp (for future Claude sessions)
+
+To connect HEA Solar Analyser, HEA C2, or HEA Document Stack to auto-deploy:
+
+1. Add a `.clasp.json` in the repo folder:
+   ```json
+   { "scriptId": "<SCRIPT_ID_FROM_TABLE_ABOVE>", "rootDir": "." }
+   ```
+2. Add an `appsscript.json` manifest with required oauth scopes
+3. Add a new job to `.github/workflows/deploy-gas.yml` following the existing pattern
+4. Add the folder path to the workflow `paths:` trigger list
+5. Commit and push — clasp will start auto-deploying
+
+---
+
+## 17. GAS Jobs System Reference
 
 **doPost actions:**
 - `createJob` — `{ action, clientName, phone, email, address, notes, estAnnualBill }` → `{ jobNumber, driveUrl, ... }`
 - `updateJob` — updates job fields
 - `generateDocument` — triggers Gemini → Slides → PDF pipeline
 
-**GAS deployment note:** Every time GAS code changes, Jesse must manually: Deploy → Manage Deployments → New version → Deploy. The `JOBS_GAS_URL` does NOT change between deployments.
+**GAS deployment note:** Claude pushes code changes to the repo → clasp auto-deploys to Apps Script. Jesse then creates a new version: Deploy → Manage Deployments → pencil → New version → Deploy. The `JOBS_GAS_URL` does NOT change between deployments.
 
 **Drive folder structure per job:**
 ```
@@ -449,4 +559,4 @@ prisma generate && tsx scripts/db-setup.ts && next build --turbopack
 
 ---
 
-*Last updated: April 2026. All code on `claude/opensolar-integration-hea-oQk6f` branch.*
+*Last updated: April 2026. Production branch: `main`. Clasp auto-deploy active for HEA Solar Intake Form + HEA Jobs API.*

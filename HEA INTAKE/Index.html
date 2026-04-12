@@ -12,10 +12,10 @@
 
   body {
     font-family: 'Figtree', 'Segoe UI', sans-serif;
-    background: #f5f5f3;
+    background: white;
     color: #1a1a1a;
     min-height: 100vh;
-    font-size: 15px;
+    font-size: 16px;
     width: 100%;
     overflow-x: hidden;
   }
@@ -43,14 +43,14 @@
 
   .main {
     display: flex; justify-content: center;
-    padding: 40px 16px 80px;
+    padding: 0;
   }
   .card {
     background: white;
-    border-radius: 14px;
-    padding: 36px 36px;
-    width: 100%; max-width: 560px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.05);
+    border-radius: 0;
+    padding: 28px 20px 40px;
+    width: 100%; max-width: 100%;
+    box-shadow: none;
   }
 
   .dots { display: flex; gap: 6px; margin-bottom: 28px; }
@@ -65,16 +65,16 @@
   .step { display: none; }
   .step.active { display: block; }
 
-  h2 { font-size: 25px; font-weight: 700; letter-spacing: -.4px; color: #0f0f0f; margin-bottom: 8px; }
-  .sub { font-size: 14px; color: #666; line-height: 1.65; margin-bottom: 28px; }
+  h2 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; color: #0f0f0f; margin-bottom: 8px; }
+  .sub { font-size: 15px; color: #666; line-height: 1.65; margin-bottom: 24px; }
 
   /* Fields */
-  .fields { display: flex; flex-direction: column; gap: 16px; }
-  .field-label { display: block; font-size: 12px; font-weight: 600; color: #444; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+  .fields { display: flex; flex-direction: column; gap: 18px; }
+  .field-label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
   input[type=text], input[type=email], input[type=tel] {
-    width: 100%; padding: 11px 14px;
-    border: 1.5px solid #e0e0de; border-radius: 8px;
-    font-size: 15px; font-family: inherit; color: #1a1a1a;
+    width: 100%; padding: 16px 14px;
+    border: 1.5px solid #e0e0de; border-radius: 10px;
+    font-size: 16px; font-family: inherit; color: #1a1a1a;
     outline: none; transition: border-color .15s; background: white;
   }
   input:focus { border-color: #1a1a1a; }
@@ -299,9 +299,10 @@
   .btn-back:disabled{ opacity: .3; cursor: default; }
   .btn-next {
     background: #1a1a1a; color: white; border: none;
-    padding: 12px 28px; border-radius: 8px;
-    font-size: 15px; font-weight: 600;
+    padding: 17px 28px; border-radius: 12px;
+    font-size: 17px; font-weight: 600;
     font-family: inherit; cursor: pointer;
+    width: 100%;
     transition: background .15s, opacity .15s;
   }
   .btn-next:hover:not(:disabled) { background: #333; }
@@ -309,97 +310,26 @@
 
   .privacy { text-align: center; font-size: 12px; color: #bbb; margin-top: 20px; }
 
-  @media (max-width: 600px) {
-    /* Base font bump — everything scales from here */
-    body { font-size: 16px; background: white; }
-
-    /* Remove outer gray — form fills the full screen like a native app */
-    .main { padding: 0; background: white; }
-
-    /* Card — flush to screen edges, no shadow, no border-radius */
+  /* ── DESKTOP: restore the floating card on wide screens ── */
+  @media (min-width: 700px) {
+    body { background: #f5f5f3; font-size: 15px; }
+    .main { padding: 40px 16px 80px; }
     .card {
-      padding: 28px 20px 40px;
-      border-radius: 0;
-      box-shadow: none;
-      max-width: 100%;
-      min-height: calc(100vh - 120px); /* fill below header */
+      border-radius: 14px;
+      padding: 36px 36px;
+      max-width: 560px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 4px 24px rgba(0,0,0,.05);
     }
-
-    /* Headings */
-    h2 { font-size: 22px; letter-spacing: -.3px; margin-bottom: 8px; }
-    .sub { font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
-
-    /* Step dots */
-    .dots { gap: 6px; margin-bottom: 22px; }
-
-    /* Field labels */
-    .field-label { font-size: 13px; margin-bottom: 6px; }
-
-    /* Inputs — 16px prevents iOS auto-zoom; 16px vertical padding = 48px min-height */
+    h2 { font-size: 25px; }
+    .sub { font-size: 14px; margin-bottom: 28px; }
+    .fields { gap: 16px; }
+    .field-label { font-size: 12px; margin-bottom: 5px; }
     input[type=text], input[type=email], input[type=tel] {
-      font-size: 16px;
-      padding: 16px 14px;
-      border-radius: 10px;
+      padding: 11px 14px; font-size: 15px; border-radius: 8px;
     }
-
-    /* Gaps between fields */
-    .fields { gap: 18px; }
-
-    /* Bill dropzone */
-    .dropzone { padding: 36px 16px; }
-
-    /* Helper text */
-    .helper { font-size: 14px; }
-
-    /* Consent big button */
-    .btn-consent {
-      font-size: 16px;
-      padding: 18px 18px;
-    }
-
-    /* Consent body */
-    .consent-body { padding: 18px 18px; font-size: 14px; }
-    .consent-sign { padding: 18px 18px; }
-
-    /* Nav bar */
-    .nav { margin-top: 24px; padding-top: 18px; }
-
-    /* Continue button — full width, tall tap target */
-    .btn-next {
-      width: 100%;
-      padding: 17px 20px;
-      font-size: 17px;
-      border-radius: 12px;
-    }
-
-    /* Back button */
-    .btn-back { font-size: 14px; padding: 8px 0; }
-
-    /* Done screen */
-    .done-screen { padding: 4px 0; }
-    .done-estimate { padding: 18px; }
-    .est-row { padding: 6px 0; }
-    .est-key { font-size: 14px; }
-    .est-val { font-size: 16px; }
-    .done-note { font-size: 15px; }
-    .done-item { font-size: 14px; }
-
-    /* Questions / pills */
-    .question { margin-bottom: 24px; }
-    .q-label  { font-size: 16px; }
-    .q-hint   { font-size: 14px; }
-    .pill     { padding: 12px 18px; font-size: 15px; }
-
-    /* Compare card */
-    .compare-inner { padding: 20px 18px; }
-    .compare-footer { padding: 16px 18px; }
-    .compare-card h3 { font-size: 18px; }
-    .compare-card p  { font-size: 14px; }
-    .check-label { font-size: 15px; }
-
-    /* Privacy footer */
-    .privacy { font-size: 12px; margin-top: 16px; }
+    .btn-next { width: auto; padding: 12px 28px; font-size: 15px; border-radius: 8px; }
   }
+
 </style>
 </head>
 <body>

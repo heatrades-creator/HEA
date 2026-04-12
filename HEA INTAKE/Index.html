@@ -311,20 +311,18 @@
 
   @media (max-width: 600px) {
     /* Base font bump — everything scales from here */
-    body { font-size: 16px; }
+    body { font-size: 16px; background: white; }
 
-    /* Outer wrapper — minimal side gutters so card fills the screen */
-    .main { padding: 12px 8px 40px; }
+    /* Remove outer gray — form fills the full screen like a native app */
+    .main { padding: 0; background: white; }
 
-    /* Header */
-    .header { padding: 12px 16px; }
-    .logo-text { font-size: 14px; }
-    .logo-sub  { font-size: 11px; }
-
-    /* Card — edge-to-edge with small margin, generous vertical breathing room */
+    /* Card — flush to screen edges, no shadow, no border-radius */
     .card {
-      padding: 28px 20px 32px;
-      border-radius: 14px;
+      padding: 28px 20px 40px;
+      border-radius: 0;
+      box-shadow: none;
+      max-width: 100%;
+      min-height: calc(100vh - 120px); /* fill below header */
     }
 
     /* Headings */

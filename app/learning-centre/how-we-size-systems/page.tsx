@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
     "Most installers size solar systems from your average bill. HEA uses your actual NEM12 interval data from Powercor. Here's why it matters for your payback.",
 };
 
-export default function HowWeSizeSystemsArticle() {
+export default async function HowWeSizeSystemsArticle() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -125,7 +127,7 @@ export default function HowWeSizeSystemsArticle() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

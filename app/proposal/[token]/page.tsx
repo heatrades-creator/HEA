@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import Nav from "@/components/Nav"
 import Footer from "@/components/Footer"
+import { getFooterData } from "@/lib/sanity"
 
 export const dynamic = "force-dynamic"
 
@@ -18,6 +19,7 @@ export default async function ProposalPage({
   params: Promise<{ token: string }>
 }) {
   const { token } = await params
+  const footer = await getFooterData()
 
   const lead = await prisma.lead.findUnique({
     where: { proposalToken: token },
@@ -122,7 +124,7 @@ export default async function ProposalPage({
         </p>
       </div>
     </main>
-    <Footer />
+    <Footer data={footer} />
     </>
   )
 }

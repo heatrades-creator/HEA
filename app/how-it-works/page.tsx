@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import { ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
 
@@ -10,7 +11,8 @@ export const metadata: Metadata = {
     "How HEA designs and installs solar in Bendigo. We use real Powercor NEM12 data to design right-sized systems. Four steps from first contact to handover.",
 };
 
-export default function HowItWorksPage() {
+export default async function HowItWorksPage() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -140,7 +142,7 @@ export default function HowItWorksPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

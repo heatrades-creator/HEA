@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import TrustStrip from "@/components/TrustStrip";
 import { ChevronRight, MapPin } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://hea-group.com.au/bendigo-ev-charger" },
 };
 
-export default function BendigoEVCharger() {
+export default async function BendigoEVCharger() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -53,7 +55,7 @@ export default function BendigoEVCharger() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

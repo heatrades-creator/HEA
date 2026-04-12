@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -49,7 +50,8 @@ const FACTORS = [
   },
 ];
 
-export default function SolarPaybackVictoria() {
+export default async function SolarPaybackVictoria() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -132,7 +134,7 @@ export default function SolarPaybackVictoria() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

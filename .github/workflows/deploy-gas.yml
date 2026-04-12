@@ -19,15 +19,52 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp
-        run: npm install -g @google/clasp
+      - name: Install clasp (pinned v2 — stable token format)
+        run: npm install -g @google/clasp@2.4.2
 
-      - name: Authenticate clasp
-        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Authenticate clasp (normalise v2/v3 token format)
+        run: |
+          set -e
+          echo '${{ secrets.CLASPRC_JSON }}' > /tmp/clasprc_raw.json
+
+          echo "=== Raw token structure (keys only) ==="
+          jq 'keys' /tmp/clasprc_raw.json
+
+          # Clasp v3 on Windows stores tokens under .tokens.default
+          # Clasp v2 on Ubuntu expects .token at the top level
+          # Normalise whichever format is present into the v2 shape
+          if jq -e '.tokens.default' /tmp/clasprc_raw.json > /dev/null 2>&1; then
+            echo "Detected clasp v3 token format — converting to v2..."
+            jq '{
+              token: .tokens.default,
+              oauth2ClientSettings: {
+                clientId: "",
+                clientSecret: "",
+                redirectUri: "http://localhost"
+              },
+              isLocalCreds: false
+            }' /tmp/clasprc_raw.json > ~/.clasprc.json
+          else
+            echo "Detected clasp v2 token format — using as-is"
+            cp /tmp/clasprc_raw.json ~/.clasprc.json
+          fi
+
+          echo "=== Normalised token keys ==="
+          jq 'keys' ~/.clasprc.json
+          echo "=== Has access_token ==="
+          jq '.token | has("access_token")' ~/.clasprc.json
 
       - name: Push to Google Apps Script
         working-directory: 'HEA INTAKE'
-        run: clasp push --force
+        run: |
+          set -e
+          echo "=== clasp version ==="
+          clasp --version
+          echo "=== .clasp.json ==="
+          cat .clasp.json
+          echo "=== Running clasp push ==="
+          clasp push --force
+          echo "=== Push complete ==="
 
   # ── Deploy HEA Jobs API ───────────────────────────────────────────────────
   deploy-jobs-api:
@@ -40,17 +77,38 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp
-        run: npm install -g @google/clasp
+      - name: Install clasp (pinned v2 — stable token format)
+        run: npm install -g @google/clasp@2.4.2
 
-      - name: Authenticate clasp
-        run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Authenticate clasp (normalise v2/v3 token format)
+        run: |
+          set -e
+          echo '${{ secrets.CLASPRC_JSON }}' > /tmp/clasprc_raw.json
 
-      - name: Check script ID is set
+          if jq -e '.tokens.default' /tmp/clasprc_raw.json > /dev/null 2>&1; then
+            echo "Detected clasp v3 token format — converting to v2..."
+            jq '{
+              token: .tokens.default,
+              oauth2ClientSettings: {
+                clientId: "",
+                clientSecret: "",
+                redirectUri: "http://localhost"
+              },
+              isLocalCreds: false
+            }' /tmp/clasprc_raw.json > ~/.clasprc.json
+          else
+            echo "Detected clasp v2 token format — using as-is"
+            cp /tmp/clasprc_raw.json ~/.clasprc.json
+          fi
+
+          echo "=== Normalised token keys ==="
+          jq 'keys' ~/.clasprc.json
+
+      - name: Skip if script ID not set
         working-directory: GAS
         run: |
           if grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
-            echo "Jobs API script ID not set in GAS/.clasp.json — skipping push"
+            echo "Jobs API script ID not configured — skipping"
             exit 0
           fi
 
@@ -58,5 +116,8 @@ jobs:
         working-directory: GAS
         run: |
           if ! grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
+            set -e
+            echo "=== Running clasp push ==="
             clasp push --force
+            echo "=== Push complete ==="
           fi

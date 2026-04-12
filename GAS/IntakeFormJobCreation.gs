@@ -8,7 +8,7 @@
  * Replace JOBS_API_URL with the deployed URL of HEAJobsAPI.gs
  */
 
-const JOBS_API_URL = 'PASTE_YOUR_JOBS_GAS_URL_HERE'; // e.g. https://script.google.com/macros/s/ABC123.../exec
+const JOBS_API_URL = 'https://script.google.com/macros/s/AKfycbxJqoUxjad6W6KWx2-NxPqIUafCJA7hrOK3jRfK8HGc9irZEVAA9khPF2tUpbQ05qjz/exec';
 
 function createJobFromIntake(formData) {
   try {

@@ -79,7 +79,11 @@ function processSubmission(data) {
 
     console.log("Step 7: Emailing HEA");
     emailHEA(data, timestamp, billUrl, consent.url, jobCard.url);
-    console.log("Step 7: Done — all steps complete ✅");
+    console.log("Step 7: Done");
+
+    console.log("Step 8: Creating job in HEA Jobs API");
+    createJobFromIntake(data);
+    console.log("Step 8: Done — all steps complete ✅");
 
     return { success: true };
 

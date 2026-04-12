@@ -94,8 +94,8 @@ export default async function PricingPage() {
   const allPkgs = content.pricingPackages ?? []
   const sanitySolar = allPkgs.filter((p: any) => p.category === "solar").map(toDisplayPkg)
   const sanityBattery = allPkgs.filter((p: any) => p.category === "battery").map(toDisplayPkg)
-  const SOLAR_PACKAGES = sanitySolar.length > 0 ? sanitySolar : FALLBACK_SOLAR
-  const BATTERY_PACKAGES = sanityBattery.length > 0 ? sanityBattery : FALLBACK_BATTERY
+  const SOLAR_PACKAGES: PricingPkg[] = sanitySolar.length > 0 ? sanitySolar : FALLBACK_SOLAR
+  const BATTERY_PACKAGES: PricingPkg[] = sanityBattery.length > 0 ? sanityBattery : FALLBACK_BATTERY
 
   return (
     <>

@@ -19,50 +19,49 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (pinned v2 — stable token format)
-        run: npm install -g @google/clasp@2.4.2
+      - name: Install clasp (latest)
+        run: npm install -g @google/clasp
 
-      - name: Authenticate clasp (normalise v2/v3 token format)
+      - name: Write credentials to all possible locations
         run: |
           set -e
-          echo '${{ secrets.CLASPRC_JSON }}' > /tmp/clasprc_raw.json
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
 
-          echo "=== Raw token structure (keys only) ==="
-          jq 'keys' /tmp/clasprc_raw.json
+          echo "=== clasp version ==="
+          clasp --version
 
-          # Clasp v3 on Windows stores tokens under .tokens.default
-          # Clasp v2 on Ubuntu expects .token at the top level
-          # Normalise whichever format is present into the v2 shape
-          if jq -e '.tokens.default' /tmp/clasprc_raw.json > /dev/null 2>&1; then
-            echo "Detected clasp v3 token format — converting to v2..."
-            jq '{
-              token: .tokens.default,
-              oauth2ClientSettings: {
-                clientId: "",
-                clientSecret: "",
-                redirectUri: "http://localhost"
-              },
-              isLocalCreds: false
-            }' /tmp/clasprc_raw.json > ~/.clasprc.json
-          else
-            echo "Detected clasp v2 token format — using as-is"
-            cp /tmp/clasprc_raw.json ~/.clasprc.json
-          fi
+          echo "=== Token top-level keys ==="
+          echo "$TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.keys()))"
 
-          echo "=== Normalised token keys ==="
-          jq 'keys' ~/.clasprc.json
-          echo "=== Has access_token ==="
-          jq '.token | has("access_token")' ~/.clasprc.json
+          # Write the raw token to every location clasp might check
+          echo "$TOKEN" > ~/.clasprc.json
+
+          mkdir -p ~/.config/clasp
+          echo "$TOKEN" > ~/.config/clasp/default.json
+
+          mkdir -p ~/.config/@google/clasp
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+
+          # Also try the XDG config dir
+          mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/clasp"
+          echo "$TOKEN" > "${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json"
+
+          echo "=== Credentials written to all locations ==="
+          ls -la ~/.clasprc.json ~/.config/clasp/ ~/.config/@google/clasp/ 2>/dev/null || true
+
+      - name: Verify authentication
+        run: |
+          set -e
+          echo "=== Testing clasp auth (whoami) ==="
+          clasp whoami || echo "whoami failed — check token"
 
       - name: Push to Google Apps Script
         working-directory: 'HEA INTAKE'
         run: |
-          set -e
-          echo "=== clasp version ==="
-          clasp --version
+          set -xe
           echo "=== .clasp.json ==="
           cat .clasp.json
-          echo "=== Running clasp push ==="
+          echo "=== Pushing... ==="
           clasp push --force
           echo "=== Push complete ==="
 
@@ -77,32 +76,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (pinned v2 — stable token format)
-        run: npm install -g @google/clasp@2.4.2
+      - name: Install clasp (latest)
+        run: npm install -g @google/clasp
 
-      - name: Authenticate clasp (normalise v2/v3 token format)
+      - name: Write credentials to all possible locations
         run: |
           set -e
-          echo '${{ secrets.CLASPRC_JSON }}' > /tmp/clasprc_raw.json
-
-          if jq -e '.tokens.default' /tmp/clasprc_raw.json > /dev/null 2>&1; then
-            echo "Detected clasp v3 token format — converting to v2..."
-            jq '{
-              token: .tokens.default,
-              oauth2ClientSettings: {
-                clientId: "",
-                clientSecret: "",
-                redirectUri: "http://localhost"
-              },
-              isLocalCreds: false
-            }' /tmp/clasprc_raw.json > ~/.clasprc.json
-          else
-            echo "Detected clasp v2 token format — using as-is"
-            cp /tmp/clasprc_raw.json ~/.clasprc.json
-          fi
-
-          echo "=== Normalised token keys ==="
-          jq 'keys' ~/.clasprc.json
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
+          echo "$TOKEN" > ~/.clasprc.json
+          mkdir -p ~/.config/@google/clasp
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+          mkdir -p ~/.config/clasp
+          echo "$TOKEN" > ~/.config/clasp/credentials.json
 
       - name: Skip if script ID not set
         working-directory: GAS
@@ -116,8 +101,6 @@ jobs:
         working-directory: GAS
         run: |
           if ! grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
-            set -e
-            echo "=== Running clasp push ==="
+            set -xe
             clasp push --force
-            echo "=== Push complete ==="
           fi

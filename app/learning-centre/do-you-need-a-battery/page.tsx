@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
     "When does a home battery storage system make financial sense in Bendigo and Victoria? An honest breakdown of when batteries help payback — and when they don't.",
 };
 
-export default function DoYouNeedABattery() {
+export default async function DoYouNeedABattery() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -119,7 +121,7 @@ export default function DoYouNeedABattery() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

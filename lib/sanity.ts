@@ -14,6 +14,15 @@ function urlFor(source: any) {
   return builder.image(source).url()
 }
 
+export async function getFooterData() {
+  const footer = await client.fetch(
+    `*[_type == "footer" && _id == "footer"][0]{
+      tagline, phone, email, facebookUrl, instagramUrl, copyrightText
+    }`
+  )
+  return footer || null
+}
+
 export async function getSiteContent() {
   const [
     hero,
@@ -41,7 +50,7 @@ export async function getSiteContent() {
       items[]{title, description, icon}
     }`),
     client.fetch(`*[_type == "about" && _id == "about"][0]{
-      heading, paragraph1, paragraph2, paragraph3, certifications
+      heading, paragraph1, paragraph2, paragraph3, certifications, teamPhoto
     }`),
     client.fetch(`*[_type == "contact" && _id == "contact"][0]{
       heading, subheading, phone, email, liveChat, serviceArea, mapEmbedUrl, businessHours{weekday, saturday, sunday}
@@ -53,7 +62,7 @@ export async function getSiteContent() {
       location, homeType, goal, system, outcome, photo, ready, order
     }`),
     client.fetch(`*[_type == "pricingPackage"] | order(order asc){
-      name, tagline, specs, fromPrice, features, highlight, order
+      name, tagline, specs, fromPrice, features, highlight, category, order
     }`),
     client.fetch(`*[_type == "article"] | order(publishedAt desc)[0...6]{
       title, "slug": slug.current, category, excerpt, readTime, publishedAt
@@ -75,12 +84,16 @@ export async function getSiteContent() {
     photo: cs.photo ? urlFor(cs.photo) : null,
   }))
 
+  const aboutWithPhoto = about
+    ? { ...about, teamPhotoUrl: about.teamPhoto ? urlFor(about.teamPhoto) : null }
+    : null
+
   return {
     hero: hero || null,
     services,
     testimonials: testimonialDoc?.testimonials || [],
     whyChooseUs: whyChooseUsDoc?.items || [],
-    about: about || null,
+    about: aboutWithPhoto,
     contact: contact || null,
     footer: footer || null,
     caseStudies: caseStudiesWithPhotos,

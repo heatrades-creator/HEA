@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import FAQAccordion from "@/components/FAQAccordion";
 import { ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -11,7 +12,8 @@ export const metadata: Metadata = {
     "Common questions about solar, battery storage, and EV charging in Bendigo. Straight answers from HEA — no sales spin. REC 37307.",
 };
 
-export default function FAQsPage() {
+export default async function FAQsPage() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -39,7 +41,7 @@ export default function FAQsPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

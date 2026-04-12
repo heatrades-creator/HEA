@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import TrustStrip from "@/components/TrustStrip";
 import { Check, ChevronRight, MapPin } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -12,7 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "https://hea-group.com.au/bendigo-battery-installer" },
 };
 
-export default function BendigoBatteryInstaller() {
+export default async function BendigoBatteryInstaller() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -74,7 +76,7 @@ export default function BendigoBatteryInstaller() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

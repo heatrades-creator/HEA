@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import Image from "next/image";
+import { getSiteContent } from "@/lib/sanity";
 import TrustStrip from "@/components/TrustStrip";
 import { Check, ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -30,7 +32,9 @@ const VALUES = [
   },
 ];
 
-export default function WhyHEA() {
+export default async function WhyHEA() {
+  const content = await getSiteContent()
+  const teamPhotoUrl = content.about?.teamPhotoUrl ?? null
   return (
     <>
       <Nav />
@@ -50,13 +54,21 @@ export default function WhyHEA() {
         {/* Story */}
         <section className="py-20 px-4 bg-white">
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-            {/* TODO_REAL_DATA: Replace with real photo of Jesse and/or Alexis */}
-            <div className="h-80 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-200">
-              <div className="text-center">
-                <p className="text-sm font-medium">Photo of Jesse & Alexis</p>
-                <p className="text-xs mt-1">TODO_REAL_DATA: add real photo</p>
+            {teamPhotoUrl ? (
+              <div className="relative h-80 rounded-2xl overflow-hidden">
+                <Image
+                  src={teamPhotoUrl}
+                  alt="Jesse and Alexis Heffernan — HEA"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                />
               </div>
-            </div>
+            ) : (
+              <div className="h-80 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-300 border border-slate-200">
+                <p className="text-sm font-medium text-slate-400">Photo coming soon</p>
+              </div>
+            )}
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-5">Jesse & Alexis Heffernan</h2>
               <p className="text-slate-600 leading-relaxed mb-4">
@@ -149,7 +161,7 @@ export default function WhyHEA() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={content.footer} />
     </>
   );
 }

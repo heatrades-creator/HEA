@@ -2,11 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
 <title>Solar + Battery Quote — HEA</title>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; width: 100%; }
 
   body {
     font-family: 'Figtree', 'Segoe UI', sans-serif;
@@ -14,6 +16,8 @@
     color: #1a1a1a;
     min-height: 100vh;
     font-size: 15px;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .header {
@@ -306,77 +310,97 @@
   .privacy { text-align: center; font-size: 12px; color: #bbb; margin-top: 20px; }
 
   @media (max-width: 600px) {
-    /* Tighter outer wrapper */
-    .main { padding: 12px 10px 32px; }
+    /* Base font bump — everything scales from here */
+    body { font-size: 16px; }
 
-    /* Header slimmer */
-    .header { padding: 10px 16px; }
-    .logo-text { font-size: 13px; }
-    .logo-sub  { font-size: 10px; }
+    /* Outer wrapper — minimal side gutters so card fills the screen */
+    .main { padding: 12px 8px 40px; }
 
-    /* Card fills screen edge-to-edge with small margin */
+    /* Header */
+    .header { padding: 12px 16px; }
+    .logo-text { font-size: 14px; }
+    .logo-sub  { font-size: 11px; }
+
+    /* Card — edge-to-edge with small margin, generous vertical breathing room */
     .card {
-      padding: 24px 18px 28px;
-      border-radius: 12px;
+      padding: 28px 20px 32px;
+      border-radius: 14px;
     }
 
     /* Headings */
-    h2 { font-size: 20px; letter-spacing: -.3px; margin-bottom: 6px; }
-    .sub { font-size: 13px; margin-bottom: 20px; }
+    h2 { font-size: 22px; letter-spacing: -.3px; margin-bottom: 8px; }
+    .sub { font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
 
-    /* Dots closer together */
-    .dots { gap: 5px; margin-bottom: 20px; }
+    /* Step dots */
+    .dots { gap: 6px; margin-bottom: 22px; }
 
-    /* Inputs: 16px prevents iOS auto-zoom on focus */
+    /* Field labels */
+    .field-label { font-size: 13px; margin-bottom: 6px; }
+
+    /* Inputs — 16px prevents iOS auto-zoom; 16px vertical padding = 48px min-height */
     input[type=text], input[type=email], input[type=tel] {
       font-size: 16px;
-      padding: 13px 14px;
-    }
-
-    /* Bill dropzone */
-    .dropzone { padding: 32px 16px; }
-
-    /* Consent big button */
-    .btn-consent {
-      font-size: 15px;
-      padding: 16px 18px;
-    }
-
-    /* Nav bar */
-    .nav { margin-top: 20px; padding-top: 16px; }
-
-    /* Continue button — full width on mobile, easy to tap */
-    .btn-next {
-      width: 100%;
-      padding: 15px 20px;
-      font-size: 16px;
+      padding: 16px 14px;
       border-radius: 10px;
     }
 
-    /* Back button stays left, smaller */
-    .btn-back { font-size: 13px; }
+    /* Gaps between fields */
+    .fields { gap: 18px; }
+
+    /* Bill dropzone */
+    .dropzone { padding: 36px 16px; }
+
+    /* Helper text */
+    .helper { font-size: 14px; }
+
+    /* Consent big button */
+    .btn-consent {
+      font-size: 16px;
+      padding: 18px 18px;
+    }
+
+    /* Consent body */
+    .consent-body { padding: 18px 18px; font-size: 14px; }
+    .consent-sign { padding: 18px 18px; }
+
+    /* Nav bar */
+    .nav { margin-top: 24px; padding-top: 18px; }
+
+    /* Continue button — full width, tall tap target */
+    .btn-next {
+      width: 100%;
+      padding: 17px 20px;
+      font-size: 17px;
+      border-radius: 12px;
+    }
+
+    /* Back button */
+    .btn-back { font-size: 14px; padding: 8px 0; }
 
     /* Done screen */
     .done-screen { padding: 4px 0; }
-    .done-estimate { padding: 16px; }
-    .est-row { padding: 5px 0; }
+    .done-estimate { padding: 18px; }
+    .est-row { padding: 6px 0; }
+    .est-key { font-size: 14px; }
+    .est-val { font-size: 16px; }
+    .done-note { font-size: 15px; }
+    .done-item { font-size: 14px; }
 
     /* Questions / pills */
-    .question { margin-bottom: 20px; }
-    .q-label  { font-size: 14px; }
-    .pill     { padding: 10px 16px; font-size: 14px; }
+    .question { margin-bottom: 24px; }
+    .q-label  { font-size: 16px; }
+    .q-hint   { font-size: 14px; }
+    .pill     { padding: 12px 18px; font-size: 15px; }
 
     /* Compare card */
-    .compare-inner { padding: 18px 16px; }
-    .compare-footer { padding: 14px 16px; }
-    .compare-card h3 { font-size: 17px; }
-
-    /* Consent box */
-    .consent-body { padding: 16px 18px; font-size: 12px; }
-    .consent-sign { padding: 16px 18px; }
+    .compare-inner { padding: 20px 18px; }
+    .compare-footer { padding: 16px 18px; }
+    .compare-card h3 { font-size: 18px; }
+    .compare-card p  { font-size: 14px; }
+    .check-label { font-size: 15px; }
 
     /* Privacy footer */
-    .privacy { font-size: 11px; margin-top: 14px; }
+    .privacy { font-size: 12px; margin-top: 16px; }
   }
 </style>
 </head>

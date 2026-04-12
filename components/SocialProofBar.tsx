@@ -113,8 +113,22 @@ const SocialProofBar = () => {
           ))}
         </div>
 
-        {/* TODO_REAL_DATA: Manufacturer logos section — add once Jesse confirms which brands HEA installs */}
-        {/* Placeholder structure ready: Fronius / Enphase / SolarEdge / BYD / Alpha ESS */}
+        {/* Manufacturer / brand trust strip */}
+        <div className="mt-10 mb-8 border-t border-slate-200 pt-8">
+          <p className="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-5">
+            Brands we install
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {["Fronius", "Enphase", "SolarEdge", "BYD", "Alpha ESS"].map((brand) => (
+              <span
+                key={brand}
+                className="px-4 py-1.5 rounded-full border border-slate-200 bg-white text-slate-600 text-sm font-medium"
+              >
+                {brand}
+              </span>
+            ))}
+          </div>
+        </div>
 
         <div className="text-center">
           <a

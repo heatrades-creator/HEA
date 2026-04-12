@@ -20,6 +20,13 @@ export const pricingPackage = defineType({
       type: 'array',
       of: [{ type: 'string' }],
     }),
+    defineField({
+      name: 'category',
+      title: 'Category',
+      type: 'string',
+      options: { list: [{ title: 'Solar', value: 'solar' }, { title: 'Battery', value: 'battery' }] },
+      description: 'Used to group packages on the Pricing page',
+    }),
     defineField({ name: 'highlight', title: 'Highlight (Most Popular)', type: 'boolean', initialValue: false }),
     defineField({ name: 'order', title: 'Display Order', type: 'number', initialValue: 99 }),
   ],

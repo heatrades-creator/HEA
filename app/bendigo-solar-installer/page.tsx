@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import TrustStrip from "@/components/TrustStrip";
 import HowItWorks from "@/components/HowItWorks";
 import FAQAccordion from "@/components/FAQAccordion";
@@ -21,7 +22,8 @@ const SUBURBS = [
   "Long Gully", "Jackass Flat", "Spring Gully",
 ];
 
-export default function BendigoSolarInstaller() {
+export default async function BendigoSolarInstaller() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -108,7 +110,7 @@ export default function BendigoSolarInstaller() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

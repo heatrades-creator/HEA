@@ -6,6 +6,7 @@ import HEAEstimator from "@/components/HEAEstimator";
 import HEAAdvisor from "@/components/HEAAdvisor";
 import { Check, ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
+import { getSiteContent } from "@/lib/sanity";
 
 export const metadata: Metadata = {
   title: "Solar & Battery Pricing Bendigo | HEA Group",
@@ -13,19 +14,28 @@ export const metadata: Metadata = {
     "Indicative solar and battery pricing for Bendigo homes. Transparent starting ranges for solar-only, battery add-on, and combined systems. REC 37307.",
 };
 
-// TODO_REAL_DATA: Jesse to confirm all prices before going live.
-const SOLAR_PACKAGES = [
+type PricingPkg = {
+  name: string;
+  specs: string;
+  from: string | null;
+  includes: string[];
+  note: string;
+  popular: boolean;
+};
+
+const FALLBACK_SOLAR: PricingPkg[] = [
   {
     name: "Solar Starter",
     specs: "6.6 kW array · 5 kW inverter",
-    from: "TODO_REAL_DATA",
+    from: null,
     includes: ["6.6 kW panel array", "5 kW grid-connect inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
     note: "Ideal for smaller households wanting to reduce bills without over-capitalising.",
+    popular: false,
   },
   {
     name: "Solar Mid",
     specs: "10 kW array · 8 kW inverter",
-    from: "TODO_REAL_DATA",
+    from: null,
     includes: ["10 kW panel array", "8 kW inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
     note: "Suits medium to large households with daytime consumption.",
     popular: true,
@@ -33,29 +43,42 @@ const SOLAR_PACKAGES = [
   {
     name: "Solar Max",
     specs: "13.2 kW array · 10 kW inverter",
-    from: "TODO_REAL_DATA",
+    from: null,
     includes: ["13.2 kW panel array", "10 kW inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
     note: "Large households or those planning to add EV charging and/or battery later.",
+    popular: false,
   },
 ];
 
-const BATTERY_PACKAGES = [
+const FALLBACK_BATTERY: PricingPkg[] = [
   {
     name: "Battery Add-On — Small",
     specs: "5–7 kWh usable capacity",
-    from: "TODO_REAL_DATA",
+    from: null,
     includes: ["5–7 kWh battery", "Inverter/charger if required", "Switchboard integration", "Monitoring setup"],
     note: "Suits smaller households or those wanting partial overnight coverage.",
+    popular: false,
   },
   {
     name: "Battery Add-On — Standard",
     specs: "10–13 kWh usable capacity",
-    from: "TODO_REAL_DATA",
+    from: null,
     includes: ["10–13 kWh battery", "Inverter/charger if required", "Full overnight coverage", "VPP-ready config"],
     note: "Most common size for Bendigo family homes. Covers overnight usage for most households.",
     popular: true,
   },
 ];
+
+function toDisplayPkg(p: any): PricingPkg {
+  return {
+    name: p.name ?? "",
+    specs: p.specs ?? "",
+    from: p.fromPrice ?? null,
+    includes: p.features ?? [],
+    note: p.tagline ?? "",
+    popular: p.highlight ?? false,
+  };
+}
 
 const WHAT_CHANGES_PRICE = [
   { factor: "Switchboard condition", detail: "Older switchboards may need upgrading to safely support a solar system. We assess this during site inspection." },
@@ -66,7 +89,14 @@ const WHAT_CHANGES_PRICE = [
   { factor: "STC rebates", detail: "Federal government STC rebates reduce the final price. The rebate amount varies by system size and changes each year." },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const content = await getSiteContent()
+  const allPkgs = content.pricingPackages ?? []
+  const sanitySolar = allPkgs.filter((p: any) => p.category === "solar").map(toDisplayPkg)
+  const sanityBattery = allPkgs.filter((p: any) => p.category === "battery").map(toDisplayPkg)
+  const SOLAR_PACKAGES = sanitySolar.length > 0 ? sanitySolar : FALLBACK_SOLAR
+  const BATTERY_PACKAGES = sanityBattery.length > 0 ? sanityBattery : FALLBACK_BATTERY
+
   return (
     <>
       <Nav />
@@ -98,9 +128,9 @@ export default function PricingPage() {
                   <p className="text-sm text-slate-400 mb-4">{pkg.specs}</p>
                   <div className="mb-4">
                     <p className="text-xs text-slate-400">From</p>
-                    {pkg.from === "TODO_REAL_DATA"
-                      ? <p className="text-xl font-bold text-slate-400 italic">Price on request</p>
-                      : <p className="text-3xl font-bold text-slate-900">${pkg.from}</p>
+                    {pkg.from
+                      ? <p className="text-3xl font-bold text-slate-900">${pkg.from}</p>
+                      : <p className="text-xl font-bold text-slate-400 italic">Price on request</p>
                     }
                   </div>
                   <ul className="space-y-2 mb-6 flex-1">
@@ -137,9 +167,9 @@ export default function PricingPage() {
                   <p className="text-sm text-slate-400 mb-4">{pkg.specs}</p>
                   <div className="mb-4">
                     <p className="text-xs text-slate-400">From</p>
-                    {pkg.from === "TODO_REAL_DATA"
-                      ? <p className="text-xl font-bold text-slate-400 italic">Price on request</p>
-                      : <p className="text-3xl font-bold text-slate-900">${pkg.from}</p>
+                    {pkg.from
+                      ? <p className="text-3xl font-bold text-slate-900">${pkg.from}</p>
+                      : <p className="text-xl font-bold text-slate-400 italic">Price on request</p>
                     }
                   </div>
                   <ul className="space-y-2 mb-6 flex-1">
@@ -224,7 +254,7 @@ export default function PricingPage() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={content.footer} />
       <HEAAdvisor pageContext="pricing" />
     </>
   );

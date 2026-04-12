@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
+import { getFooterData } from "@/lib/sanity";
 import Link from "next/link";
 import { BookOpen, Clock, ChevronRight } from "lucide-react";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -35,7 +36,8 @@ const ARTICLES = [
   },
 ];
 
-export default function LearningCentre() {
+export default async function LearningCentre() {
+  const footer = await getFooterData()
   return (
     <>
       <Nav />
@@ -95,7 +97,7 @@ export default function LearningCentre() {
           </div>
         </section>
       </main>
-      <Footer />
+      <Footer data={footer} />
     </>
   );
 }

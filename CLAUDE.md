@@ -1,220 +1,122 @@
 # HEA Group — Claude Code Context
 
-This file is read by Claude at the start of every session. It captures the project's
-architecture, pipelines, conventions, and known history so work can resume immediately
-without re-discovery.
-
----
-
-## Project Overview
-
-**HEA Group** (Heffernan Electrical Automation) is a Bendigo-based solar/battery/EV
-installer. This repo contains:
-
-| Layer | Stack | Deploy |
+## Stack
+| Layer | Tech | Deploy trigger |
 |---|---|---|
-| **Public website** | Next.js 16 App Router + Tailwind + Sanity CMS | Vercel (auto on push to `main`) |
-| **Intake form** | Next.js `/intake` page + `/api/intake` route | Vercel (same as above) |
-| **Intake PDF generation** | `pdf-lib` (serverless-safe, no puppeteer) | Vercel edge/serverless |
-| **Email** | Resend (`lib/email.ts`, `lib/intake-email` in `api/intake`) | Resend API |
-| **GAS — Intake backend** | Google Apps Script in `HEA INTAKE/` | Auto-deployed via clasp (GitHub Actions) |
-| **GAS — Jobs API** | Google Apps Script in `GAS/` | Auto-deployed via clasp (GitHub Actions) |
-| **CMS** | Sanity Studio at `/studio` | Sanity cloud |
-| **Database** | Prisma + Turso (libSQL) | Turso cloud |
+| Website + intake form | Next.js 16 App Router · Tailwind | Push to `main` → Vercel auto |
+| CMS | Sanity (studio at `/studio`) | Sanity cloud |
+| Email | Resend (`lib/email.ts`, `app/api/intake/route.ts`) | Via API key |
+| PDF generation | `pdf-lib` in `lib/intake-pdf.ts` — NO puppeteer | Serverless-safe |
+| Database | Prisma + Turso libSQL (`lib/db.ts`) | Turso cloud |
+| GAS scripts | clasp via GitHub Actions on push to `main` | See GAS section |
 
-**Live URLs:**
-- Website: `https://hea-group.com.au`
-- Intake form: `https://hea-group.com.au/intake`
-- Sanity Studio: `https://hea-group.com.au/studio`
-- GAS Intake (legacy, still live): `https://script.google.com/macros/s/AKfycbxftHfxNKrWKR9rC0QqNz7cIxkjK6whCz-KXKxBoaQODmHmuP8GrCeO6PmE6s43KZ8/exec`
-- GAS Jobs API: `https://script.google.com/macros/s/AKfycbxJqoUxjad6W6KWx2-NxPqIUafCJA7hrOK3jRfK8HGc9irZEVAA9khPF2tUpbQ05qjz/exec`
+**Live:** `https://hea-group.com.au` · Studio: `/studio` · Intake: `/intake`
 
 ---
 
-## Auto-Deploy Pipeline
+## Auto-Deploy: GAS via Clasp
 
-### Next.js → Vercel
-Push any commit to `main` → Vercel automatically builds and deploys.
-- Build command: `prisma generate && tsx scripts/db-setup.ts && next build --turbopack`
-- No manual steps required.
+Push to `main` touching `HEA INTAKE/**` or `GAS/**` → `.github/workflows/deploy-gas.yml` runs → clasp pushes to Google Apps Script.
 
-### GAS → Google Apps Script (via clasp)
-Push a commit to `main` that touches `HEA INTAKE/**` or `GAS/**` →
-GitHub Actions runs `.github/workflows/deploy-gas.yml` → clasp pushes the code.
+**Credentials:** GitHub secret `CLASPRC_JSON` is written to 4 locations in the workflow (all of them — clasp v3 is inconsistent about which it reads).
 
-**How the credentials work:**
-- The secret `CLASPRC_JSON` in GitHub repo settings holds the full clasp auth token.
-- The workflow writes this token to **all** locations clasp may check:
-  - `~/.clasprc.json`
-  - `~/.config/clasp/default.json`
-  - `~/.config/@google/clasp/credentials.json`
-  - `${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json`
-- Uses `clasp push --force` (no version bump — see note below).
+**⚠️ After clasp push, GAS needs a new deployment version to go live:**
+GAS project → Deploy → Manage Deployments → Edit → New version → Deploy.
 
-**⚠️ IMPORTANT — After a clasp push, the GAS deployment needs a new version:**
-Clasp push updates the *code* but does NOT make it live on the deployed URL.
-After the GitHub Action completes, go to the GAS project → Deploy → Manage Deployments
-→ Edit (pencil icon) → Version: "New version" → Deploy.
-This is a one-click step in the Apps Script UI.
+**If pushes silently fail** (GAS "Last modified" doesn't update):
+1. `clasp login` on a machine signed in as `hea.trades@gmail.com`
+2. Copy `~/.clasprc.json` → update `CLASPRC_JSON` in GitHub Secrets
 
-**Refreshing `CLASPRC_JSON`:**
-If the token expires or pushes silently fail (GAS "Last modified" doesn't update),
-refresh the secret:
-1. Run `clasp login` on a local machine logged in as `hea.trades@gmail.com`
-2. Copy the contents of `~/.clasprc.json`
-3. Go to GitHub repo → Settings → Secrets → Actions → update `CLASPRC_JSON`
+**GAS scripts:**
+| Folder | Purpose |
+|---|---|
+| `HEA INTAKE/` | Intake form backend (PDFs, email, Drive, Sheets) — Code.gs + Index.html |
+| `GAS/` | Jobs API (Drive folders, Sheet entries, Telegram alerts) |
 
 ---
 
-## Key Source Files
+## Intake Form (Next.js — replaced GAS for mobile)
 
-### Intake Form (NEW — replaces GAS form on mobile)
+GAS iframe = fixed ~750px CSS viewport on mobile → CSS @media useless → JS `window.innerWidth` also unreliable → moved form to Next.js.
+
 | File | Purpose |
 |---|---|
-| `app/intake/page.tsx` | 5-step multi-step form (client component) |
-| `app/api/intake/route.ts` | API handler — validates, generates PDFs, sends emails |
-| `lib/intake-pdf.ts` | pdf-lib helpers: `generateConsentPdf()`, `generateJobCardPdf()` |
+| `app/intake/page.tsx` | 5-step form, `?service=solar\|battery\|ev` pre-selects step 2 |
+| `app/api/intake/route.ts` | Validates → generates PDFs → emails client + Jesse → notifies Jobs API |
+| `lib/intake-pdf.ts` | `generateConsentPdf()` + `generateJobCardPdf()` via pdf-lib |
 
-**URL params:** `?service=solar\|battery\|ev` pre-selects the service on step 2.
+---
 
-**On submission:**
-1. Generates NMI Consent PDF + Job Card PDF (`pdf-lib`)
-2. Emails client with consent PDF attached (Resend)
-3. Emails Jesse with both PDFs + electricity bill (Resend)
-4. Calls GAS Jobs API to create a Google Drive folder + Sheet entry
+## Lead Links
 
-### Lead Links (all 25 files used to point to GAS — now point to `/intake`)
+`lib/constants.ts` defines:
+```ts
+GAS_INTAKE_URL     = "/intake"           // generic — used by 22 pages
+INTAKE_URL_SOLAR   = "/intake?service=solar"
+INTAKE_URL_BATTERY = "/intake?service=battery"
+INTAKE_URL_EV      = "/intake?service=ev"
 ```
-lib/constants.ts          GAS_INTAKE_URL = "/intake"
-                          INTAKE_URL_SOLAR = "/intake?service=solar"
-                          INTAKE_URL_BATTERY = "/intake?service=battery"
-                          INTAKE_URL_EV = "/intake?service=ev"
-```
-Service pages import the matching constant:
-- `app/bendigo-solar-installer/page.tsx` → `INTAKE_URL_SOLAR`
-- `app/bendigo-battery-installer/page.tsx` → `INTAKE_URL_BATTERY`
-- `app/bendigo-ev-charger/page.tsx` → `INTAKE_URL_EV`
-- All other pages → `GAS_INTAKE_URL` (`/intake`)
+Service pages import their matching constant. Pricing page solar cards → `INTAKE_URL_SOLAR`, battery cards → `INTAKE_URL_BATTERY`.
 
-### Sanity CMS
-| File | Purpose |
-|---|---|
-| `lib/sanity.ts` | `getSiteContent()` fetches all CMS data; `getFooterData()` for footer only |
-| `sanity/schemaTypes/` | All content schemas |
+---
 
-`getSiteContent()` returns: `footer`, `about` (with `teamPhotoUrl`), `pricingPackages`, `caseStudies`, `faqs`, `reviews`, `siteSettings`.
+## Sanity CMS
 
-**To add CMS-driven content:** add field to the relevant schema in `sanity/schemaTypes/`,
-update the GROQ query in `lib/sanity.ts`, use in page component.
+`lib/sanity.ts` exports:
+- `getSiteContent()` — full site data (footer, about, pricingPackages, caseStudies, faqs, reviews)
+- `getFooterData()` — footer only (for pages that don't need full content)
+- `urlFor(image)` — Sanity image URL builder
 
-### Footer
-All pages pass footer data: `<Footer data={content.footer} />` or `<Footer data={footer} />`
-where `footer` comes from `getSiteContent()` or `getFooterData()`.
-The component falls back to hardcoded defaults if no data passed.
+**All pages pass footer:** `<Footer data={content.footer} />` — never bare `<Footer />`.
 
-### GAS Scripts
-| Folder | Script | What it does |
-|---|---|---|
-| `HEA INTAKE/` | Solar Intake Form | Serves intake HTML, generates PDFs, emails, logs to Sheets |
-| `GAS/` | HEA Jobs API | Job CRUD — Google Drive folders, Sheet entries, Telegram alerts |
-
-**Note:** The GAS intake form (`HEA INTAKE/Index.html`) is still live and functional.
-It was replaced by the Next.js `/intake` page for mobile compatibility only.
-The GAS backend (`Code.gs`) still runs — the Jobs API calls it.
+**Adding a CMS field:** schema in `sanity/schemaTypes/` → update GROQ in `getSiteContent()` → use in page.
 
 ---
 
 ## Environment Variables
 
-### Vercel (production)
-| Variable | Purpose |
-|---|---|
-| `RESEND_API_KEY` | Email sending (intake form PDFs + alerts) |
-| `EMAIL_FROM` | From address for outbound emails |
-| `EMAIL_ALERT_TO` | Jesse's email for new lead alerts (HEA.Trades@gmail.com) |
-| `DATABASE_URL` | Turso libSQL connection string |
-| `NEXTAUTH_SECRET` | NextAuth session signing |
-| `NEXTAUTH_URL` | Full site URL (https://hea-group.com.au) |
-| `JOBS_GAS_URL` | GAS Jobs API endpoint URL |
-| `SANITY_API_TOKEN` | Sanity write token (for Studio mutations) |
-| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity project ID |
-| `NEXT_PUBLIC_SANITY_DATASET` | Sanity dataset (usually `production`) |
+**Vercel (production):**
+`RESEND_API_KEY` · `EMAIL_FROM` · `EMAIL_ALERT_TO` (HEA.Trades@gmail.com) · `DATABASE_URL` · `NEXTAUTH_SECRET` · `NEXTAUTH_URL` · `JOBS_GAS_URL` · `NEXT_PUBLIC_SANITY_PROJECT_ID` · `NEXT_PUBLIC_SANITY_DATASET` · `SANITY_API_TOKEN`
 
-### GitHub Secrets (for GAS deploy)
-| Secret | Purpose |
-|---|---|
-| `CLASPRC_JSON` | Full clasp auth token JSON (see Refreshing above) |
+**GitHub Secrets:** `CLASPRC_JSON`
 
 ---
 
-## Development Workflow
+## Key Patterns & Rules
 
-```bash
-npm run dev          # Start local dev server (Turbopack)
-npm run build        # Full production build (includes prisma generate)
-npx tsc --noEmit     # Type-check without building
-```
-
-**Branch strategy:**
-- `main` → production (auto-deploys to Vercel + triggers GAS clasp push if GAS files changed)
-- Feature branches → merge to `main` when ready
-
-**TypeScript:**
-- `strict: true` — no implicit any
-- `_achieved/` is excluded from TS compilation (archived files)
-- When adding new Sanity fields, update both the schema AND the GROQ query in `lib/sanity.ts`
+- **TypeScript strict** — no implicit any; explicit type annotations on conditional arrays
+- **Zod v4** — use `error:` not `errorMap:` in `z.literal()`
+- **`_achieved/`** — archived files, excluded from TS (`tsconfig.json` exclude array)
+- **PDF on Vercel** — use `pdf-lib` only (no puppeteer/playwright — no native deps)
+- **Async server components** — all pages that fetch data are `async` functions
+- **No bare `<Footer />`** — always pass `data` prop
 
 ---
 
-## Known Issues & History
+## Known Fixed Issues (don't re-investigate)
 
-### GAS Mobile Rendering (resolved by moving to Next.js)
-GAS web apps wrap HTML in an iframe with a fixed CSS viewport width (~750px) on mobile.
-CSS `@media` queries inside GAS read this iframe width, not the device width.
-`window.innerWidth` in JS *also* returns the iframe width on some devices.
-**Resolution:** All public lead links now point to `/intake` (Next.js, real viewport).
-The GAS intake form is kept live but no longer linked from the site.
-
-### Clasp Silent Push Failures (resolved)
-Clasp v3 uses a different token format than v2. Writing the raw `CLASPRC_JSON` token
-to multiple credential locations (without format conversion) fixed silent push failures.
-See `.github/workflows/deploy-gas.yml` for the credential write approach.
-
-### Vercel TypeScript Build Errors (resolved)
-- `_achieved/` files: excluded via `tsconfig.json` `exclude` array
-- Zod v4 uses `error:` not `errorMap:` for custom error messages in `z.literal()`
-- Explicit type annotations required for conditional array assignments (e.g. `PricingPkg[]`)
-
-### PDF Generation
-`pdf-lib` is used (not puppeteer/playwright) — it's a pure JS library that works on
-Vercel serverless functions without native dependencies or bundling issues.
+| Issue | Root cause | Fix |
+|---|---|---|
+| GAS mobile form zoomed out | GAS iframe CSS viewport ~750px, media queries useless | Use Next.js `/intake` |
+| Clasp push silently fails | Token format / credential location | Write raw token to 4 paths in workflow |
+| Vercel build: `_achieved` TS errors | Archived files included in compilation | `exclude: ["_achieved"]` in tsconfig |
+| Vercel build: pricing page `any` type | Missing explicit `PricingPkg[]` annotation | Add type annotation to SOLAR_PACKAGES / BATTERY_PACKAGES |
 
 ---
 
-## Folder Structure (non-obvious)
+## Folder Map (non-obvious)
 
 ```
-app/
-  intake/           ← Public intake form (new, mobile-first)
-  api/intake/       ← Intake API — PDFs + emails
-  api/leads/        ← Existing lead capture (simpler, no PDFs)
-  admin/            ← Internal dashboard (NextAuth protected)
-  studio/           ← Sanity Studio (embedded)
-  proposal/[token]/ ← Customer proposal viewer
-
-components/
-  HEAAdvisor.tsx    ← AI chat widget (uses /api/advisor/explain)
-  HEAEstimator.tsx  ← Interactive savings estimator
-  SocialProofBar.tsx← Reviews + manufacturer brand strip
-
-lib/
-  sanity.ts         ← All CMS queries + urlFor helper
-  email.ts          ← Staff alert emails (Resend)
-  intake-pdf.ts     ← PDF generation for intake form
-  db.ts             ← Prisma client singleton
-  constants.ts      ← Shared URLs and contact info
-
-HEA INTAKE/         ← GAS project: intake form (clasp-managed)
-GAS/                ← GAS project: Jobs API (clasp-managed)
-_achieved/          ← Archived/unused files (excluded from TS)
+app/intake/          ← Public intake form (new, mobile-first)
+app/api/intake/      ← Intake API: PDFs + emails
+app/api/leads/       ← Simpler lead capture (no PDFs)
+app/admin/           ← Internal dashboard (NextAuth protected)
+app/studio/          ← Sanity Studio (embedded)
+app/proposal/[token] ← Customer proposal viewer
+components/HEAAdvisor.tsx    ← AI chat widget → /api/advisor/explain
+components/HEAEstimator.tsx  ← Interactive savings estimator
+components/SocialProofBar.tsx← Reviews + manufacturer brand strip
+HEA INTAKE/          ← GAS project (clasp-managed)
+GAS/                 ← GAS Jobs API (clasp-managed)
+_achieved/           ← Archived/unused files (excluded from TS)
 ```

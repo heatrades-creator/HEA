@@ -25,6 +25,9 @@ const TRUST_BADGES = [
   { icon: Wrench, label: "Direct Installer" },
 ];
 
+// Icons mapped by position — shown regardless of CMS stat values
+const STAT_ICONS = ["💰", "📅", "🏅", "🔨"];
+
 const Hero = ({ data }: HeroProps) => {
   const defaultData = {
     tagline: "Bendigo's Solar & Battery Specialists",
@@ -34,10 +37,10 @@ const Hero = ({ data }: HeroProps) => {
     ctaText: "Get My Solar Estimate",
     secondaryCtaText: "Book Free Consultation",
     stats: [
-      { value: "< 10yr", label: "Target Payback" },
-      { value: "NEM12", label: "Real Usage Analysis" },
-      { value: "REC 37307", label: "Licensed & Insured" },
-      { value: "Bendigo VIC", label: "Local Installer" },
+      { value: "$1,800+", label: "Avg annual savings for Bendigo homes" },
+      { value: "< 10yr", label: "Payback target — every system, every time" },
+      { value: "REC 37307", label: "Licensed & fully insured in Victoria" },
+      { value: "No middlemen", label: "Jesse & Alexis do your install" },
     ],
   };
 
@@ -81,28 +84,29 @@ const Hero = ({ data }: HeroProps) => {
 
   return (
     <section className="relative pt-32 pb-24 px-4 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-yellow-50/40 via-amber-50/75 to-slate-50/50" />
-      <div className="absolute inset-0 opacity-8">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-yellow-400 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-500 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        />
-      </div>
+      {/* Gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-yellow-50 via-amber-50 to-slate-100" />
+
+      {/* Subtle background image — solar panels */}
       <Image
         src="https://images.pexels.com/photos/16423103/pexels-photo-16423103.jpeg"
         alt="Solar panels installed on Bendigo home"
         fill
-        style={{ objectFit: "cover" }}
-        className="absolute top-0 left-0 w-full h-full opacity-8"
+        style={{ objectFit: "cover", opacity: 0.07 }}
         priority
+      />
+
+      {/* Soft glow orbs */}
+      <div className="absolute top-20 left-10 w-80 h-80 bg-yellow-300 rounded-full blur-3xl opacity-20 animate-pulse" />
+      <div
+        className="absolute bottom-20 right-10 w-96 h-96 bg-yellow-400 rounded-full blur-3xl opacity-15 animate-pulse"
+        style={{ animationDelay: "1.2s" }}
       />
 
       <div className="max-w-7xl mx-auto relative z-10">
         <div className="flex flex-col justify-center text-center max-w-4xl mx-auto">
           {/* Badge */}
-          <div className="inline-block mb-5 px-4 py-2 mx-auto bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-full text-sm font-semibold">
+          <div className="inline-block mb-5 px-4 py-2 mx-auto bg-yellow-400/20 border border-yellow-400/40 text-yellow-800 rounded-full text-sm font-semibold">
             ⚡ {heroData.tagline}
           </div>
 
@@ -159,7 +163,7 @@ const Hero = ({ data }: HeroProps) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-20 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-16 max-w-4xl mx-auto">
           {(heroData.stats || defaultData.stats).map((stat, idx) => {
             const config = statsConfig[idx];
             const displayValue = config.isStatic
@@ -169,10 +173,13 @@ const Hero = ({ data }: HeroProps) => {
             return (
               <div
                 key={idx}
-                className="flex justify-center items-center flex-col bg-white/80 backdrop-blur-sm border border-white/60 p-6 rounded-2xl shadow-sm text-center hover:shadow-md transition-shadow"
+                className="relative flex flex-col items-center bg-white/90 backdrop-blur-sm border border-white/80 p-5 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center overflow-hidden group"
               >
-                <div className="text-3xl font-bold text-slate-900 mb-1">{displayValue}</div>
-                <div className="text-sm text-slate-500">{stat.label}</div>
+                {/* Yellow top accent */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400 to-yellow-300 rounded-t-2xl" />
+                <div className="text-xl mb-2 mt-1">{STAT_ICONS[idx]}</div>
+                <div className="text-2xl font-black text-slate-900 mb-1 leading-none">{displayValue}</div>
+                <div className="text-xs text-slate-500 leading-snug">{stat.label}</div>
               </div>
             );
           })}

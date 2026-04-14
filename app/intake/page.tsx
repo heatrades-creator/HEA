@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, Suspense } from "react"
+import Image from "next/image"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -224,13 +225,7 @@ function IntakeFormInner() {
     return (
       <div className="min-h-screen bg-white flex flex-col">
         <header className="border-b border-slate-100 px-5 py-4 flex items-center gap-3">
-          <div className="w-8 h-8 bg-slate-900 rounded-md flex items-center justify-center">
-            <span className="text-yellow-400 text-xs font-black">H</span>
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-900 leading-none">HEA</p>
-            <p className="text-xs text-slate-400">Heffernan Electrical Automation</p>
-          </div>
+          <Image src="/Logo_transparent.png" alt="HEA Group" height={36} style={{ height: 36, width: "auto" }} />
         </header>
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
@@ -261,13 +256,8 @@ function IntakeFormInner() {
     <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="border-b border-slate-100 px-5 py-4 flex items-center gap-3 flex-shrink-0">
-        <div className="w-8 h-8 bg-slate-900 rounded-md flex items-center justify-center">
-          <span className="text-yellow-400 text-xs font-black">H</span>
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-900 leading-none">HEA — Solar &amp; Battery Quote</p>
-          <p className="text-xs text-slate-400">Heffernan Electrical Automation · REC 37307</p>
-        </div>
+        <Image src="/Logo_transparent.png" alt="HEA Group" height={32} style={{ height: 32, width: "auto" }} />
+        <div className="flex-1 min-w-0" />
         <span className="text-xs text-slate-400 flex-shrink-0">Step {step}/{STEPS.length}</span>
       </header>
 

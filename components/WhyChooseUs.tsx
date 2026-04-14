@@ -91,7 +91,25 @@ const WhyChooseUs = ({ data }: WhyChooseUsProps) => {
           })}
         </div>
 
-        <div className="text-center">
+        {/* Results banner */}
+        <div className="mt-12 bg-yellow-400 rounded-2xl px-8 py-7 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div>
+            <p className="text-slate-900 font-black text-xl md:text-2xl leading-tight">
+              Most Bendigo households save <span className="underline decoration-wavy decoration-slate-900/30">$1,800+ per year</span>
+            </p>
+            <p className="text-slate-800 text-sm mt-1 opacity-80">
+              Based on a right-sized solar system designed from your actual usage data.
+            </p>
+          </div>
+          <a
+            href="/intake"
+            className="flex-shrink-0 bg-slate-900 text-white font-bold px-7 py-3.5 rounded-xl hover:bg-slate-800 transition-colors text-sm whitespace-nowrap"
+          >
+            See My Numbers →
+          </a>
+        </div>
+
+        <div className="text-center mt-8">
           <Link
             href="/why-hea"
             className="inline-flex items-center gap-2 text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition-colors border border-yellow-400/30 hover:border-yellow-400/60 rounded-lg px-5 py-2.5"

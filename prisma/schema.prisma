@@ -65,6 +65,8 @@ model Lead {
   financeApprovedAt   DateTime?
   contractSignedAt    DateTime?
   depositPaidAt       DateTime?
+  completionPaidAt    DateTime?
+  esvPaidAt           DateTime?
   permitSubmittedAt   DateTime?
   soldAt              DateTime?
   installedAt         DateTime?

@@ -1,5 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { sendReviewRequest } from '@/lib/email';
 
 const GAS_URL = process.env.JOBS_GAS_URL!;
 
@@ -35,5 +37,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (!res.ok) return NextResponse.json({ error: 'GAS error' }, { status: 502 });
 
   const updated = await res.json();
+
+  // Auto-send review request when job moves to Complete
+  if (body.status === 'Complete') {
+    try {
+      const lead = await prisma.lead.findFirst({ where: { gasJobNumber: id } });
+      if (lead) {
+        await sendReviewRequest(lead);
+        await prisma.auditEntry.create({
+          data: {
+            leadId: lead.id,
+            action: 'review_requested',
+            actor:  'system',
+            detail: JSON.stringify({ trigger: 'status_complete', jobNumber: id }),
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Auto review email failed:', e);
+    }
+  }
+
   return NextResponse.json(updated);
 }

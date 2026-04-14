@@ -236,7 +236,7 @@ function IntakeFormInner() {
             Jesse will review your details and be in touch to book a call.
             Check your inbox — your NMI consent form is on its way.
           </p>
-          <div className="bg-slate-50 rounded-2xl p-6 max-w-sm w-full text-left space-y-3 mb-8">
+          <div className="bg-slate-50 rounded-2xl p-6 max-w-sm w-full text-left space-y-3 mb-6">
             <p className="font-semibold text-slate-900 text-sm">What happens next:</p>
             {["Jesse reviews your electricity data", "You get your exact payback period", "Walk-through of applicable rebates", "No obligation — just clear answers"].map(item => (
               <div key={item} className="flex items-start gap-2">
@@ -244,6 +244,19 @@ function IntakeFormInner() {
                 <p className="text-sm text-slate-600">{item}</p>
               </div>
             ))}
+          </div>
+          {/* Book a call — Calendly pre-filled with client name + email */}
+          <div className="max-w-sm w-full mb-6 text-center">
+            <p className="text-sm font-semibold text-slate-700 mb-3">Skip the wait — book your consultation now:</p>
+            <a
+              href={`https://calendly.com/hea-trades/free-solar-consultation-hea?name=${encodeURIComponent(watch("name"))}&email=${encodeURIComponent(watch("email"))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#ffd100] text-[#111827] font-bold px-6 py-3 rounded-xl text-base shadow hover:bg-yellow-400 transition-colors w-full justify-center"
+            >
+              📅 Book a free call with Jesse
+            </a>
+            <p className="text-xs text-slate-400 mt-2">Choose a time that suits you — opens in a new tab</p>
           </div>
           <a href="https://hea-group.com.au" className="text-sm text-slate-400 underline">Back to hea-group.com.au</a>
         </div>

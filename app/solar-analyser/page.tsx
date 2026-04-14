@@ -12,6 +12,16 @@ function SolarAnalyserContent() {
   const email      = params.get("email")
   const annualBill = params.get("annualBill")
 
+  // Build GAS URL with client params so the script can pre-fill fields
+  const GAS_BASE = "https://script.google.com/macros/s/AKfycbzI42lh28ASdcxa2F6b8_euLk9KBcfvg4VfxR-bI3Jl3dLPTxvFGDKuZJh2_tqvZiE/exec"
+  const gasParams = new URLSearchParams()
+  if (name)       gasParams.set("name", name)
+  if (email)      gasParams.set("email", email)
+  if (phone)      gasParams.set("phone", phone)
+  if (address)    gasParams.set("address", address)
+  if (annualBill) gasParams.set("annualBill", annualBill)
+  const gasUrl = gasParams.size > 0 ? `${GAS_BASE}?${gasParams.toString()}` : GAS_BASE
+
   return (
     <>
       <Nav />
@@ -30,14 +40,14 @@ function SolarAnalyserContent() {
             Upload your NEM12 interval data for a personalised solar and battery proposal from the HEA team.
           </p>
           <a
-            href="https://script.google.com/macros/s/AKfycbzI42lh28ASdcxa2F6b8_euLk9KBcfvg4VfxR-bI3Jl3dLPTxvFGDKuZJh2_tqvZiE/exec"
+            href={gasUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-heffdark text-white font-semibold px-8 py-4 rounded-xl hover:bg-heffblack transition-colors text-lg shadow-md"
           >
             Open Solar Analyser →
           </a>
-          <p className="text-gray-400 text-sm mt-4">Opens in a new tab</p>
+          <p className="text-gray-400 text-sm mt-4">{name ? `Pre-filled for ${name} — opens in a new tab` : "Opens in a new tab"}</p>
         </div>
 
         {/* Floating customer info card — shown when opened from admin lead card */}

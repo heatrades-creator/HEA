@@ -205,9 +205,10 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Notify Jobs API (GAS) ────────────────────────────────────────────────────
+  let gasJobNumber: string | undefined
   if (process.env.JOBS_GAS_URL) {
     try {
-      await fetch(process.env.JOBS_GAS_URL, {
+      const gasRes = await fetch(process.env.JOBS_GAS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -219,7 +220,15 @@ export async function POST(req: NextRequest) {
           notes:      `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
         }),
       })
-    } catch { /* non-fatal */ }
+      if (gasRes.ok) {
+        const gasData = await gasRes.json()
+        gasJobNumber = gasData.jobNumber
+      } else {
+        console.error("GAS createJob non-OK:", gasRes.status, await gasRes.text())
+      }
+    } catch (e) {
+      console.error("GAS createJob failed:", e)
+    }
   }
 
   // ── Save lead to Prisma ──────────────────────────────────────────────────────
@@ -238,9 +247,10 @@ export async function POST(req: NextRequest) {
         suburb,
         state,
         postcode,
-        notes:      d.goals,
-        leadSource: "website",
-        status:     "pending_review",
+        notes:        d.goals,
+        leadSource:   "website",
+        status:       "pending_review",
+        gasJobNumber: gasJobNumber ?? null,
         nmiConsentAt: d.nmiConsent ? new Date(d.nmiConsentAt) : null,
         auditLog: {
           create: {

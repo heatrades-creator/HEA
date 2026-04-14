@@ -197,9 +197,76 @@ export default function JobDetail({ job }: { job: any }) {
           {saving ? 'Saving…' : saved ? 'Saved ✓' : 'Save Changes'}
         </button>
 
+        {/* ── Payments ── */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-[#374151] text-xs uppercase tracking-wider">Payments</p>
+            <div className="flex-1 h-px bg-[#eef0f5]" />
+          </div>
+          <p className="text-[#6b7280] text-xs mb-3">Payment schedule: 10% deposit → 80% on completion → 10% after ESV certificate</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <PaymentMilestone
+              label="10% Deposit"
+              description="Ordered and delivered to site"
+              stripeLink={process.env.NEXT_PUBLIC_STRIPE_DEPOSIT_LINK}
+              jobNumber={job.jobNumber}
+              email={job.email}
+              paid={job.depositPaidAt}
+            />
+            <PaymentMilestone
+              label="80% Completion"
+              description="Works complete"
+              stripeLink={process.env.NEXT_PUBLIC_STRIPE_COMPLETION_LINK}
+              jobNumber={job.jobNumber}
+              email={job.email}
+              paid={job.completionPaidAt}
+            />
+            <PaymentMilestone
+              label="10% ESV Certificate"
+              description="After ESV cert returned"
+              stripeLink={process.env.NEXT_PUBLIC_STRIPE_ESV_LINK}
+              jobNumber={job.jobNumber}
+              email={job.email}
+              paid={job.esvPaidAt}
+            />
+          </div>
+        </div>
+
         {/* Document generation */}
         <JobDocuments jobNumber={job.jobNumber} />
       </div>
+    </div>
+  );
+}
+
+function PaymentMilestone({
+  label, description, stripeLink, jobNumber, email, paid,
+}: {
+  label: string; description: string; stripeLink?: string;
+  jobNumber: string; email?: string; paid?: string | null;
+}) {
+  const href = stripeLink
+    ? `${stripeLink}?client_reference_id=${encodeURIComponent(jobNumber)}${email ? `&prefilled_email=${encodeURIComponent(email)}` : ''}`
+    : undefined;
+
+  return (
+    <div className={`rounded-xl border p-4 ${paid ? 'border-green-300 bg-green-50' : 'border-[#e5e9f0] bg-[#f9fafb]'}`}>
+      <p className={`text-sm font-semibold mb-0.5 ${paid ? 'text-green-800' : 'text-[#374151]'}`}>{label}</p>
+      <p className="text-xs text-[#6b7280] mb-3">{description}</p>
+      {paid ? (
+        <p className="text-xs text-green-700 font-medium">✓ Paid {new Date(paid).toLocaleDateString('en-AU')}</p>
+      ) : href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block bg-[#ffd100] text-[#111827] text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
+        >
+          Send Payment Link →
+        </a>
+      ) : (
+        <p className="text-xs text-[#9ca3af] italic">Stripe not configured</p>
+      )}
     </div>
   );
 }

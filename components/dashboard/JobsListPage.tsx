@@ -179,7 +179,7 @@ function MobileJobCard({
       )}
 
       {/* ── Action buttons ────────────────────────────────── */}
-      <div className="px-4 pb-4 grid grid-cols-2 gap-2">
+      <div className="px-4 pb-4 grid grid-cols-3 gap-2">
 
         {/* 1. Solar Analyser */}
         <a
@@ -231,7 +231,28 @@ function MobileJobCard({
           )}
         </button>
 
-        {/* 4. Full Job Details */}
+        {/* 4. OpenSolar Design */}
+        {(job as any).openSolarProjectId ? (
+          <a
+            href={`https://app.opensolar.com/220067/projects/${(job as any).openSolarProjectId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${btnBase} border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100`}
+          >
+            <span className="text-lg">🔆</span>
+            <span>Open Design</span>
+          </a>
+        ) : (
+          <a
+            href="/admin"
+            className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] hover:bg-[#eef0f5] hover:text-[#374151]`}
+          >
+            <span className="text-lg">🔆</span>
+            <span>Create Design</span>
+          </a>
+        )}
+
+        {/* 5. Full Job Details */}
         <button
           onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
           className={`${btnBase} border-[#e5e9f0] bg-[#f5f7fa] text-[#374151] hover:bg-[#eef0f5]`}
@@ -240,12 +261,12 @@ function MobileJobCard({
           <span>Full Details</span>
         </button>
 
-        {/* 5. Complete — full width */}
+        {/* 6. Complete — full width */}
         {job.status !== 'Complete' ? (
           <button
             onClick={markComplete}
             disabled={completing}
-            className={`${btnBase} col-span-2 border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-60`}
+            className={`${btnBase} col-span-3 border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-60`}
           >
             <span className="text-lg">{completing ? '⏳' : '✅'}</span>
             <span>{completing ? 'Marking complete…' : 'Mark as Complete'}</span>
@@ -253,7 +274,7 @@ function MobileJobCard({
         ) : (
           <button
             onClick={() => onMove(job.jobNumber, 'Lead')}
-            className={`${btnBase} col-span-2 border-[#e5e9f0] bg-[#f5f7fa] text-[#6b7280] hover:bg-[#eef0f5]`}
+            className={`${btnBase} col-span-3 border-[#e5e9f0] bg-[#f5f7fa] text-[#6b7280] hover:bg-[#eef0f5]`}
           >
             <span className="text-lg">↩️</span>
             <span>Reopen Job</span>
@@ -519,7 +540,7 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
                 <Th label="System"  className="hidden lg:table-cell" />
                 <Th label="Created" sortKey="createdDate" current={sortKey} asc={sortAsc} onSort={toggleSort} className="hidden lg:table-cell" />
                 <Th label="Phone"   className="hidden xl:table-cell" />
-                <th className="px-4 py-3 w-20" />
+                <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-[#6b7280]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -585,8 +606,58 @@ function JobRow({ job, isEven, onMove, onClick }: {
   job: Job & { systemSize?: string }; isEven: boolean;
   onMove: (jobNumber: string, newStatus: Stage) => void; onClick: () => void;
 }) {
-  const [showMove, setShowMove] = useState(false);
+  const router = useRouter();
+  const [showMove, setShowMove]       = useState(false);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent]     = useState(false);
+  const [emailError, setEmailError]   = useState('');
+  const [completing, setCompleting]   = useState(false);
+
   const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
+
+  const analyserUrl = `/solar-analyser?${new URLSearchParams({
+    name:       job.clientName,
+    email:      job.email      ?? '',
+    phone:      job.phone      ?? '',
+    address:    job.address    ?? '',
+    annualBill: '',
+  }).toString()}`;
+
+  // OpenSolar link — direct project link if confirmed, else admin panel
+  const openSolarUrl = (job as any).openSolarProjectId
+    ? `https://app.opensolar.com/220067/projects/${(job as any).openSolarProjectId}`
+    : `/admin`;
+
+  async function sendFollowup() {
+    if (!job.email) { setEmailError('No email on file'); return; }
+    setSendingEmail(true);
+    setEmailError('');
+    try {
+      const res = await fetch(`/api/jobs/${job.jobNumber}/followup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientName: job.clientName, email: job.email,
+          phone: job.phone, address: job.address, jobNumber: job.jobNumber, followupCount: 1 }),
+      });
+      const data = await res.json();
+      if (res.ok && data.sentAt) {
+        setEmailSent(true);
+        setTimeout(() => setEmailSent(false), 3000);
+      } else {
+        setEmailError(data.error ?? 'Email failed');
+      }
+    } catch { setEmailError('Network error'); }
+    setSendingEmail(false);
+  }
+
+  async function markComplete() {
+    setCompleting(true);
+    await onMove(job.jobNumber, job.status === 'Complete' ? 'Lead' : 'Complete');
+    setCompleting(false);
+  }
+
+  const iconBtn = 'p-1.5 rounded-lg text-sm transition-colors hover:bg-[#333] disabled:opacity-40';
+
   return (
     <tr onClick={onClick} className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group bg-[#f5f7fb] hover:bg-[#232323]`}>
       <td className="px-4 py-3">
@@ -598,20 +669,60 @@ function JobRow({ job, isEven, onMove, onClick }: {
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">{(job as any).systemSize ? `${(job as any).systemSize} kW` : '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">{job.createdDate ?? '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">{job.phone ?? '—'}</td>
-      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className="relative inline-block">
-          <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5">Move ▾</button>
-          {showMove && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-              <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
-                {STAGES.map((s) => (
-                  <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'}`}>{s}</button>
-                ))}
-              </div>
-            </>
+      {/* Quick actions */}
+      <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-1">
+          {/* Solar Analyser */}
+          <a href={analyserUrl} target="_blank" rel="noopener noreferrer"
+            title="Solar Analyser" className={iconBtn}>☀️</a>
+
+          {/* OpenSolar Design */}
+          <a href={openSolarUrl} target="_blank" rel="noopener noreferrer"
+            title={(job as any).openSolarProjectId ? 'Open OpenSolar project' : 'Create design (admin)'}
+            className={`${iconBtn} ${!(job as any).openSolarProjectId ? 'opacity-50' : ''}`}>🔆</a>
+
+          {/* Client Files */}
+          {job.driveUrl ? (
+            <a href={job.driveUrl} target="_blank" rel="noopener noreferrer"
+              title="Client Files" className={iconBtn}>📁</a>
+          ) : (
+            <span title="No Drive folder yet" className={`${iconBtn} opacity-30 cursor-default`}>📁</span>
           )}
+
+          {/* Follow-up Email */}
+          <button onClick={sendFollowup} disabled={sendingEmail || !job.email}
+            title={emailError || (emailSent ? 'Sent!' : 'Send follow-up email')}
+            className={`${iconBtn} ${emailSent ? 'text-green-400' : ''}`}>
+            {emailSent ? '✅' : sendingEmail ? '⏳' : '📧'}
+          </button>
+
+          {/* Full Details */}
+          <button onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
+            title="Full Details" className={iconBtn}>📋</button>
+
+          {/* Mark Complete / Reopen */}
+          <button onClick={markComplete} disabled={completing}
+            title={job.status === 'Complete' ? 'Reopen job' : 'Mark as complete'}
+            className={`${iconBtn} ${job.status === 'Complete' ? 'text-green-400' : ''}`}>
+            {completing ? '⏳' : job.status === 'Complete' ? '↩️' : '✅'}
+          </button>
+
+          {/* Move stage */}
+          <div className="relative inline-block ml-1">
+            <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5">Move ▾</button>
+            {showMove && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
+                <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
+                  {STAGES.map((s) => (
+                    <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'}`}>{s}</button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
+        {emailError && <p className="text-red-400 text-[10px] mt-0.5 text-right">{emailError}</p>}
       </td>
     </tr>
   );

@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HEA Group — hea-group.com.au
 
-## Getting Started
+Solar, battery storage & EV charging installer based in Bendigo, Victoria.
 
-First, run the development server:
+## Stack
+
+| Layer | Tech |
+|---|---|
+| Website | Next.js 16 App Router · Tailwind CSS |
+| CMS | Sanity (content at `/studio`) |
+| Intake form | `/intake` — Next.js multi-step form, PDF generation via pdf-lib |
+| Email | Resend |
+| Database | Prisma + Turso (libSQL) |
+| GAS scripts | Google Apps Script, auto-deployed via clasp + GitHub Actions |
+| Hosting | Vercel (auto-deploys on push to `main`) |
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Deploy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Push to `main`:
+- **Vercel** builds and deploys the Next.js app automatically
+- **GitHub Actions** runs clasp to push any changed GAS scripts (`HEA INTAKE/` or `GAS/`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+See `CLASP_SETUP.md` for one-time GAS credential setup.
 
-## Learn More
+## Lead Flow
 
-To learn more about Next.js, take a look at the following resources:
+All "Get a Quote" buttons on the site point to `/intake` with a service pre-selected:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Page | URL |
+|---|---|
+| Solar installer | `/intake?service=solar` |
+| Battery installer | `/intake?service=battery` |
+| EV charger | `/intake?service=ev` |
+| All other pages | `/intake` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+On submission, the form generates a NMI Consent PDF + Job Card PDF and emails both to
+Jesse (HEA.Trades@gmail.com) and the client.
 
-## Deploy on Vercel
+## For Claude Code
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `CLAUDE.md` — full architecture, pipeline details, known issues, and conventions.

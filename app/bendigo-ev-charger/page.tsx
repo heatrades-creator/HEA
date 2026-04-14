@@ -4,7 +4,7 @@ import Footer from "@/components/Footer";
 import { getFooterData } from "@/lib/sanity";
 import TrustStrip from "@/components/TrustStrip";
 import { ChevronRight, MapPin } from "lucide-react";
-import { GAS_INTAKE_URL } from "@/lib/constants";
+import { INTAKE_URL_EV as GAS_INTAKE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "EV Charger Installer Bendigo | HEA Group",

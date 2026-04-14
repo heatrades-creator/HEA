@@ -5,7 +5,7 @@ import TrustStrip from "@/components/TrustStrip";
 import HEAEstimator from "@/components/HEAEstimator";
 import HEAAdvisor from "@/components/HEAAdvisor";
 import { Check, ChevronRight } from "lucide-react";
-import { GAS_INTAKE_URL } from "@/lib/constants";
+import { INTAKE_URL_SOLAR, INTAKE_URL_BATTERY, GAS_INTAKE_URL } from "@/lib/constants";
 import { getSiteContent } from "@/lib/sanity";
 
 export const metadata: Metadata = {
@@ -141,7 +141,7 @@ export default async function PricingPage() {
                     ))}
                   </ul>
                   <p className="text-xs text-slate-400 italic mb-4">{pkg.note}</p>
-                  <a href={GAS_INTAKE_URL} target="_blank" rel="noopener noreferrer"
+                  <a href={INTAKE_URL_SOLAR}
                     className="text-center text-sm font-semibold border-2 border-slate-200 text-slate-700 py-2.5 rounded-xl hover:border-yellow-400 transition-colors">
                     Get a Quote
                   </a>
@@ -180,7 +180,7 @@ export default async function PricingPage() {
                     ))}
                   </ul>
                   <p className="text-xs text-slate-400 italic mb-4">{pkg.note}</p>
-                  <a href={GAS_INTAKE_URL} target="_blank" rel="noopener noreferrer"
+                  <a href={INTAKE_URL_BATTERY}
                     className="text-center text-sm font-semibold border-2 border-slate-200 text-slate-700 py-2.5 rounded-xl hover:border-yellow-400 transition-colors">
                     Get a Quote
                   </a>

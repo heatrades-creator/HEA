@@ -6,7 +6,7 @@ import TrustStrip from "@/components/TrustStrip";
 import HowItWorks from "@/components/HowItWorks";
 import FAQAccordion from "@/components/FAQAccordion";
 import { Check, ChevronRight, MapPin } from "lucide-react";
-import { GAS_INTAKE_URL } from "@/lib/constants";
+import { INTAKE_URL_SOLAR as GAS_INTAKE_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
   title: "Solar Installer Bendigo | HEA Group",

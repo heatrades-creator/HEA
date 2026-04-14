@@ -13,6 +13,7 @@ import CaseStudies from "@/components/CaseStudies";
 import LearningHub from "@/components/LearningHub";
 import FAQAccordion from "@/components/FAQAccordion";
 import Contact from "@/components/Contact";
+import ConsultationForm from "@/components/ConsultationForm";
 import Footer from "@/components/Footer";
 import { getSiteContent } from "@/lib/sanity";
 import { GAS_INTAKE_URL } from "@/lib/constants";
@@ -88,6 +89,22 @@ export default async function Home() {
           </a>
           <p className="text-slate-400 text-sm mt-4">No obligation · opens in a new tab</p>
         </div>
+      </section>
+
+      {/* Free Consultation — simple contact form, linked from Hero "Book Free Consultation" */}
+      <section id="consultation" className="py-20 px-4 bg-slate-50">
+        <div className="max-w-xl mx-auto text-center mb-10">
+          <p className="text-sm font-bold tracking-widest uppercase text-slate-400 mb-2">
+            Free Consultation
+          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+            Book a Free Consultation
+          </h2>
+          <p className="text-slate-500 text-lg">
+            Talk to Jesse directly — no sales pitch, no obligation. We&apos;ll get back to you within 24 hours.
+          </p>
+        </div>
+        <ConsultationForm />
       </section>
 
       <Footer data={content?.footer} />

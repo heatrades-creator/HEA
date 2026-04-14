@@ -1,9 +1,11 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { GAS_INTAKE_URL, HEA_PHONE } from "@/lib/constants";
 
 const StickyMobileCTA = () => {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -11,6 +13,9 @@ const StickyMobileCTA = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Don't show on the intake form — it blocks the Continue button
+  if (pathname === "/intake") return null;
 
   return (
     <div

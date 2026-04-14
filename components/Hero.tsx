@@ -129,9 +129,7 @@ const Hero = ({ data }: HeroProps) => {
               <ChevronRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
-              href={GAS_INTAKE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#consultation"
               className="bg-white text-slate-900 border-2 border-slate-200 px-8 py-4 rounded-xl text-lg font-semibold
                 hover:border-yellow-400 hover:shadow-lg transition-all duration-200 flex items-center justify-center"
             >

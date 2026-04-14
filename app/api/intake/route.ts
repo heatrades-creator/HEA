@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { Resend } from "resend"
 import { generateConsentPdf, generateJobCardPdf, type IntakeData } from "@/lib/intake-pdf"
+import { prisma } from "@/lib/db"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM   = process.env.EMAIL_FROM     ?? "noreply@hea-group.com.au"
@@ -28,6 +29,13 @@ const Schema = z.object({
   billName:      z.string().max(200).optional(),
   billMime:      z.string().max(60).optional(),
 })
+
+// Parse suburb/state/postcode from a combined Australian address string
+function parseAddress(address: string): { suburb: string; state: string; postcode: string } {
+  const m = address.match(/,\s*([^,]+?)\s+(VIC|NSW|QLD|SA|WA|TAS|NT|ACT)\s+(\d{4})\s*$/i)
+  if (m) return { suburb: m[1].trim(), state: m[2].toUpperCase(), postcode: m[3] }
+  return { suburb: "Bendigo", state: "VIC", postcode: "3550" }
+}
 
 // Melbourne timestamp
 function melbourneTimestamp(): string {
@@ -212,6 +220,40 @@ export async function POST(req: NextRequest) {
         }),
       })
     } catch { /* non-fatal */ }
+  }
+
+  // ── Save lead to Prisma ──────────────────────────────────────────────────────
+  try {
+    const [firstName, ...rest] = d.name.trim().split(" ")
+    const lastName = rest.join(" ") || "-"
+    const { suburb, state, postcode } = parseAddress(d.address)
+
+    await prisma.lead.create({
+      data: {
+        firstName,
+        lastName,
+        email:   d.email,
+        phone:   d.phone,
+        address: d.address,
+        suburb,
+        state,
+        postcode,
+        notes:      d.goals,
+        leadSource: "website",
+        status:     "pending_review",
+        nmiConsentAt: d.nmiConsent ? new Date(d.nmiConsentAt) : null,
+        auditLog: {
+          create: {
+            action: "lead_received",
+            actor:  "system",
+            detail: JSON.stringify({ source: "intake_form", service: d.service }),
+          },
+        },
+      },
+    })
+  } catch (dbErr) {
+    console.error("Intake lead DB save failed:", dbErr)
+    // non-fatal — emails already sent
   }
 
   return NextResponse.json({ success: true }, { status: 201 })

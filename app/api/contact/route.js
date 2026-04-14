@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { prisma } from "@/lib/db";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -205,6 +206,37 @@ export async function POST(request) {
     sendTelegram(sanitizedData).catch((err) =>
       console.error("Telegram error:", err)
     );
+
+    // Save lead to Prisma (non-fatal)
+    try {
+      const nameParts = sanitizedData.name.trim().split(" ");
+      const firstName = nameParts[0];
+      const lastName  = nameParts.slice(1).join(" ") || "-";
+      await prisma.lead.create({
+        data: {
+          firstName,
+          lastName,
+          email:     sanitizedData.email,
+          phone:     sanitizedData.phone,
+          address:   "Not provided",
+          suburb:    "Not provided",
+          state:     "VIC",
+          postcode:  "0000",
+          notes:     `Service: ${sanitizedData.service}\n\n${sanitizedData.message}`,
+          leadSource: "website",
+          status:    "pending_review",
+          auditLog: {
+            create: {
+              action: "lead_received",
+              actor:  "system",
+              detail: JSON.stringify({ source: "contact_form", service: sanitizedData.service }),
+            },
+          },
+        },
+      });
+    } catch (dbErr) {
+      console.error("Lead DB save failed:", dbErr);
+    }
 
     return Response.json(
       { success: true, messageId: data.id },

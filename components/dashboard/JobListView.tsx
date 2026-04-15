@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Job, Stage } from './KanbanBoard';
 
-const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 
 const STAGE_STYLES: Record<Stage, { badge: string }> = {
   Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]' },
   Quoted:        { badge: 'bg-blue-900/40 text-blue-300' },
+  Contract:      { badge: 'bg-orange-900/40 text-orange-300' },
   Booked:        { badge: 'bg-purple-900/40 text-purple-300' },
   'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]' },
   Complete:      { badge: 'bg-green-900/40 text-green-400' },

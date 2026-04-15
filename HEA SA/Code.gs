@@ -13,14 +13,14 @@ function doGet(e) {
   }
 
   // Pre-fill from HEA dashboard link params
-  // (?name=&address=&phone=&annualBill=&occupants=&homeDaytime=&hotWater=&gasAppliances=&ev=&driveUrl=)
+  // (?name=&address=&phone=&postcode=&occupants=&homeDaytime=&hotWater=&gasAppliances=&ev=&driveUrl=)
   const addr = params.address || '';
   const postcodeMatch = addr.match(/\b(\d{4})\b/);
   const prefillData = JSON.stringify({
     clientName:    params.name         || '',
     clientAddress: addr,
     clientPhone:   params.phone        || '',
-    postcode:      postcodeMatch ? postcodeMatch[1] : '',
+    postcode:      params.postcode || (postcodeMatch ? postcodeMatch[1] : ''),
     annualBill:    params.annualBill   || '',
     occupants:     params.occupants    || '',
     homeDaytime:   params.homeDaytime  || '',

@@ -13,13 +13,13 @@ const Schema = z.object({
   email:         z.string().email(),
   phone:         z.string().min(8).max(20),
   address:       z.string().min(5).max(300),
+  postcode:      z.string().regex(/^\d{4}$/).optional(),
   service:       z.string().max(100).default("General enquiry"),
   occupants:     z.string().max(20).optional(),
   homeDaytime:   z.string().max(60).optional(),
   hotWater:      z.string().max(60).optional(),
   gasAppliances: z.string().max(60).optional(),
   ev:            z.string().max(60).optional(),
-  annualBill:    z.string().max(20).optional(),
   goals:         z.string().max(500).optional(),
   systemSize:    z.string().max(100).optional(),
   batterySize:   z.string().max(100).optional(),
@@ -219,8 +219,8 @@ export async function POST(req: NextRequest) {
           phone:         d.phone,
           email:         d.email,
           address:       d.address,
+          postcode:      d.postcode     ?? '',
           notes:         `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
-          annualBill:    d.annualBill    ?? '',
           occupants:     d.occupants    ?? '',
           homeDaytime:   d.homeDaytime  ?? '',
           hotWater:      d.hotWater     ?? '',
@@ -244,7 +244,8 @@ export async function POST(req: NextRequest) {
   try {
     const [firstName, ...rest] = d.name.trim().split(" ")
     const lastName = rest.join(" ") || "-"
-    const { suburb, state, postcode } = parseAddress(d.address)
+    const parsed = parseAddress(d.address)
+    const postcode = d.postcode ?? parsed.postcode
 
     await prisma.lead.create({
       data: {
@@ -253,8 +254,8 @@ export async function POST(req: NextRequest) {
         email:        d.email,
         phone:        d.phone,
         address:      d.address,
-        suburb,
-        state,
+        suburb:       parsed.suburb,
+        state:        parsed.state,
         postcode,
         notes:        d.goals,
         leadSource:   "website",
@@ -262,7 +263,6 @@ export async function POST(req: NextRequest) {
         gasJobNumber: gasJobNumber ?? null,
         gasDriveUrl:  gasDriveUrl  ?? null,
         nmiConsentAt: d.nmiConsent ? new Date(d.nmiConsentAt) : null,
-        annualBillAud: d.annualBill ? (parseInt(d.annualBill, 10) || null) : null,
         occupants:     d.occupants     ?? null,
         homeDaytime:   d.homeDaytime   ?? null,
         hotWater:      d.hotWater      ?? null,

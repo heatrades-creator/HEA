@@ -14,7 +14,13 @@ const STAGE_COLORS: Record<string, string> = {
   Complete:      'bg-green-900/40 text-green-400',
 };
 
-export default function JobDetail({ job }: { job: any }) {
+const MILESTONE_LABELS: Record<string, string> = {
+  deposit:    '10% Deposit',
+  completion: '80% Completion',
+  esv:        '10% ESV Certificate',
+};
+
+export default function JobDetail({ job, paymentStatus, paymentMilestone }: { job: any; paymentStatus?: string; paymentMilestone?: string }) {
   const router = useRouter();
 
   // Core fields
@@ -60,6 +66,25 @@ export default function JobDetail({ job }: { job: any }) {
   }
 
   return (
+    <div className="space-y-4">
+      {/* Payment result banners */}
+      {paymentStatus === 'success' && (
+        <div className="bg-green-50 border border-green-300 rounded-xl px-5 py-4 flex items-center gap-3">
+          <span className="text-2xl">✅</span>
+          <div>
+            <p className="text-green-800 font-semibold text-sm">Payment received!</p>
+            <p className="text-green-700 text-xs mt-0.5">
+              {paymentMilestone ? MILESTONE_LABELS[paymentMilestone] ?? paymentMilestone : 'Payment'} was completed successfully by the client.
+            </p>
+          </div>
+        </div>
+      )}
+      {paymentStatus === 'cancelled' && (
+        <div className="bg-yellow-50 border border-yellow-300 rounded-xl px-5 py-3">
+          <p className="text-yellow-800 text-sm font-medium">Payment was cancelled — the Stripe link is still valid if the client wants to try again.</p>
+        </div>
+      )}
+
     <div className="bg-white rounded-xl border border-[#e5e9f0] overflow-hidden">
       {/* Header */}
       <div className="px-6 py-5 border-b border-[#e5e9f0]">
@@ -256,6 +281,7 @@ export default function JobDetail({ job }: { job: any }) {
         {/* Document generation */}
         <JobDocuments jobNumber={job.jobNumber} />
       </div>
+    </div>
     </div>
   );
 }

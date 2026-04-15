@@ -50,6 +50,11 @@ export async function POST(req: NextRequest) {
   const amountCents = Math.round(total * info.pct * 100)
   const amountDisplay = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(total * info.pct)
 
+  // Stripe minimum charge is $0.50 AUD
+  if (amountCents < 50) {
+    return NextResponse.json({ error: `Amount ${amountDisplay} is below Stripe's minimum of $0.50 — the Quote Value may be set too low` }, { status: 400 })
+  }
+
   const baseUrl      = process.env.NEXTAUTH_URL ?? 'https://hea-group.com.au'
   const successUrl   = `${baseUrl}/dashboard/jobs/${jobNumber}?payment=success&milestone=${milestone}`
   const cancelUrl    = `${baseUrl}/dashboard/jobs/${jobNumber}?payment=cancelled`

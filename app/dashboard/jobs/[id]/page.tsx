@@ -17,8 +17,15 @@ async function getJob(id: string) {
   }
 }
 
-export default async function JobPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ payment?: string; milestone?: string }>;
+}) {
   const { id } = await params;
+  const { payment, milestone: paymentMilestone } = await searchParams;
   const job = await getJob(id);
   if (!job) notFound();
 
@@ -30,7 +37,7 @@ export default async function JobPage({ params }: { params: Promise<{ id: string
       >
         ← Back to Dashboard
       </Link>
-      <JobDetail job={job} />
+      <JobDetail job={job} paymentStatus={payment} paymentMilestone={paymentMilestone} />
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useSearchParams } from "next/navigation"
-import { Check, ChevronRight, Upload, X, Loader2 } from "lucide-react"
+import { Camera, Check, ChevronRight, Upload, X, Loader2 } from "lucide-react"
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 const Schema = z.object({
@@ -21,9 +21,13 @@ const Schema = z.object({
   hotWater:      z.string().min(1, "Please select"),
   gasAppliances: z.string().min(1, "Please select"),
   ev:            z.string().min(1, "Please select"),
-  goals:         z.string().optional(),
-  systemSize:    z.string().optional(),
-  batterySize:   z.string().optional(),
+  goals:           z.string().optional(),
+  systemSize:      z.string().optional(),
+  batterySize:     z.string().optional(),
+  roofMaterial:    z.string().optional(),
+  roofOrientation: z.string().optional(),
+  shadingIssues:   z.string().optional(),
+  phases:          z.string().optional(),
   nmiConsent:    z.literal(true, { error: "Consent is required to proceed" }),
 })
 type FormData = z.infer<typeof Schema>
@@ -145,8 +149,10 @@ function IntakeFormInner() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted]   = useState(false)
   const [submitError, setSubmitError] = useState("")
-  const [billFile, setBillFile]     = useState<File | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [billFile, setBillFile]         = useState<File | null>(null)
+  const [roofPhotoFile, setRoofPhotoFile] = useState<File | null>(null)
+  const fileRef      = useRef<HTMLInputElement>(null)
+  const roofPhotoRef = useRef<HTMLInputElement>(null)
 
   const {
     register, handleSubmit, watch, setValue, trigger,
@@ -197,6 +203,18 @@ function IntakeFormInner() {
       } catch { /* skip if conversion fails */ }
     }
 
+    let roofPhotoBase64: string | undefined
+    let roofPhotoName:   string | undefined
+    let roofPhotoMime:   string | undefined
+
+    if (roofPhotoFile) {
+      try {
+        roofPhotoBase64 = await fileToBase64(roofPhotoFile)
+        roofPhotoName   = roofPhotoFile.name
+        roofPhotoMime   = roofPhotoFile.type
+      } catch { /* skip if conversion fails */ }
+    }
+
     try {
       const res = await fetch("/api/intake", {
         method: "POST",
@@ -208,6 +226,9 @@ function IntakeFormInner() {
           billBase64,
           billName,
           billMime,
+          roofPhotoBase64,
+          roofPhotoName,
+          roofPhotoMime,
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -427,6 +448,105 @@ function IntakeFormInner() {
                     className="w-full border border-slate-200 rounded-xl px-4 py-3 text-base text-slate-900 focus:outline-none focus:border-slate-800 transition-colors resize-none"
                     {...register("goals")}
                   />
+                </div>
+
+                <div className="border-t border-slate-100 pt-5">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                    Property info <span className="font-normal normal-case text-slate-400">(optional — helps Jesse plan your system)</span>
+                  </p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Roof type</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["Tiles", "Colorbond / Metal", "Concrete", "Not sure"].map(v => (
+                          <button key={v} type="button"
+                            onClick={() => setValue("roofMaterial", watch("roofMaterial") === v ? "" : v)}
+                            className={`py-3 px-3 rounded-xl border text-sm font-medium transition-all text-left ${
+                              watch("roofMaterial") === v ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-400"
+                            }`}
+                          >{v}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Which way does your main roof face?</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {["North", "North-East", "North-West", "East", "West", "Not sure"].map(v => (
+                          <button key={v} type="button"
+                            onClick={() => setValue("roofOrientation", watch("roofOrientation") === v ? "" : v)}
+                            className={`py-2.5 px-2 rounded-xl border text-xs font-medium transition-all ${
+                              watch("roofOrientation") === v ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-400"
+                            }`}
+                          >{v}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Any shading on your roof?</Label>
+                      <div className="space-y-2">
+                        {["None or very minor", "Some trees or structures nearby", "Significant shading", "Not sure"].map(v => (
+                          <RadioRow key={v} name="shadingIssues" value={v} label={v}
+                            checked={watch("shadingIssues") === v}
+                            onChange={() => setValue("shadingIssues", v)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Power supply type</Label>
+                      <div className="space-y-2">
+                        {["Single phase (most homes)", "Three phase", "Not sure"].map(v => (
+                          <RadioRow key={v} name="phases" value={v} label={v}
+                            checked={watch("phases") === v}
+                            onChange={() => setValue("phases", v)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Roof photo (optional — helps plan panel placement)</Label>
+                      <p className="text-xs text-slate-400 mb-3">
+                        Take a photo of your roof or upload one from your gallery. JPG or PNG · Max 5 MB
+                      </p>
+                      {roofPhotoFile ? (
+                        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                          <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800 truncate">{roofPhotoFile.name}</p>
+                            <p className="text-xs text-slate-400">{(roofPhotoFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                          </div>
+                          <button type="button" onClick={() => { setRoofPhotoFile(null); if (roofPhotoRef.current) roofPhotoRef.current.value = "" }}>
+                            <X className="w-4 h-4 text-slate-400" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => roofPhotoRef.current?.click()}
+                          className="w-full border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-slate-400 transition-colors"
+                        >
+                          <Camera className="w-6 h-6 text-slate-400" />
+                          <p className="text-sm text-slate-500">Tap to photograph your roof</p>
+                        </button>
+                      )}
+                      <input
+                        ref={roofPhotoRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => {
+                          const f = e.target.files?.[0]
+                          if (f && f.size <= 5 * 1024 * 1024) setRoofPhotoFile(f)
+                          else if (f) alert("File must be under 5 MB")
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div>

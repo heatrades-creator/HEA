@@ -6,20 +6,32 @@ import Nav from "@/components/Nav"
 
 function SolarAnalyserContent() {
   const params = useSearchParams()
-  const name       = params.get("name")
-  const address    = params.get("address")
-  const phone      = params.get("phone")
-  const email      = params.get("email")
-  const annualBill = params.get("annualBill")
+  const name          = params.get("name")
+  const address       = params.get("address")
+  const phone         = params.get("phone")
+  const email         = params.get("email")
+  const annualBill    = params.get("annualBill")
+  const occupants     = params.get("occupants")
+  const homeDaytime   = params.get("homeDaytime")
+  const hotWater      = params.get("hotWater")
+  const gasAppliances = params.get("gasAppliances")
+  const ev            = params.get("ev")
+  const driveUrl      = params.get("driveUrl")
 
   // Build GAS URL with client params so the script can pre-fill fields
   const GAS_BASE = "https://script.google.com/macros/s/AKfycbzI42lh28ASdcxa2F6b8_euLk9KBcfvg4VfxR-bI3Jl3dLPTxvFGDKuZJh2_tqvZiE/exec"
   const gasParams = new URLSearchParams()
-  if (name)       gasParams.set("name", name)
-  if (email)      gasParams.set("email", email)
-  if (phone)      gasParams.set("phone", phone)
-  if (address)    gasParams.set("address", address)
-  if (annualBill) gasParams.set("annualBill", annualBill)
+  if (name)          gasParams.set("name", name)
+  if (email)         gasParams.set("email", email)
+  if (phone)         gasParams.set("phone", phone)
+  if (address)       gasParams.set("address", address)
+  if (annualBill)    gasParams.set("annualBill", annualBill)
+  if (occupants)     gasParams.set("occupants", occupants)
+  if (homeDaytime)   gasParams.set("homeDaytime", homeDaytime)
+  if (hotWater)      gasParams.set("hotWater", hotWater)
+  if (gasAppliances) gasParams.set("gasAppliances", gasAppliances)
+  if (ev)            gasParams.set("ev", ev)
+  if (driveUrl)      gasParams.set("driveUrl", driveUrl)
   const gasUrl = gasParams.size > 0 ? `${GAS_BASE}?${gasParams.toString()}` : GAS_BASE
 
   return (
@@ -59,11 +71,22 @@ function SolarAnalyserContent() {
             {phone && <p className="text-xs text-gray-600">{phone}</p>}
             {email && <p className="text-xs text-gray-600">{email}</p>}
             {annualBill && <p className="text-xs text-gray-600">Bill: ${annualBill}/yr</p>}
+            {occupants && <p className="text-xs text-gray-500 mt-1">Occupants: {occupants}</p>}
+            {homeDaytime && <p className="text-xs text-gray-500">Home daytime: {homeDaytime}</p>}
+            {hotWater && <p className="text-xs text-gray-500">Hot water: {hotWater}</p>}
+            {gasAppliances && <p className="text-xs text-gray-500">Gas: {gasAppliances}</p>}
+            {ev && <p className="text-xs text-gray-500">EV: {ev}</p>}
+            {driveUrl && (
+              <a href={driveUrl} target="_blank" rel="noopener noreferrer"
+                className="text-xs text-yellow-700 hover:underline mt-1.5 block">
+                📁 Client folder (NMI Data) →
+              </a>
+            )}
             <a
               href="https://myenergy.powercor.com.au/s/nmi-register"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-yellow-700 hover:underline mt-2 block"
+              className="text-xs text-yellow-700 hover:underline mt-1 block"
             >
               NMI lookup (Powercor) →
             </a>

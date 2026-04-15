@@ -20,6 +20,7 @@ const Schema = z.object({
   hotWater:      z.string().min(1, "Please select"),
   gasAppliances: z.string().min(1, "Please select"),
   ev:            z.string().min(1, "Please select"),
+  annualBill:    z.string().optional(),
   goals:         z.string().optional(),
   systemSize:    z.string().optional(),
   batterySize:   z.string().optional(),
@@ -411,8 +412,23 @@ function IntakeFormInner() {
           {/* ── Step 4: Goals + Bill ───────────────────────────────────────── */}
           {step === 4 && (
             <div>
-              <StepHeader title="Goals & electricity bill" sub="Optional but helpful — upload your bill and we can use real data." />
+              <StepHeader title="Goals & electricity bill" sub="Optional but helpful — the more we know, the better we can size your system." />
               <div className="space-y-5">
+                <div>
+                  <Label>Approximate annual electricity bill ($) (optional)</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 text-base font-medium">$</span>
+                    <Input
+                      type="number"
+                      placeholder="2800"
+                      min="0"
+                      max="50000"
+                      {...register("annualBill")}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">Your total yearly electricity spend — check your last 4 bills</p>
+                </div>
+
                 <div>
                   <Label>What are your main goals? (optional)</Label>
                   <textarea

@@ -1,0 +1,3243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HEA -- Solar Analyser</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f2f2f0;color:#1a1a1a;min-height:100vh}
+.hdr{background:#1a1a1a;padding:12px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.hdr img{height:36px}
+.hdr h1{color:#fff;font-size:16px;font-weight:700;line-height:1.2}
+.hdr span{color:#f5c518;font-size:11px}
+.main{max-width:1060px;margin:0 auto;padding:18px 14px 60px}
+.card{background:#fff;border-radius:10px;padding:18px;margin-bottom:14px;border:1px solid #e6e6e4;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:9px}
+.badge{background:#f5c518;color:#1a1a1a;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr 1fr}}
+label{display:block;font-size:10.5px;font-weight:700;color:#666;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+input,select,textarea{width:100%;padding:8px 11px;border:1.5px solid #ddd;border-radius:7px;font-size:13px;font-family:inherit;background:#fff;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1a1a1a}
+textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
+.tabs{display:flex;border-bottom:2px solid #e6e6e4}
+.tab{padding:8px 16px;background:none;border:none;font-size:13px;font-weight:600;cursor:pointer;color:#999;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab.on{color:#1a1a1a;border-bottom-color:#f5c518}
+.tt{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tt-btn{padding:6px 14px;border:1.5px solid #ddd;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;background:#fff;color:#888;transition:all .15s}
+.tt-btn.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.tsec{background:#f7f7f5;border-radius:8px;padding:13px;border:1px solid #ebebea}
+.btn{padding:10px 22px;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity .2s;font-family:inherit}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn:hover:not(:disabled){opacity:.8}
+.btn-dark{background:#1a1a1a;color:#fff}
+.btn-gold{background:#f5c518;color:#1a1a1a}
+.btn-sm{padding:7px 13px;font-size:12px}
+.msg{padding:9px 13px;border-radius:7px;font-size:12.5px;margin:7px 0}
+.err{background:#fce8e8;color:#7a1a1a;border:1px solid #f5c5c5}
+.ok{background:#e8fce8;color:#1a6a1a;border:1px solid #b5e5b5}
+.inf{background:#e6f0fc;color:#1a3a7a;border:1px solid #b5d0f5}
+.hint{font-size:11px;color:#bbb;margin-top:4px}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid #ccc;border-top-color:#1a1a1a;border-radius:50%;animation:sp .65s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* == Explorer == */
+.explorer{background:linear-gradient(135deg,#1a1a1a,#272727);border-radius:10px;padding:20px;margin-bottom:14px;color:#fff}
+.explorer h2{font-size:15px;margin-bottom:16px;color:#f5c518}
+.slider-row{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.slider-row label{color:#ccc;font-size:10px;width:90px;flex-shrink:0;margin:0}
+.slider-row input[type=range]{flex:1;min-width:140px;accent-color:#f5c518;height:4px}
+.slider-val{font-size:14px;font-weight:700;color:#f5c518;min-width:140px}
+.live-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:580px){.live-kpis{grid-template-columns:1fr 1fr}}
+.lkpi{background:rgba(255,255,255,.07);border-radius:8px;padding:12px 10px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.lkpi .v{font-size:22px;font-weight:800;line-height:1}
+.lkpi .v.grn{color:#4ade80}
+.lkpi .v.amber{color:#f5c518}
+.lkpi .v.red{color:#f87171}
+.lkpi .l{font-size:10px;color:#aaa;margin-top:3px}
+.waste-box{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.25);border-radius:8px;padding:11px 14px;font-size:12px;color:#f5e090;margin-bottom:14px}
+.waste-box strong{color:#f5c518}
+.baseline-banner{background:rgba(255,255,255,.05);border:1px solid rgba(248,113,113,.35);border-radius:8px;padding:9px 13px;font-size:12px;color:#fca5a5;margin-bottom:14px;display:none}
+
+/* == Bill Card == */
+.bill-card{background:#fff;border-radius:10px;padding:18px;margin-bottom:14px;border:2px solid #f5c518;box-shadow:0 2px 10px rgba(245,197,24,.12)}
+.bill-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:12px}
+@media(max-width:520px){.bill-cols{grid-template-columns:1fr}}
+.bill-col{border-radius:8px;padding:14px}
+.bill-col.current{background:#fafaf8;border:1.5px solid #e0e0de}
+.bill-col.solar{background:#f0faf0;border:1.5px solid #b5e5b5}
+.bill-col-head{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.bill-col.current .bill-col-head{color:#999}
+.bill-col.solar .bill-col-head{color:#1a6a1a}
+.bill-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px}
+.bill-row:last-of-type{border-bottom:none}
+.bill-row .lbl{color:#666;font-size:12px}
+.bill-row .val{font-weight:700}
+.bill-row .val.qt{font-size:19px;font-weight:800}
+.bill-row .val.qt.red{color:#c04a4a}
+.bill-row .val.qt.grn{color:#1a6a1a}
+.bill-footer{display:flex;align-items:center;justify-content:space-between;background:#1a1a1a;color:#fff;border-radius:8px;padding:12px 16px;flex-wrap:wrap;gap:8px}
+.bill-footer .sav-label{font-size:11px;color:#aaa}
+.bill-footer .sav-val{font-size:18px;font-weight:800;color:#f5c518}
+.conn-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.conn-row label{font-size:10.5px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.3px;margin:0}
+.conn-input-wrap{display:flex;align-items:center;gap:4px;background:#f5f5f3;border:1.5px solid #ddd;border-radius:7px;padding:5px 10px}
+.conn-input-wrap span{font-size:12px;color:#888;font-weight:600}
+.conn-input-wrap input{border:none;background:transparent;width:64px;padding:0;font-size:13px;font-weight:700;color:#1a1a1a;text-align:center}
+.conn-input-wrap input:focus{outline:none}
+
+/* == ROI / Finance Card == */
+.roi-card{background:linear-gradient(135deg,#1a1a1a,#232323);border-radius:10px;padding:20px;margin-bottom:14px;color:#fff}
+.roi-card h2{font-size:15px;margin-bottom:16px;color:#f5c518;display:flex;align-items:center;gap:9px}
+.fin-inputs{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;background:rgba(255,255,255,.06);border-radius:8px;padding:13px}
+.fin-inputs label{color:#ccc;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0;white-space:nowrap}
+.fin-amount-wrap{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 10px}
+.fin-amount-wrap span{color:#aaa;font-size:13px;font-weight:700}
+.fin-amount-wrap input{border:none;background:transparent;width:72px;padding:0;font-size:15px;font-weight:800;color:#f5c518;text-align:center}
+.fin-amount-wrap input:focus{outline:none}
+.fin-period{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.15);border-radius:7px;padding:6px 10px;font-size:13px;font-weight:700;color:#f5c518;width:auto;min-width:120px}
+.fin-period option{color:#1a1a1a;background:#fff}
+.escal-toggle{display:flex;align-items:center;gap:7px;font-size:11.5px;color:#ccc;cursor:pointer;margin-left:auto}
+.escal-toggle input{width:auto;margin:0;accent-color:#f5c518}
+.milestones{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:4px}
+.ms-item{background:rgba(255,255,255,.06);border-radius:8px;padding:13px 14px;border:1px solid rgba(255,255,255,.08);position:relative}
+.ms-item.breakeven{border-color:rgba(245,197,24,.4);background:rgba(245,197,24,.08)}
+.ms-item.profit{border-color:rgba(74,222,128,.3);background:rgba(74,222,128,.06)}
+.ms-item .ms-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#aaa;margin-bottom:5px}
+.ms-item .ms-val{font-size:20px;font-weight:800;line-height:1;margin-bottom:2px}
+.ms-item .ms-val.gold{color:#f5c518}
+.ms-item .ms-val.grn{color:#4ade80}
+.ms-item .ms-val.neg{color:#f87171}
+.ms-item .ms-sub{font-size:10.5px;color:#999}
+.ms-item .ms-badge{position:absolute;top:10px;right:10px;background:rgba(245,197,24,.2);color:#f5c518;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px}
+.timeline-bar{height:8px;background:rgba(255,255,255,.1);border-radius:4px;margin:16px 0 6px;overflow:hidden;position:relative}
+.timeline-fill{height:100%;border-radius:4px;transition:width .4s ease;background:linear-gradient(90deg,#f87171,#f5c518,#4ade80)}
+.timeline-labels{display:flex;justify-content:space-between;font-size:9px;color:#888;margin-bottom:12px}
+.fin-note{font-size:11px;color:#888;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)}
+
+/* == Season Chart Card == */
+.stabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.stab{padding:6px 16px;border:1.5px solid #ddd;border-radius:20px;font-size:11.5px;font-weight:700;cursor:pointer;background:#fff;color:#888;transition:all .15s}
+.stab.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.chart-wrap{position:relative;height:300px}
+.chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:#555}
+.leg-item{display:flex;align-items:center;gap:5px}
+.leg-dot{width:12px;height:12px;border-radius:2px;flex-shrink:0}
+.drive-list{max-height:190px;overflow-y:auto;border:1.5px solid #ddd;border-radius:7px;margin-top:9px}
+.d-item{padding:8px 13px;cursor:pointer;border-bottom:1px solid #f0f0ee;font-size:12.5px}
+.d-item:last-child{border-bottom:none}
+.d-item:hover{background:#f5f5f3}
+.d-item .df{color:#aaa;font-size:10.5px;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <img src="https://hea-group.com.au/_next/static/media/Logo_transparent.02d8e37d.png" alt="HEA">
+  <div>
+    <h1>Solar Interval Analyser</h1>
+    <span>NEM12 -> load profile -> generation model -> live system sizing -> payback</span>
+  </div>
+</div>
+<div class="main">
+
+<!-- STEP 1 -->
+<div class="card">
+  <div class="card-title"><span class="badge">1</span>Client &amp; Interval Data</div>
+  <div class="g2" style="margin-bottom:13px">
+    <div><label>Client Name</label><input id="clientName" type="text" placeholder="Jane Smith"></div>
+    <div>
+      <label>Postcode</label>
+      <input id="postcode" type="text" placeholder="3550" maxlength="4" oninput="detectZone()">
+      <div id="zoneHint" class="hint"></div>
+    </div>
+    <div><label>Site Address</label><input id="clientAddress" type="text" placeholder="42 Solar St, Bendigo VIC 3550" style="width:100%"></div>
+    <div><label>Client Phone</label><input id="clientPhone" type="tel" placeholder="0412 345 678"></div>
+  </div>
+  <!-- Load from Intake ──────────────────────────────────── -->
+  <div style="margin-bottom:13px">
+    <button class="btn btn-dark btn-sm" onclick="loadIntakeClients()" style="margin-bottom:6px">📋 Load from Intake</button>
+    <div id="intakeBanner" class="msg ok" style="display:none;margin-top:6px"></div>
+    <div id="intakeList" style="margin-top:6px"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab on" onclick="switchTab('paste',this)">Paste CSV</button>
+    <button class="tab" onclick="switchTab('drive',this)">Pick from Drive</button>
+  </div>
+  <div style="padding-top:12px">
+    <div id="pane-paste">
+      <label>NEM12 CSV -- paste full file content from Powercor portal</label>
+      <textarea id="csvText" rows="5" placeholder="200,6203432639,E1,E1,E1,,B4200628,KWH,30,&#10;300,20250608,0.999,...&#10;900"></textarea>
+    </div>
+    <div id="pane-drive" style="display:none">
+      <div class="msg inf" style="margin-bottom:10px">
+        <strong> Drive location:</strong> My Drive -> 2) --- Client Information -> 1) Jobs -> [Client folder]. File must end in <strong>.csv</strong> or contain "interval"/"nem12".
+      </div>
+      <button class="btn btn-dark btn-sm" onclick="loadDriveFiles()">Browse Client Folders</button>
+      <div id="driveList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="card">
+  <div class="card-title"><span class="badge">2</span>System &amp; Tariff</div>
+  <p style="font-size:11px;color:#aaa;margin:-8px 0 14px">Default rates match Powercor/Tango VIC D1 tariff. Update from the customer's actual bill. Set panels to 0 for baseline bill only.</p>
+
+  <!-- Rebate cliff urgency banner -- shown until May 1 2026 -->
+  <div id="rebateCliffBanner" style="background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(248,113,113,.1));border:1.5px solid rgba(245,197,24,.5);border-radius:8px;padding:11px 14px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:800;color:#f5c518;margin-bottom:4px">!! Battery Rebate Cliff -- 38 days remaining</div>
+    <div style="font-size:11px;color:#1a1a1a;line-height:1.7;margin-bottom:10px">
+      The federal Cheaper Home Battery Program changes on <strong style="color:#b85c00">1 May 2026</strong>.
+      Batteries over 14 kWh receive a significantly reduced rebate after that date -- the bigger the battery, the harder the hit.
+      A 30 kWh battery loses <strong style="color:#c0392b">$3,600+</strong> in rebate value.
+      A 42 kWh battery loses <strong style="color:#c0392b">$6,900+</strong>.
+      <strong style="color:#b85c00">Lock in quotes and sign contracts before April 30 to secure current pricing.</strong>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:11px;text-align:center">
+      <div style="background:rgba(39,174,96,.15);border:1px solid rgba(39,174,96,.4);border-radius:6px;padding:8px">
+        <div style="color:#1a6a1a;font-weight:800;font-size:14px">0-14 kWh</div>
+        <div style="color:#333;font-size:10px;margin-top:2px">Barely affected<br>~$68/kWh less rebate</div>
+      </div>
+      <div style="background:rgba(245,197,24,.15);border:1px solid rgba(245,197,24,.5);border-radius:6px;padding:8px">
+        <div style="color:#7a5200;font-weight:800;font-size:14px">14-28 kWh</div>
+        <div style="color:#333;font-size:10px;margin-top:2px">Significantly reduced<br>60% rebate factor</div>
+      </div>
+      <div style="background:rgba(192,57,43,.12);border:1px solid rgba(192,57,43,.35);border-radius:6px;padding:8px">
+        <div style="color:#c0392b;font-weight:800;font-size:14px">28+ kWh</div>
+        <div style="color:#333;font-size:10px;margin-top:2px">Rebate cliff<br>Only 15% factor</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:13px">
+    <div>
+      <label>System Capacity (kWp)</label>
+      <select id="systemKw" onchange="updatePanelCount();updatePriceEstimate()">
+        <option value="0">0 kW -- baseline (no solar)</option>
+        <option value="6.6">6.6 kW (15 panels)</option>
+        <option value="10.0">10.0 kW (23 panels)</option>
+        <option value="13.3">13.3 kW (31 panels)</option>
+        <option value="16.0">16.0 kW (37 panels)</option>
+        <option value="custom">Custom...</option>
+      </select>
+    </div>
+    <div id="customWrap" style="display:none">
+      <label>Custom kWp</label>
+      <input id="customKw" type="number" step="0.1" min="1" max="30" placeholder="e.g. 8.0" oninput="updatePanelCount()">
+    </div>
+    <div><label>Efficiency (%)</label><input id="efficiency" type="number" value="85" min="70" max="100"></div>
+    <div><label>Battery (kWh)</label><input id="batteryKwh" type="number" value="0" min="0" step="1" placeholder="0 = none" oninput="updatePriceEstimate()"></div>
+    <div>
+      <label>Panel Wattage (W)</label>
+      <input id="panelWatt" type="number" value="440" min="200" max="700" step="5" oninput="updatePanelCount();updatePriceEstimate()" placeholder="e.g. 440">
+      <div class="hint">Trina 440W default</div>
+    </div>
+    <div>
+      <label>&nbsp;</label>
+      <div id="panelCountBadge" style="padding:8px 11px;background:#f5f5f3;border-radius:7px;font-size:12px;color:#555;border:1.5px solid #e8e8e6"></div>
+    </div>
+  </div>
+
+  <div class="g3" style="margin-bottom:14px">
+    <div>
+      <label>Net System Cost after STCs ($)</label>
+      <input id="sysNet" type="number" placeholder="e.g. 8500" oninput="syncLoanToSysNet()">
+    </div>
+    <div>
+      <label>Feed-in Tariff (c/kWh)</label>
+      <input id="fitC" type="number" value="3.3" step="0.1">
+    </div>
+    <div>
+      <label>Connection Fee ($/day)</label>
+      <!-- DEFAULT: $1.034/day = 103.4c/day -- exact Tango/Powercor D1 supply charge -->
+      <input id="connFee" type="number" value="1.034" step="0.001" min="0" oninput="syncConnFee('main'); updateBillCard()">
+      <div class="hint">Supply charge from bill. Tango/Powercor D1 default = $1.034/day</div>
+    </div>
+  </div>
+
+  <!-- ?? QUICK PRICE ESTIMATOR ?? -->
+  <div id="priceCard" style="background:linear-gradient(135deg,#1a1a1a,#232323);border-radius:8px;padding:14px;margin-bottom:16px;border:1px solid rgba(245,197,24,.2);transition:border-color .4s">
+    <div style="font-size:13px;font-weight:700;color:#f5c518;margin-bottom:12px">($) Quick Price Estimator</div>
+    <div style="font-size:11px;color:#888;margin:-8px 0 12px">Market rates 2026 VIC, after STC rebate + federal battery rebate (Jul 2025). Update rates below to match your actual quote.</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px">
+      <div>
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;display:block">Quality Tier</label>
+        <select id="priceTier" onchange="updatePriceEstimate()" style="width:100%;padding:7px 10px;border:1.5px solid #444;border-radius:7px;font-size:13px;background:#2a2a2a;color:#fff">
+          <option value="budget">Budget -- $0.80/W + $650/kWh</option>
+          <option value="standard" selected>Standard -- $0.92/W + $780/kWh</option>
+          <option value="premium">Premium -- $1.15/W + $1000/kWh</option>
+          <option value="custom">Custom rates...</option>
+        </select>
+      </div>
+      <div id="customRateWrap" style="display:none">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;display:block">Solar ($/W installed)</label>
+        <input id="pricePerW" type="number" value="0.92" step="0.01" min="0.5" max="2.0" oninput="updatePriceEstimate()" style="width:100%;padding:7px 10px;border:1.5px solid #444;border-radius:7px;font-size:13px;background:#2a2a2a;color:#fff">
+      </div>
+      <div id="customBatWrap" style="display:none">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;display:block">Battery ($/kWh installed)</label>
+        <input id="pricePerKwh" type="number" value="780" step="10" min="300" max="1500" oninput="updatePriceEstimate()" style="width:100%;padding:7px 10px;border:1.5px solid #444;border-radius:7px;font-size:13px;background:#2a2a2a;color:#fff">
+      </div>
+    </div>
+
+    <!-- Live price breakdown -->
+    <div id="priceBreakdown" style="background:rgba(0,0,0,.3);border-radius:6px;padding:12px;font-size:12px">
+      <div style="color:#888;font-style:italic">Set system size and battery above to see estimate</div>
+    </div>
+
+    <div style="font-size:10px;color:#555;margin-top:8px">
+      Rates: Budget = Alpha ESS/BYD entry. Standard = BYD HVM/Sungrow/Alpha SMILE. Premium = Tesla Powerwall 3.
+      All after STC rebate (5 yr deeming, 2026) and federal battery rebate ($330/kWh usable from Jul 2025).
+      Update the Net System Cost field above to use this estimate in payback calculations.
+    </div>
+
+    <div style="margin-top:10px">
+      <button class="btn btn-gold btn-sm" onclick="applyPriceEstimate()">Apply to System Cost Fields</button>
+    </div>
+  </div>
+
+  <label style="margin-bottom:8px">Electricity Tariff Rate (c/kWh)</label>
+  <div class="tt">
+    <button class="tt-btn on" id="tt-flat" onclick="switchTariff('flat')">Flat Rate</button>
+    <button class="tt-btn" id="tt-tou" onclick="switchTariff('tou')">Time of Use</button>
+    <button class="tt-btn" id="tt-cl" onclick="switchTariff('cl')">Controlled Load</button>
+  </div>
+  <div class="tsec" id="ts-flat">
+    <div style="max-width:200px">
+      <label>Single Rate (c/kWh)</label>
+      <!-- DEFAULT: 24.112 c/kWh -- exact Tango/Powercor D1 Victorian Default Offer -->
+      <input id="flatRate" type="number" value="24.112" step="0.001">
+      <div class="hint">Tango/Powercor D1 default = 24.112 c/kWh</div>
+    </div>
+  </div>
+  <div class="tsec" id="ts-tou" style="display:none">
+    <div class="g3">
+      <div><label>Peak -- 3pm-9pm (c/kWh)</label><input id="peakRate" type="number" value="40.0" step="0.1"></div>
+      <div><label>Shoulder (c/kWh)</label><input id="shoulderRate" type="number" value="25.0" step="0.1"></div>
+      <div><label>Off-peak -- 11pm-7am (c/kWh)</label><input id="offpeakRate" type="number" value="18.0" step="0.1"></div>
+    </div>
+    <p class="hint">Per-hour rates applied to actual kWh in each period.</p>
+  </div>
+  <div class="tsec" id="ts-cl" style="display:none">
+    <div class="g2">
+      <div><label>Main Rate (c/kWh)</label><input id="clMainRate" type="number" value="24.112" step="0.001"></div>
+      <div><label>Controlled Load Rate (c/kWh)</label><input id="clRate" type="number" value="14.0" step="0.1"></div>
+    </div>
+    <p class="hint">!! CL runs overnight -- solar cannot offset it. Savings apply to main consumption only.</p>
+  </div>
+</div>
+
+<!-- ANALYSE -->
+<div style="text-align:center;margin:20px 0">
+  <button class="btn btn-dark" id="btnRun" onclick="doAnalysis()" style="padding:13px 44px;font-size:15px">
+    Analyse Interval Data ->
+  </button>
+  <div id="runStatus" style="margin-top:9px"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="resultPanel" style="display:none">
+
+  <!-- Live Explorer -->
+  <div class="explorer">
+    <h2>~ Live System Explorer -- drag to resize</h2>
+    <div class="baseline-banner" id="baselineBanner">
+       <strong>Baseline mode</strong> -- showing current bill with no solar. Drag panels right to see solar impact.
+    </div>
+    <div id="qualityWarnings" style="display:none;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:9px 13px;font-size:11px;color:#fde68a;margin-bottom:14px"></div>
+
+    <div class="slider-row">
+      <label>Panels</label>
+      <input type="range" id="slPanels" min="0" max="44" value="15" step="1" oninput="onSliderChange()">
+      <span class="slider-val" id="slPanelLabel">15 x 440W = 6.6 kW</span>
+    </div>
+    <div class="slider-row">
+      <label>Battery</label>
+      <input type="range" id="slBat" min="0" max="42" value="0" step="1" oninput="onSliderChange()">
+      <span class="slider-val" id="slBatLabel">No battery</span>
+    </div>
+
+    <!-- OPTIMISE + PRICE BUTTONS -->
+    <div style="text-align:center;margin:6px 0 14px">
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:6px">
+        <button class="btn btn-gold" id="btnOptimise" onclick="runOptimiser()" style="padding:11px 28px;font-size:14px;letter-spacing:.3px">
+          !! Optimise System for This Home
+        </button>
+        <button class="btn btn-dark" onclick="priceCurrentSystem()" style="padding:11px 24px;font-size:13px;border:1.5px solid rgba(245,197,24,.4)">
+          ($) Price This System
+        </button>
+      </div>
+      <div style="font-size:10px;color:#888">Left: auto-find best system (fast screen using approx payback, not full DCF) &nbsp;|&nbsp; Right: price whatever is set on the sliders now</div>
+    </div>
+
+    <!-- OPTIMISE RESULT PANEL -->
+    <div id="optimiseResult" style="display:none;background:rgba(245,197,24,.08);border:1px solid rgba(245,197,24,.3);border-radius:8px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:800;color:#f5c518;margin-bottom:10px">!! Recommended System</div>
+      <div id="optimiseDetails" style="font-size:12px;color:#e0e0e0;line-height:1.8"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-gold btn-sm" onclick="applyOptimisation()">Apply This System</button>
+        <button class="btn btn-dark btn-sm" onclick="document.getElementById('optimiseResult').style.display='none'">Dismiss</button>
+      </div>
+    </div>
+
+    <div class="live-kpis">
+      <div class="lkpi"><div class="v grn" id="lk-sav">--</div><div class="l">Est. Annual Savings (Yr 1)</div></div>
+      <div class="lkpi"><div class="v" id="lk-pb">--</div><div class="l">Approx Payback (yr)</div></div>
+      <div class="lkpi"><div class="v" id="lk-self">--</div><div class="l">Self-Consumption %</div></div>
+      <div class="lkpi"><div class="v amber" id="lk-exp">--</div><div class="l">Annual Export (kWh)</div></div>
+      <div class="lkpi"><div class="v amber" id="lk-waste">--</div><div class="l">Export Value at FiT</div></div>
+      <div class="lkpi"><div class="v" id="lk-gen">--</div><div class="l">Est. Annual Generation (kWh)</div></div>
+    </div>
+    <div class="waste-box" id="wasteMsg"></div>
+    <div id="doNothingBox" style="display:none;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:11px 14px;margin-bottom:14px;font-size:12px;color:#fca5a5">
+      <strong style="color:#f87171">If you do nothing (no solar):</strong>
+      <span id="doNothingText"></span>
+    </div>
+  </div>
+
+  <!-- Bill Comparison -->
+  <div class="bill-card">
+    <div class="card-title" style="margin-bottom:12px">
+      <span class="badge"></span>Estimated Bill Comparison
+    </div>
+    <div class="conn-row">
+      <label>Daily supply/connection charge:</label>
+      <div class="conn-input-wrap">
+        <span>$</span>
+        <input id="connFeeCard" type="number" value="1.034" step="0.001" min="0"
+               oninput="syncConnFee('card'); updateBillCard()">
+        <span>/ day</span>
+      </div>
+      <span style="font-size:11px;color:#aaa;font-style:italic">Enter from bill -- updates all figures live</span>
+    </div>
+    <div class="bill-cols">
+      <div class="bill-col current">
+        <div class="bill-col-head">~ Current Bill (no solar)</div>
+        <div class="bill-row"><span class="lbl">Weekly</span><span class="val" id="b-cur-wk">--</span></div>
+        <div class="bill-row"><span class="lbl">Monthly</span><span class="val" id="b-cur-mo">--</span></div>
+        <div class="bill-row"><span class="lbl">Quarterly</span><span class="val qt red" id="b-cur-qt">--</span></div>
+        <div style="font-size:10.5px;color:#aaa;margin-top:8px;padding-top:6px;border-top:1px solid #eee">
+          Grid: <strong id="b-cur-kwh">--</strong> kWh/yr &nbsp;|&nbsp; Conn: <strong id="b-cur-conn">--</strong>/yr
+        </div>
+        <div id="b-cl-note" style="display:none;font-size:10px;color:#a06000;margin-top:5px;padding-top:5px;border-top:1px dashed #ddd"></div>
+      </div>
+      <div class="bill-col solar">
+        <div class="bill-col-head" id="billColSolarHead">* With Solar System</div>
+        <div class="bill-row"><span class="lbl">Weekly</span><span class="val" id="b-sol-wk">--</span></div>
+        <div class="bill-row"><span class="lbl">Monthly</span><span class="val" id="b-sol-mo">--</span></div>
+        <div class="bill-row"><span class="lbl">Quarterly</span><span class="val qt grn" id="b-sol-qt">--</span></div>
+        <div style="font-size:10.5px;color:#aaa;margin-top:8px;padding-top:6px;border-top:1px dashed #b5e5b5">
+          Grid: <strong id="b-sol-kwh">--</strong> kWh/yr &nbsp;|&nbsp; From solar: <strong id="b-sol-saved">--</strong> kWh/yr
+        </div>
+      </div>
+    </div>
+    <div class="bill-footer">
+      <div><div class="sav-label">Bill reduction per quarter</div><div class="sav-val" id="b-qt-save">--</div></div>
+      <div><div class="sav-label">Bill reduction per year</div><div class="sav-val" id="b-yr-save">--</div></div>
+      <div><div class="sav-label">Incl. connection + grid charges</div><div style="font-size:11px;color:#666;margin-top:2px" id="b-note"></div></div>
+    </div>
+  </div>
+
+  <!-- ROI / Finance Card -->
+  <div class="roi-card" id="roiCard" style="display:none">
+    <h2>(chart) Lifetime Return Calculator</h2>
+    <p style="font-size:11px;color:#888;margin:-10px 0 6px">Enter full system cost + payment details below. Shows 4 separate payback metrics.</p>
+    <div style="display:inline-block;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:3px 10px;font-size:10px;color:#60a5fa;font-weight:700;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase">Customer Cashflow View — upfront deposit as Year 0, loan repayments in annual NCF</div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:rgba(255,255,255,.05);border-radius:8px;padding:13px;margin-bottom:12px">
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#f5c518;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Total System Cost ($)</label>
+        <div class="fin-amount-wrap"><span>$</span><input id="finTotalCost" type="number" value="0" min="0" step="100" placeholder="e.g. 15000" oninput="syncFinanceAmt();updateROI()" style="width:90px"></div>
+        <div class="hint" style="color:#888">Full price incl. battery, before any payments</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Cash Paid Upfront ($)</label>
+        <div class="fin-amount-wrap"><span>$</span><input id="finCashDeposit" type="number" value="0" min="0" step="100" placeholder="0" oninput="syncFinanceAmt();updateROI()" style="width:90px"></div>
+        <div class="hint" style="color:#888">Amount paid cash (not financed, no interest)</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Finance Amount ($)</label>
+        <div class="fin-amount-wrap"><span>$</span><input id="finLoanAmount" type="number" value="0" min="0" step="100" placeholder="auto" oninput="this._userEdited=true;updateROI()" style="width:90px"></div>
+        <div class="hint" style="color:#888" id="finAmtHint">Auto = Total minus Cash</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Repayment</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="fin-amount-wrap"><span>$</span><input id="finPayment" type="number" value="0" min="0" step="1" placeholder="0" oninput="updateROI()"></div>
+          <select id="finPeriod" class="fin-period" onchange="updateROI()">
+            <option value="week">/ week</option>
+            <option value="fortnight">/ fortnight</option>
+            <option value="month">/ month</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Interest Rate (% p.a.)</label>
+        <div class="fin-amount-wrap"><input id="finInterestRate" type="number" value="5" min="0" max="30" step="0.1" oninput="updateROI()" style="width:60px"><span>%</span></div>
+        <div class="hint" style="color:#888">Applies to financed amount only</div>
+      <div id="loanSummaryHint" style="font-size:10px;color:#f5c518;margin-top:4px;padding:5px 8px;background:rgba(245,197,24,.08);border-radius:5px;display:none"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Discount Rate (% p.a.)</label>
+        <div class="fin-amount-wrap"><input id="discountRate" type="number" value="7" min="0" max="20" step="0.5" oninput="updateROI()" style="width:60px"><span>%</span></div>
+        <div class="hint" style="color:#888">7% = standard default</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Tariff escalation (% p.a.)</label>
+        <div class="fin-amount-wrap"><input id="tariffEsc" type="number" value="3" min="-5" max="10" step="0.5" oninput="updateROI()" style="width:60px"><span>%</span></div>
+        <div class="hint" style="color:#888">AER forecast ~3%/yr</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Analysis period (years)</label>
+        <div class="fin-amount-wrap"><input id="analysisYears" type="number" value="25" min="10" max="30" step="1" oninput="updateROI()" style="width:60px"><span>yr</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Maintenance ($/yr)</label>
+        <div class="fin-amount-wrap"><span>$</span><input id="maintCost" type="number" value="150" min="0" step="50" oninput="updateROI()" style="width:72px"></div>
+        <div class="hint" style="color:#888">Default $150/yr</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Inverter replacement ($)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="fin-amount-wrap"><span>$</span><input id="invReplCost" type="number" value="" min="0" step="100" placeholder="auto" oninput="updateROI()" style="width:72px"></div>
+          <span style="color:#777;font-size:11px">yr</span>
+          <div class="fin-amount-wrap"><input id="invReplYr" type="number" value="12" min="1" max="30" oninput="updateROI()" style="width:42px;text-align:center"></div>
+        </div>
+        <div class="hint" style="color:#888">Blank = auto (20% of total cost)</div>
+      </div>
+    </div>
+
+    <!-- Assumptions in use (expandable) -->
+    <div id="assumptionsBar" style="font-size:10px;color:#666;background:rgba(0,0,0,.3);border-radius:6px;padding:7px 12px;margin-bottom:12px;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'':'none'">
+       Assumptions &amp; defaults in use (click to expand)
+    </div>
+    <div id="assumptionsDetail" style="display:none;font-size:10px;color:#999;background:rgba(0,0,0,.25);border-radius:6px;padding:10px 14px;margin-bottom:12px;line-height:1.7"></div>
+
+    <!-- Milestone cards -->
+    <div class="milestones" id="roiMilestones" style="margin-bottom:12px"></div>
+
+    <!-- Headline -->
+    <div id="roiInsight" style="text-align:center;font-size:14px;font-weight:800;margin-bottom:10px;min-height:22px"></div>
+
+    <!-- Cursor year panel -->
+    <div id="roiCursorPanel" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 16px;margin-bottom:8px;min-height:62px">
+      <div style="font-size:11px;color:#666;font-style:italic"> Move your mouse across the chart to explore any year</div>
+    </div>
+
+    <!-- Main chart -->
+    <div style="position:relative;height:300px;margin-bottom:4px"><canvas id="roiChart"></canvas></div>
+    <div id="roiChartLegend" style="display:flex;gap:12px;flex-wrap:wrap;font-size:10.5px;color:#bbb;margin-bottom:10px;justify-content:center"></div>
+
+    <!-- Annual cashflow bar chart -->
+    <div style="font-size:10.5px;font-weight:700;color:#777;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Annual Cash Flow Breakdown</div>
+    <div style="position:relative;height:110px;margin-bottom:4px"><canvas id="roiAnnualChart"></canvas></div>
+    <div style="font-size:10px;color:#666;text-align:center;margin-bottom:8px">
+       Grid savings avoided &nbsp;.&nbsp;  FiT export income &nbsp;.&nbsp;  Finance repayments &nbsp;.&nbsp;  Opex &amp; replacements
+    </div>
+
+    <!-- Annual table toggle -->
+    <div style="text-align:center;margin-bottom:6px">
+      <button class="btn btn-dark btn-sm" onclick="toggleAnnualTable()"> Show/Hide Full Annual Table</button>
+    </div>
+    <div id="annualTable" style="display:none;overflow-x:auto;max-height:320px;overflow-y:auto;margin-bottom:8px"></div>
+
+    <div class="fin-note" id="roiNote"></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card">
+    <div class="card-title" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:9px">
+        <span class="badge" style="background:#f5c518">3</span>Generation vs Load
+        <span id="zoneTag" style="font-size:11px;font-weight:400;color:#aaa"></span>
+      </span>
+      <span id="dataSummary" style="font-size:11px;color:#aaa;font-weight:400"></span>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:2px">
+      <div class="stabs" style="margin-bottom:0">
+        <button class="stab on" onclick="showSeason('Summer',this)">Summer</button>
+        <button class="stab" onclick="showSeason('Autumn',this)">Autumn</button>
+        <button class="stab" onclick="showSeason('Winter',this)">Winter</button>
+        <button class="stab" onclick="showSeason('Spring',this)">Spring</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-size:10px;color:#888" title="Toggle to see what your bill looks like without any solar">
+        <span id="solarToggleLabel" style="font-size:10px;color:#aaa">☀ With Solar</span>
+        <div style="position:relative;width:32px;height:17px">
+          <input type="checkbox" id="noSolarToggle" onchange="onSolarToggle(this.checked)" style="opacity:0;position:absolute;width:100%;height:100%;margin:0;cursor:pointer;z-index:1">
+          <div id="noSolarTrack" style="position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:9px;transition:background .2s"></div>
+          <div id="noSolarThumb" style="position:absolute;top:2px;left:2px;width:13px;height:13px;background:#aaa;border-radius:50%;transition:left .2s,background .2s"></div>
+        </div>
+        <span style="font-size:10px;color:#666">No Solar</span>
+      </label>
+    </div>
+    <!-- Month selector — shows months with data for the current season -->
+    <div id="monthChips" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:8px;min-height:22px">
+      <span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.8px">Month:</span>
+    </div>
+    <div id="baselineNote" style="font-size:9px;color:#666;margin-bottom:6px"></div>
+    <div id="noSolarCost"   style="display:none;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.4);border-radius:6px;padding:7px 12px;margin-bottom:8px;font-size:11px;color:#7f1d1d;font-weight:600"></div>
+    <div id="withSolarStats" style="display:none;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.4);border-radius:6px;padding:7px 14px;margin-bottom:8px;font-size:11px;color:#052e16;font-weight:600"></div>
+
+    <div class="chart-wrap"><canvas id="sChart"></canvas></div>
+
+    <div class="chart-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(34,197,94,.8)"></div> Solar direct to load</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(239,68,68,.85)"></div> Grid purchase (cost)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#f97316;border-radius:50%"></div> Solar generation curve</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(14,165,233,.65)"></div> Exported (low FiT)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(139,92,246,.75)"></div> Battery discharge (stored solar)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(99,102,241,.55)"></div> Solar charging battery</div>
+      <div class="leg-item"><div class="leg-dot" style="background:rgba(255,255,255,.7);border:1px dashed #999"></div> Avg Daily Consumption — baseline</div>
+    </div>
+    <p class="hint" style="margin-top:7px">
+      Red = grid purchases (money out). Green = solar direct to load. Purple = battery discharge overnight. Indigo = battery charging from solar. Orange = BOM irradiance model. Weighted daily average (5xweekday + 2xweekend / 7).
+    </p>
+
+    <!-- Monthly bill estimate table -- totals always visible, detail behind toggle -->
+    <div id="monthlyBillTable" style="display:none;margin-top:14px;background:#f9f9f7;border:1px solid #e8e8e6;border-radius:8px;overflow:hidden">
+      <!-- Always-visible totals summary -->
+      <div id="monthlyBillTotals" style="background:#f0f0ee;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between"
+           onclick="toggleMonthlyDetail()">
+        <span style="color:#555;font-size:10px;font-weight:400">Est. Annual Grid Cost -- Before vs After Solar (incl. supply charge)</span>
+        <span id="monthlyToggleBtn" style="font-size:10px;color:#888;font-weight:400;margin-left:12px;white-space:nowrap">+ Show monthly breakdown</span>
+      </div>
+      <!-- Collapsible detail rows -->
+      <div id="monthlyBillDetail" style="display:none">
+        <div style="background:#1a1a1a;color:#f5c518;font-size:11px;font-weight:700;padding:6px 12px;display:flex;justify-content:space-between;align-items:center">
+          <span>Monthly Breakdown</span>
+          <div style="display:flex;gap:10px;font-size:9px;font-weight:400">
+            <span style="color:#fbbf24">-- Summer</span>
+            <span style="color:#f97316">-- Autumn</span>
+            <span style="color:#60a5fa">-- Winter</span>
+            <span style="color:#4ade80">-- Spring</span>
+          </div>
+        </div>
+        <div id="monthlyBillRows" style="font-size:11px"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
+      <button class="btn btn-gold" id="btnPDF" onclick="doPDF()" style="display:none"></button>
+      <button class="btn" id="btnOpenQuote" onclick="openQuoteOverlay()" style="background:#f5c518;color:#1a1a1a;font-size:18px;font-weight:900;padding:16px 48px;border-radius:10px;box-shadow:0 6px 24px rgba(245,197,24,.45);letter-spacing:.5px;font-family:'Barlow Condensed','Arial Black',sans-serif">🔒 Lock In This System</button>
+      <button class="btn btn-dark btn-sm" onclick="reRun()" style="padding:8px 16px;font-size:12px">↺ New Analysis</button>
+    </div>
+    <div id="pdfStatus" style="margin-top:9px;text-align:center"></div>
+  </div>
+
+</div><!-- /resultPanel -->
+</div><!-- /main -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// == Constants ==
+const PANEL_W_DEFAULT = 440; // fallback
+function getPanelW(){var el=document.getElementById('panelWatt');return parseFloat(el?el.value:null)||PANEL_W_DEFAULT;}
+const BAT_EFF = 0.92;
+// CORRECTED calendar day counts: Summer=Dec+Jan+Feb=90, Autumn=Mar+Apr+May=92,
+// Winter=Jun+Jul+Aug=92, Spring=Sep+Oct+Nov=91
+const SDAYS = { Summer:90, Autumn:92, Winter:92, Spring:91 };
+const PEAK_HRS    = new Set([15,16,17,18,19,20]);
+const OFFPEAK_HRS = new Set([23,0,1,2,3,4,5,6]);
+const CL_HRS      = new Set([23,0,1,2,3,4,5,6]);
+
+// == State ==
+let result     = null;
+let sChart     = null;
+let tariffMode = 'flat';
+let curSeason  = 'Summer';
+
+// == Zone detection ==
+const ZONE_NAMES_JS = {
+  SUNRAYSIA:'Sunraysia / Mildura (+18%)', NORTH:'Northern VIC -- Bendigo / Shepparton / Wangaratta (+6%)',
+  WIMMERA:'Wimmera (+3%)', METRO:'Melbourne Metro (base)',
+  BALLARAT:'Ballarat (-4%)', GIPPSLAND:'Gippsland (-7%)'
+};
+
+function syncLoanToSysNet() {
+  const sysNet = parseFloat(document.getElementById('sysNet').value)||0;
+  const loanEl = document.getElementById('finLoanAmount');
+  if (loanEl && (parseFloat(loanEl.value)||0) === 0 || !loanEl._userEdited) {
+    if (loanEl) { loanEl.value = sysNet > 0 ? sysNet : ''; loanEl._userEdited = false; }
+  }
+  updateROI();
+}
+
+function detectZone() {
+  const p = parseInt(document.getElementById('postcode').value) || 0;
+  let z = 'METRO', sub = '';
+  if (p>=3550&&p<=3556)      { z='NORTH'; sub='Bendigo'; }
+  else if (p>=3630&&p<=3634) { z='NORTH'; sub='Shepparton'; }
+  else if (p>=3635&&p<=3699) { z='NORTH'; sub='Shepparton / NE VIC'; }
+  else if (p>=3700&&p<=3749) { z='NORTH'; sub='Hume Corridor VIC'; }
+  else if (p>=3500&&p<=3599) { z='SUNRAYSIA'; sub='Sunraysia / Mildura'; }
+  else if (p>=3350&&p<=3399) { z='BALLARAT'; sub='Ballarat'; }
+  else if (p>=3400&&p<=3499) { z='WIMMERA'; sub='Wimmera'; }
+  else if (p>=3800&&p<=3975) { z='GIPPSLAND'; sub='Gippsland'; }
+  const zMults = {SUNRAYSIA:'+18%',NORTH:'+6%',WIMMERA:'+3%',METRO:'base',BALLARAT:'-4%',GIPPSLAND:'-7%'};
+  document.getElementById('zoneHint').textContent = p > 0 ? '📍 ' + (sub||z) + ' — solar zone: ' + (zMults[z]||'') : '';
+}
+function updatePanelCount() {
+  const kwSel = document.getElementById('systemKw').value;
+  document.getElementById('customWrap').style.display = kwSel==='custom' ? '' : 'none';
+  const kw = kwSel==='custom' ? parseFloat(document.getElementById('customKw').value)||0
+           : kwSel==='0' ? 0 : parseFloat(kwSel);
+  const pw = getPanelW();
+  document.getElementById('panelCountBadge').textContent =
+    kw===0 ? 'Baseline -- no solar system' :
+    kw>0   ? Math.ceil(kw*1000/pw)+' x '+pw+'W panels = '+kw+' kWp' : '--';
+}
+
+function switchTab(which, btn) {
+  document.getElementById('pane-paste').style.display = which==='paste' ? '' : 'none';
+  document.getElementById('pane-drive').style.display = which==='drive' ? '' : 'none';
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function switchTariff(t) {
+  tariffMode = t;
+  ['flat','tou','cl'].forEach(x => {
+    document.getElementById('ts-'+x).style.display  = x===t ? '' : 'none';
+    document.getElementById('tt-'+x).classList.toggle('on', x===t);
+  });
+}
+
+function syncConnFee(source) {
+  const val = parseFloat(document.getElementById(source==='card'?'connFeeCard':'connFee').value) || 1.034;
+  document.getElementById('connFee').value     = val.toFixed(3);
+  document.getElementById('connFeeCard').value = val.toFixed(3);
+}
+
+// == Drive browser ==
+var _driveAdminPin = '';
+function loadDriveFiles() {
+  if (!_driveAdminPin) {
+    const pin = prompt('Admin PIN required to browse Drive files:');
+    if (!pin) return;
+    _driveAdminPin = pin;
+  }
+  document.getElementById('driveList').innerHTML = '<div style="padding:11px;color:#888;font-size:12px"><span class="spin"></span> Loading...</div>';
+  google.script.run.withSuccessHandler(function(res) {
+    if (!res || res.error === 'auth') {
+      _driveAdminPin = '';
+      document.getElementById('driveList').innerHTML = '<div style="padding:11px;color:#c04040;font-size:12px">Incorrect PIN. Try again.</div>';
+      return;
+    }
+    showDriveFiles(res);
+  }).withFailureHandler(() => {
+    document.getElementById('driveList').innerHTML = '<div style="padding:11px;color:#888;font-size:12px">Could not load Drive files.</div>';
+  }).getDriveFiles(_driveAdminPin);
+}
+function showDriveFiles(files) {
+  if (!files||!files.length) { document.getElementById('driveList').innerHTML = '<div style="padding:11px;color:#888;font-size:12px">No CSV files found.</div>'; return; }
+  let h = '<div class="drive-list">';
+  // Escape file names before inserting into innerHTML to prevent XSS
+  function escClient(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  files.forEach(f => { h += '<div class="d-item" onclick="pickDriveFile(\'' + f.id + '\',\'' + f.name.replace(/'/g,"\\'") + '\')"> ' + escClient(f.name) + '<div class="df"> ' + escClient(f.folder) + '</div></div>'; });
+  document.getElementById('driveList').innerHTML = h + '</div>';
+}
+function pickDriveFile(id, name) {
+  document.getElementById('driveList').innerHTML = `<div style="padding:11px;color:#888;font-size:12px"><span class="spin"></span> Loading ${name}...</div>`;
+  google.script.run.withSuccessHandler(content => {
+    if (content) { switchTab('paste', document.querySelector('.tabs .tab')); document.getElementById('csvText').value = content; document.getElementById('driveList').innerHTML = ''; setMsg('runStatus','ok Loaded: '+name,'ok'); }
+    else { setMsg('runStatus','Could not read file.','err'); }
+  }).getDriveFile(id, _driveAdminPin);
+}
+
+// ── INTAKE BRIDGE ──────────────────────────────────────────────────────────
+// Reuses _driveAdminPin — same PIN for Drive browser and Intake loader.
+function _escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function loadIntakeClients() {
+  if (!_driveAdminPin) {
+    const pin = prompt('Admin PIN required to load intake clients:');
+    if (!pin) return;
+    _driveAdminPin = pin;
+  }
+  const listEl = document.getElementById('intakeList');
+  listEl.style.display = '';
+  listEl.innerHTML = '<div style="padding:11px;color:#888;font-size:12px"><span class="spin"></span> Loading clients\u2026</div>';
+  document.getElementById('intakeBanner').style.display = 'none';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || res.error === 'auth') {
+        _driveAdminPin = '';
+        listEl.innerHTML = '<div style="padding:11px;color:#c04040;font-size:12px">Incorrect PIN. Try again.</div>';
+        return;
+      }
+      showIntakeClients(res);
+    })
+    .withFailureHandler(function() {
+      listEl.innerHTML = '<div style="padding:11px;color:#888;font-size:12px">Could not load intake clients.</div>';
+    })
+    .getIntakeClients(_driveAdminPin);
+}
+
+function showIntakeClients(clients) {
+  const listEl = document.getElementById('intakeList');
+  if (!clients || !clients.length) {
+    listEl.innerHTML = '<div style="padding:11px;color:#888;font-size:12px">No clients awaiting consultation.</div>';
+    return;
+  }
+  let h = '<div class="drive-list">';
+  clients.forEach(function(c) {
+    h += '<div class="d-item" onclick="pickIntakeClient(' + c.rowIndex + ')">' +
+         _escH(c.name) +
+         '<div class="df">' + _escH(c.address) + ' &nbsp;\u00b7&nbsp; ' + _escH(c.timestamp) + '</div></div>';
+  });
+  listEl.innerHTML = h + '</div>';
+}
+
+function pickIntakeClient(rowIndex) {
+  const listEl = document.getElementById('intakeList');
+  listEl.innerHTML = '<div style="padding:11px;color:#888;font-size:12px"><span class="spin"></span> Loading client data\u2026</div>';
+  google.script.run
+    .withSuccessHandler(function(client) {
+      if (!client || client.error) {
+        listEl.innerHTML = '<div style="padding:11px;color:#c04040;font-size:12px">Could not load client. Try again.</div>';
+        return;
+      }
+      document.getElementById('clientName').value    = client.name    || '';
+      document.getElementById('postcode').value      = client.postcode || '';
+      document.getElementById('clientAddress').value = client.address  || '';
+      document.getElementById('clientPhone').value   = client.phone   || '';
+      if (client.postcode) detectZone();
+      listEl.style.display = 'none';
+      const banner = document.getElementById('intakeBanner');
+      banner.style.display = '';
+      banner.innerHTML = '<strong>\u2714 ' + _escH(client.name) + '</strong> loaded from intake' +
+        (client.goals ? ' \u00b7 Goals: ' + _escH(client.goals) : '') +
+        (client.systemSize && client.systemSize !== 'No preference' ? ' \u00b7 Prefers: ' + _escH(client.systemSize) : '') +
+        (client.batterySize && client.batterySize !== 'No preference' ? ' \u00b7 Battery: ' + _escH(client.batterySize) : '');
+      // Mark as loaded — non-blocking background call, updates status in sheet
+      google.script.run.markIntakeClientLoaded(rowIndex, _driveAdminPin);
+    })
+    .withFailureHandler(function() {
+      listEl.innerHTML = '<div style="padding:11px;color:#888;font-size:12px">Error loading client.</div>';
+    })
+    .getIntakeClient(rowIndex, _driveAdminPin);
+}
+
+// == Tariff helpers ==
+function getTariff() {
+  if (tariffMode==='flat') return { type:'flat', flatRate:fv('flatRate') };
+  if (tariffMode==='tou')  return { type:'tou', peak:fv('peakRate'), shoulder:fv('shoulderRate'), offpeak:fv('offpeakRate') };
+  return { type:'cl', flatRate:fv('clMainRate'), clRate:fv('clRate') };
+}
+function fv(id) { return parseFloat(document.getElementById(id).value)||0; }
+function tariffForHour(tariff, h) {
+  if (tariff.type==='flat') return parseFloat(tariff.flatRate)||24.112;
+  if (tariff.type==='cl')   return parseFloat(tariff.flatRate)||24.112;
+  if (tariff.type==='tou') {
+    if (PEAK_HRS.has(h))    return parseFloat(tariff.peak)||40;
+    if (OFFPEAK_HRS.has(h)) return parseFloat(tariff.offpeak)||18;
+    return parseFloat(tariff.shoulder)||25;
+  }
+  return 24.112;
+}
+function getEffTariff() {
+  const t = getTariff();
+  if (t.type==='flat') return t.flatRate||24.112;
+  if (t.type==='cl')   return t.flatRate||24.112;
+  return (t.peak*6 + t.shoulder*10 + t.offpeak*8)/24;
+}
+
+// == Analysis ==
+function doAnalysis() {
+  const csv = document.getElementById('csvText').value.trim();
+  if (!csv) { setMsg('runStatus','Please paste the NEM12 CSV first.','err'); return; }
+  const kwSel = document.getElementById('systemKw').value;
+  const kw    = kwSel==='custom' ? parseFloat(document.getElementById('customKw').value) : kwSel==='0' ? 0 : parseFloat(kwSel);
+  if (isNaN(kw)) { setMsg('runStatus','Please select or enter a system size.','err'); return; }
+  const params = {
+    csvText:    csv,
+    postcode:   (document.getElementById('postcode').value||'3000').trim(),
+    systemKw:   kw,
+    efficiency: parseFloat(document.getElementById('efficiency').value)||85,
+    batteryKwh: parseFloat(document.getElementById('batteryKwh').value)||0,
+    sysNet:     parseFloat(document.getElementById('sysNet').value)||0,
+    fitC:       parseFloat(document.getElementById('fitC').value)||3.3,
+    tariff:     getTariff()
+  };
+  document.getElementById('resultPanel').style.display = 'none';
+  result = null;
+  document.getElementById('btnRun').disabled = true;
+  setMsg('runStatus','<span class="spin"></span> Analysing interval data...','inf');
+  google.script.run
+    .withSuccessHandler(res => {
+      document.getElementById('btnRun').disabled = false;
+      if (res.error) { setMsg('runStatus', res.error, 'err'); return; }
+      result = res;
+      const initPanels = kw===0 ? 0 : Math.ceil(kw*1000/getPanelW());
+      document.getElementById('slPanels').value = initPanels;
+      document.getElementById('slBat').value    = params.batteryKwh;
+      showResultPanel(res);
+      setMsg('runStatus','','inf');
+    })
+    .withFailureHandler(err => {
+      document.getElementById('btnRun').disabled = false;
+      setMsg('runStatus','Server error: '+(err.message||err||'unknown'), 'err');
+    })
+    .runAnalysis(params);
+}
+
+function reRun() {
+  result = null;
+  if (sChart) { sChart.destroy(); sChart = null; }
+  if (roiChartInst) { roiChartInst.destroy(); roiChartInst = null; }
+  if (roiAnnualChInst) { roiAnnualChInst.destroy(); roiAnnualChInst = null; }
+  document.getElementById('roiInsight').textContent='';
+  document.getElementById('roiNote').textContent='';
+  document.getElementById('annualTable').innerHTML='';
+  document.getElementById('resultPanel').style.display = 'none';
+  document.getElementById('roiCard').style.display = 'none';
+  setMsg('runStatus','','inf');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function showResultPanel(res) {
+  document.getElementById('zoneTag').textContent     = '-- '+res.zoneName;
+  document.getElementById('dataSummary').textContent = 'NMI: '+res.nmi+' . '+res.days+' days';
+  const qwEl = document.getElementById('qualityWarnings');
+  var allWarnings = res.dataQuality && res.dataQuality.warnings ? res.dataQuality.warnings.slice() : [];
+  // Add missing/interpolated season warnings
+  (res.missingSeasons || []).forEach(function(s) {
+    if (!allWarnings.some(function(w){ return w.indexOf(s)>=0; })) {
+      allWarnings.unshift(s+': NO DATA -- estimated from adjacent seasons (indicative only)');
+    }
+  });
+  // Add NEM12 estimated/substituted reading warning
+  var estimatedDays = res.estimatedDays || 0;
+  var substitutedDays = res.substitutedDays || 0;
+  if (estimatedDays > 0 || substitutedDays > 0) {
+    var estMsg = [];
+    if (estimatedDays > 0)   estMsg.push(estimatedDays + ' estimated days (E flag)');
+    if (substitutedDays > 0) estMsg.push(substitutedDays + ' substituted days (S flag)');
+    allWarnings.push('NEM12 quality: ' + estMsg.join(', ') + ' -- results may vary');
+  }
+  // Surface NEM12 channel validation summary (shows which channel was used)
+  if (res.nem12Validation) {
+    var v = res.nem12Validation;
+    // Escape NEM12 channel strings — they come from parsed file data, not safe for raw innerHTML
+    function escW(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    var chanInfo = 'NEM12 channel: ' + escW(v.chosen_channel) + ' | ' + v.days_accepted + ' days';
+    if (v.fallback_used) {
+      chanInfo = '⚠ NEM12: no recognised import suffix — all channels accepted (review your file)';
+    } else {
+      if (v.all_channels && v.all_channels !== v.chosen_channel) chanInfo += ' (all seen: ' + escW(v.all_channels) + ')';
+      if (v.skipped_channels && v.skipped_channels !== 'none')   chanInfo += ' (skipped: ' + escW(v.skipped_channels) + ')';
+    }
+    if (v.days_estimated > 0)   chanInfo += ' | ' + v.days_estimated + ' estimated';
+    if (v.days_substituted > 0) chanInfo += ' | ' + v.days_substituted + ' substituted';
+    if (v.malformed_rows > 0)   chanInfo += ' | ⚠ ' + v.malformed_rows + ' malformed rows skipped';
+    allWarnings.push(chanInfo);
+  }
+  if (allWarnings.length > 0) {
+    qwEl.style.display = 'block';
+    qwEl.innerHTML = '&#9888; Data: '+allWarnings.join(' &nbsp;|&nbsp; ');
+  } else { qwEl.style.display = 'none'; }
+  document.getElementById('resultPanel').style.display = '';
+  onSliderChange();
+  updateMonthlyBillTable();
+  // Show month chips after first render
+  if (result && result.monthlyProfiles) updateMonthChips(curSeason);
+  setTimeout(() => document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'}), 150);
+}
+
+// == Generation ==
+function getGenForKw(season, kw, eff) {
+  if (kw===0) return new Array(24).fill(0);
+  return result.genPerKw[season].map(v => v*kw*eff);
+}
+
+// == Battery simulation ==
+function simulateBattery(genH, conH, batKwh) {
+  const batCapWh = batKwh*1000;
+  let soc = batCapWh*0.2;
+  // directSolar = solar going DIRECTLY to load (no battery involved)
+  // batToLoad   = battery discharge going to load
+  // selfCon     = directSolar + batToLoad (total avoided grid, for financial calcs)
+  const directSolar=[], batToLoad=[], selfCon=[], gridImp=[], expWaste=[], batCapture=[];
+  for (let h=0;h<24;h++) {
+    const con=conH[h], gn=genH[h];
+    if (gn>=con) {
+      // More solar than load -- charge battery with surplus
+      const chg=Math.min((gn-con)*BAT_EFF, batCapWh-soc); soc+=chg;
+      const exp=Math.max(0,gn-con-chg/BAT_EFF);
+      directSolar.push(con);   // all load covered directly by solar
+      batToLoad.push(0);        // battery not needed this hour
+      selfCon.push(con);
+      gridImp.push(0);
+      expWaste.push(exp);
+      batCapture.push(chg/BAT_EFF);
+    } else {
+      // Load exceeds solar -- battery covers the gap
+      const need=con-gn;
+      const use=Math.min(need, soc*BAT_EFF); soc-=use/BAT_EFF;
+      directSolar.push(gn);              // solar goes directly to load
+      batToLoad.push(use);               // battery covers remaining load
+      selfCon.push(gn+use);              // total self-served (for financials)
+      gridImp.push(Math.max(0,need-use));// still from grid after battery
+      expWaste.push(0);
+      batCapture.push(use);              // energy discharged from battery
+    }
+  }
+  return { directSolar, batToLoad, selfCon, gridImp, expWaste, batCapture };
+}
+
+function buildSeries(season, kw, eff, batKwh) {
+  const con  = result.chartData[season].con;  // (5wd+2we)/7 weighted
+  const genH = getGenForKw(season, kw, eff);
+  if (batKwh===0||kw===0) {
+    return {
+      con,
+      gen: genH,
+      directSolar: con.map((c,i)=>Math.min(c,genH[i])),  // solar direct to load
+      batToLoad:   new Array(24).fill(0),                  // no battery
+      selfCon:     con.map((c,i)=>Math.min(c,genH[i])),
+      gridImp:     con.map((c,i)=>Math.max(0,c-genH[i])),
+      expWaste:    genH.map((g,i)=>Math.max(0,g-con[i])),
+      batCapture:  new Array(24).fill(0)
+    };
+  }
+  const r = simulateBattery(genH, con, batKwh);
+  return { con, gen:genH, ...r };
+}
+
+// == Financials ==
+function clientFinancials(kw, eff, batKwh) {
+  if (!result) return {};
+  const tariff   = getTariff();
+  const fitC     = fv('fitC')||3.3;
+  const sysNet   = fv('sysNet')||0;
+  let totCon=0, totSelf=0, totExp=0, totSavings=0, totCLkwh=0;
+  for (const [s, days] of Object.entries(SDAYS)) {
+    const wdN=Math.round(days*5/7), weN=days-wdN;
+    for (const [type, cnt] of [['weekday',wdN],['weekend',weN]]) {
+      const conH=result.profiles[s][type];
+      const genH=getGenForKw(s,kw,eff);
+      if (batKwh===0||kw===0) {
+        for (let h=0;h<24;h++) {
+          const c=conH[h]/1000, g=genH[h]/1000, self=Math.min(c,g), exp=Math.max(0,g-c);
+          const rate=tariffForHour(tariff,h)/100;
+          totCon+=c*cnt; totSelf+=self*cnt; totExp+=exp*cnt; totSavings+=self*rate*cnt;
+          if (tariff.type==='cl'&&CL_HRS.has(h)) totCLkwh+=c*cnt;
+        }
+      } else {
+        const batCapWh=batKwh*1000; let soc=batCapWh*0.2;
+        for (let h=0;h<24;h++) {
+          const c=conH[h], g=genH[h], rate=tariffForHour(tariff,h)/100;
+          totCon+=c/1000*cnt;
+          if (tariff.type==='cl'&&CL_HRS.has(h)) totCLkwh+=c/1000*cnt;
+          if (g>=c) {
+            const chg=Math.min((g-c)*BAT_EFF,batCapWh-soc); soc+=chg;
+            const exp=Math.max(0,(g-c)-chg/BAT_EFF);
+            totSelf+=c/1000*cnt; totExp+=exp/1000*cnt; totSavings+=(c/1000)*rate*cnt;
+          } else {
+            const use=Math.min((c-g),soc*BAT_EFF); soc-=use/BAT_EFF;
+            const selfUsed=(g+use)/1000; totSelf+=selfUsed*cnt; totSavings+=selfUsed*rate*cnt;
+          }
+        }
+      }
+    }
+  }
+  const fitIncome=totExp*fitC/100, totalSav=totSavings+fitIncome;
+  const payback=sysNet>0&&totalSav>0 ? sysNet/totalSav : 0;
+  const gridImportKwh=Math.max(0,Math.round(totCon-totSelf));
+  return {
+    selfPct: (totSelf+totExp)>0?(totSelf/(totSelf+totExp)*100).toFixed(1):'0', // True SCR = self / generated
+    selfKwh: Math.round(totSelf), exportKwh:Math.round(totExp), genKwh:Math.round(totSelf+totExp),
+    annualKwh:Math.round(totCon), gridImportKwh,
+    savings:totalSav.toFixed(0), savingsFromTariff:totSavings.toFixed(0),
+    savingsFromFiT:fitIncome.toFixed(0), payback:payback.toFixed(1),
+    wasteVal:fitIncome.toFixed(0), clAnnualKwh:Math.round(totCLkwh),
+    clAnnualCost:(totCLkwh*(parseFloat(getTariff().clRate)||14)/100).toFixed(0)
+  };
+}
+
+// == Bill card ==
+function updateBillCard() {
+  if (!result) return;
+  const connDay=parseFloat(document.getElementById('connFeeCard').value)||1.034;
+  const connAnn=connDay*365, tariff=getTariff(), fitC=fv('fitC')||3.3;
+  const panels=parseInt(document.getElementById('slPanels').value);
+  const batKwh=parseInt(document.getElementById('slBat').value);
+  const kw=panels*getPanelW()/1000, eff=(fv('efficiency')||85)/100;
+  const baseKwh=result.fin.annualKwh, avgTariffC=getEffTariff();
+  const baseGridCost=baseKwh*avgTariffC/100;
+  let baseCLcost=0;
+  if (tariff.type==='cl') {
+    document.getElementById('b-cl-note').style.display='block';
+    document.getElementById('b-cl-note').textContent=`!! CL circuit: overnight load at ${tariff.clRate}c/kWh -- solar cannot reduce this.`;
+    let clBaseKwh=0;
+    for (const [s,days] of Object.entries(SDAYS)) { const wdN=Math.round(days*5/7),weN=days-wdN; for (const [t,cnt] of [['weekday',wdN],['weekend',weN]]) { for (const h of CL_HRS) clBaseKwh+=result.profiles[s][t][h]/1000*cnt; } }
+    baseCLcost=clBaseKwh*(parseFloat(tariff.clRate)||14)/100;
+  } else { document.getElementById('b-cl-note').style.display='none'; }
+  const baseBillAnn=baseGridCost+baseCLcost+connAnn;
+  const fin=clientFinancials(kw,eff,batKwh);
+  const solGridKwh=fin.gridImportKwh||Math.max(0,fin.annualKwh-fin.selfKwh);
+  const solGridCost=solGridKwh*avgTariffC/100;
+  const solCLcost=tariff.type==='cl'?parseFloat(fin.clAnnualCost||0):0;
+  const fitCredit=parseFloat(fin.savingsFromFiT||0);
+  const solBillAnn=solGridCost+solCLcost+connAnn-fitCredit;
+  const fmt=v=>'$'+Math.round(Math.abs(v)).toLocaleString();
+  setText('b-cur-wk',fmt(baseBillAnn/52)); setText('b-cur-mo',fmt(baseBillAnn/12)); setText('b-cur-qt',fmt(baseBillAnn/4));
+  setText('b-cur-kwh',baseKwh.toLocaleString()); setText('b-cur-conn',fmt(connAnn));
+  setText('b-sol-wk',fmt(solBillAnn/52)); setText('b-sol-mo',fmt(solBillAnn/12)); setText('b-sol-qt',fmt(solBillAnn/4));
+  setText('b-sol-kwh',solGridKwh.toLocaleString()); setText('b-sol-saved',(baseKwh-solGridKwh).toLocaleString());
+  const solarDesc=panels===0?'0 panels (no solar)':panels+' x '+getPanelW()+'W'+(batKwh>0?' + '+batKwh+' kWh bat':'');
+  setText('billColSolarHead','* With '+solarDesc);
+  const qtSave=(baseBillAnn-solBillAnn)/4, yrSave=baseBillAnn-solBillAnn;
+  setText('b-qt-save',fmt(qtSave)+' less / qtr'); setText('b-yr-save',fmt(yrSave)+' less / yr');
+  setText('b-note',fitCredit>0?'+ $'+Math.round(fitCredit).toLocaleString()+'/yr FiT already deducted':'');
+}
+
+// ===========================================================================
+// HEA SOLAR DISCOUNTED PAYBACK ENGINE  v3
+// Corrected per accountant review:
+//  - Exact repayment-driven amortisation (not assumed loan years)
+//  - year0 upfront = cash deposit only; loan recovered via repayments
+//  - 4 clearly separated payback metrics
+//  - Self-consumption/export consistency enforced
+// ===========================================================================
+
+
+<?!= include('FinanceEngine') ?>
+
+function fmtD(v) { return (v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString(); }
+
+// -- Annual table toggle --
+function toggleAnnualTable() {
+  var el = document.getElementById('annualTable');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+// -- Sync finance amount from total cost - deposit --
+function syncFinanceAmt() {
+  var total = parseFloat(document.getElementById('finTotalCost').value)  || 0;
+  var cash  = parseFloat(document.getElementById('finCashDeposit').value) || 0;
+  var loanEl = document.getElementById('finLoanAmount');
+  var hintEl = document.getElementById('finAmtHint');
+  if (!loanEl._userEdited) {
+    var auto = Math.max(0, total - cash);
+    loanEl.value = auto > 0 ? auto : '';
+    if (hintEl) hintEl.textContent = total > 0
+      ? 'Auto = $' + total.toLocaleString() + ' - $' + cash.toLocaleString() + ' = $' + auto.toLocaleString()
+      : 'Auto = Total minus Cash';
+  }
+}
+
+// -- Sync total cost from sysNet field --
+function syncLoanToSysNet() {
+  var sysNet = parseFloat(document.getElementById('sysNet').value) || 0;
+  var tcEl   = document.getElementById('finTotalCost');
+  if (tcEl && !tcEl._userEdited && sysNet > 0) { tcEl.value = sysNet; }
+  syncFinanceAmt();
+  updateROI();
+}
+
+// -- ROI / Finance card update --
+var roiChartInst    = null;
+var roiAnnualChInst = null;
+var _lastEngineResult = null;
+
+function updateROI() {
+  if (!result) return;
+  var panels   = parseInt(document.getElementById('slPanels').value);
+  var batKwh   = parseInt(document.getElementById('slBat').value);
+  var kw       = panels * getPanelW() / 1000;
+  var eff      = (fv('efficiency') || 85) / 100;
+  var fin      = clientFinancials(kw, eff, batKwh);
+
+  var total_cost   = parseFloat(document.getElementById('finTotalCost').value)   || 0;
+  var cash_deposit = parseFloat(document.getElementById('finCashDeposit').value)  || 0;
+  var loanEl       = document.getElementById('finLoanAmount');
+  var loan_amt     = parseFloat(loanEl.value) || Math.max(0, total_cost - cash_deposit);
+
+  if (panels === 0 || total_cost <= 0) { document.getElementById('roiCard').style.display = 'none'; return; }
+  document.getElementById('roiCard').style.display = '';
+
+  // Declare finance variables FIRST — needed by loanHint block below (Bug fix: was declared after use)
+  var repayAmt  = parseFloat(document.getElementById('finPayment').value) || 0;
+  var period    = document.getElementById('finPeriod').value;
+  var ppy       = period === 'week' ? 52 : period === 'fortnight' ? 26 : 12;
+  var intRate   = (parseFloat(document.getElementById('finInterestRate').value) || 5) / 100;
+
+  // Show loan summary under repayment field
+  var loanHint = document.getElementById('loanSummaryHint');
+  if (loanHint) {
+    if (loan_amt > 0 && repayAmt > 0) {
+      var lw = 0, r_p_h = intRate / ppy;
+      if (r_p_h < 1e-9) { lw = loan_amt / repayAmt; }
+      else { var rt = loan_amt * r_p_h / repayAmt; if(rt<1) lw = -Math.log(1-rt)/Math.log(1+r_p_h); }
+      var lyr = (lw/ppy).toFixed(1);
+      var tint = Math.max(0, repayAmt * lw - loan_amt);
+      loanHint.style.display = 'block';
+      loanHint.textContent = 'Loan paid off in ~' + lyr + ' yrs (~' + Math.round(lw) + ' payments). Total interest: $' + Math.round(tint).toLocaleString() + '. Higher repayments = paid off faster but more cash out per year.';
+    } else {
+      loanHint.style.display = 'none';
+    }
+  }
+  var discRate  = (parseFloat(document.getElementById('discountRate').value) || 7)    / 100;
+  var tEsc      = (parseFloat(document.getElementById('tariffEsc').value) || 3)       / 100;
+  var anlYrs    = parseInt(document.getElementById('analysisYears').value) || 25;
+  var maintCost = parseFloat(document.getElementById('maintCost').value) || 0;
+  var invReplCostUser = document.getElementById('invReplCost').value !== ''
+    ? parseFloat(document.getElementById('invReplCost').value) : null;
+  var invReplYr = parseInt(document.getElementById('invReplYr').value) || 12;
+
+  var annualLoad = fin.annualKwh || result.fin.annualKwh;
+  var genKwh1   = fin.genKwh   || 0;
+  var selfKwh1  = fin.selfKwh  || 0;
+  var expKwh1   = fin.exportKwh || 0;
+
+  // Enforce self-consumption/export consistency:
+  // If export = 0 then all usable PV is consumed => direct_scr accounts for full generation
+  var direct_scr = genKwh1 > 0
+    ? (expKwh1 === 0 ? 1.0 : selfKwh1 / genKwh1)
+    : 0.35;
+
+  // Shiftable load: constrained by actual battery size and load
+  var shiftable_load = batKwh > 0
+    ? Math.min(genKwh1 * 0.5, annualLoad * 0.35)
+    : 0;
+
+  var inp = {
+    total_cost:    total_cost,
+    cash_deposit:  cash_deposit,
+    loan_amount:   loan_amt,
+    repayment_per_period: repayAmt,
+    ppy:           ppy,
+    annual_rate:   intRate,
+    discount_rate: discRate,
+    analysis_years: anlYrs,
+    import_esc:    tEsc,
+    maint_yr1:     maintCost,
+    inv_repl_yr:   invReplYr,
+    inv_repl_cost: invReplCostUser,
+    gen_kwh_yr1:   genKwh1,
+    annual_load:   annualLoad,
+    direct_scr:    direct_scr,
+    shiftable_load: shiftable_load,
+    bat_kwh:       batKwh,
+    bat_rte:       0.90,
+    bat_deg:       0.025,
+    battery_max_dod: 0.90,
+    import_tariff: getEffTariff() / 100,
+    fit:           (fv('fitC') || 3.3) / 100,
+    supply_daily:  parseFloat(document.getElementById('connFeeCard').value || document.getElementById('connFee').value || 1.034),
+    pv_degradation_rate: 0.005,
+  };
+
+  // Check loan servicability before running engine
+  var loanServiceError = checkLoanServicability(loan_amt, repayAmt, ppy, intRate);
+  if (loanServiceError) {
+    setMsg('roiNote', '⚠ Invalid loan: ' + loanServiceError, 'err');
+    document.getElementById('roiMilestones').innerHTML = '<div style="color:#f87171;padding:12px;font-size:12px">⚠ ' + loanServiceError + '</div>';
+    return;
+  }
+  var eng = runEngine(inp);
+  _lastEngineResult = eng;
+  if (!eng.ok) {
+    setMsg('roiNote', '⚠ ' + (eng.error || 'Calculation error'), 'err');
+    return;
+  }
+
+  var summary    = eng.summary;
+  var annual_rows = eng.annual_rows;
+  var inv_repl_cost = eng.inv_repl_cost;
+  var bat_repl_cost = eng.bat_repl_cost;
+
+  var simple_pb        = summary.simple_pb;
+  var simple_pb_label  = summary.simple_pb_label;
+  var undis_frac   = summary.undis_frac;
+  var dis_frac     = summary.dis_frac;
+  var undis_be     = summary.undis_be;
+  var dis_be       = summary.dis_be;
+  var ann_cf_pos   = summary.ann_cf_pos_yr;
+  var NPV          = summary.NPV;
+  var IRR          = summary.IRR;
+  var MIRR         = summary.MIRR;
+  var loan_finish_yr = summary.loan_finish_yr;
+  var loan_weeks   = summary.loan_weeks;
+  var total_interest = summary.total_interest;
+  var year0_outflow = summary.year0_outflow;
+
+  // -- Assumptions display --
+  var asmParts = [
+    'Panel deg: <strong>0.5%/yr</strong>',
+    'Tariff esc: <strong>' + (tEsc*100).toFixed(1) + '%/yr</strong>',
+    'Discount: <strong>' + (discRate*100).toFixed(1) + '%</strong>',
+    'SCR: <strong>' + Math.round(direct_scr*100) + '%</strong>',
+    'Inv repl yr ' + invReplYr + ': <strong>' + fmtD(inv_repl_cost) + '</strong>',
+    batKwh > 0 ? 'Bat repl yr ' + ENGINE_DEFAULTS.bat_repl_yr + ': <strong>' + fmtD(bat_repl_cost) + '</strong>' : null,
+    loan_amt > 0 && repayAmt > 0
+      ? 'Loan: <strong>~' + loan_weeks.toFixed(1) + ' wks</strong>, interest: <strong>' + fmtD(total_interest) + '</strong>'
+      : null,
+  ].filter(Boolean).join(' &nbsp;|&nbsp; ');
+  document.getElementById('assumptionsDetail').innerHTML = asmParts;
+
+  // -- 4 clearly separated milestone cards --
+  var mils = [];
+
+  // 1. Approx Simple Payback — shortcut metric only (Upfront_Cost / Year_1_Net_Savings)
+  mils.push({
+    label: 'Approx Simple Payback',
+    cls: 'gold', badge: '$',
+    val: simple_pb != null ? simple_pb.toFixed(2) + ' yr' : (simple_pb_label || 'N/A'),
+    sub: simple_pb != null
+      ? 'Rough shortcut: upfront cash deposit ($' + (summary.upfront_cost||0).toLocaleString() + ') ÷ Year 1 net savings ($' + (summary.yr1_net_savings||0).toLocaleString() + '). NOT the true break-even — use BEP for that.'
+      : (simple_pb_label || 'No simple payback calculable')
+  });
+
+  // 2. CF+ Year — first year Annual_NCF_t > 0 (full net cashflow: savings minus ALL costs)
+  // Always show CF+ regardless of financing — relevant for cash purchases too
+  mils.push({
+    label: 'CF+ Year',
+    cls: ann_cf_pos ? 'profit' : 'neg', badge: 'CF+',
+    val: ann_cf_pos ? 'Year ' + ann_cf_pos : 'Never CF+ in period',
+    sub: ann_cf_pos
+      ? 'Year ' + ann_cf_pos + ': first year your total annual net cashflow is positive — savings exceed ALL costs (maintenance, replacements, loan repayments)'
+      : 'No year in the analysis period has a positive annual net cashflow — check system size, costs, or extend the analysis period'
+  });
+
+  // 3. BEP — first year Cumulative_Nominal_NCF_t >= 0 (all inflows + outflows, undiscounted)
+  mils.push({
+    label: 'Break-Even Point (BEP)',
+    cls: undis_be ? 'breakeven' : 'neg', badge: 'BEP',
+    val: undis_frac != null ? 'Year ' + undis_frac : 'No BEP in ' + anlYrs + 'yr',
+    sub: undis_be
+      ? 'Year ' + undis_frac + ': cumulative nominal net cashflow turns positive — every dollar of upfront deposit recovered through net savings (undiscounted)'
+      : 'Cumulative net cashflow does not reach zero within ' + anlYrs + ' years — consider a larger system or review cost inputs'
+  });
+
+  // 4. DPB — first year Cumulative_DCF_t >= 0 (discounted to present value)
+  mils.push({
+    label: 'Discounted Payback (DPB)',
+    cls: dis_be ? 'breakeven' : 'neg', badge: 'DPB',
+    val: dis_frac != null ? 'Year ' + dis_frac : 'No DPB in ' + anlYrs + 'yr',
+    sub: dis_be
+      ? 'Year ' + dis_frac + ': cumulative discounted net cashflow (DCF) turns positive at ' + (discRate*100).toFixed(0) + '% discount rate — the most rigorous payback measure. Always worse than BEP.'
+      : 'Discounted cashflows do not recover initial outlay within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
+  });
+
+  // 5. NPV = ICF0 + SUM(DCF_t) — present value of all future net cashflows plus initial outlay
+  mils.push({
+    label: 'Net Present Value (NPV)',
+    cls: NPV >= 0 ? 'profit' : 'neg', badge: 'NPV',
+    val: fmtD(NPV),
+    sub: NPV >= 0
+      ? 'NPV = Initial outlay ($' + Math.abs(summary.ICF0||0).toLocaleString() + ') + PV of all future net cashflows at ' + (discRate*100).toFixed(0) + '% discount rate. Positive = financially viable investment.'
+      : 'NPV is negative — at a ' + (discRate*100).toFixed(0) + '% discount rate this system does not generate sufficient returns. Check system size, costs, or tariff assumptions.'
+  });
+
+  // 6. IRR — annual return rate equivalent to this investment
+  if (IRR != null) {
+    mils.push({
+      label: 'IRR — Investment Return Rate',
+      cls: IRR > discRate*100 ? 'profit' : 'breakeven', badge: 'IRR',
+      val: IRR.toFixed(1) + '%',
+      sub: 'The annual return rate this solar system delivers on your upfront deposit. Compare with your savings account or mortgage rate. Exceeds discount rate (' + (discRate*100).toFixed(0) + '%) = good investment.'
+        + (MIRR != null ? ' MIRR: ' + MIRR.toFixed(1) + '% (conservative, accounts for reinvestment rate).' : '')
+    });
+  }
+
+  var mHtml = '';
+  for (var mi = 0; mi < mils.length; mi++) {
+    var m  = mils[mi];
+    var vc = m.cls === 'profit' ? 'grn' : m.cls === 'neg' ? 'neg' : 'gold';
+    mHtml += '<div class="ms-item ' + (m.cls==='breakeven'?'breakeven':'') + ' ' + (m.cls==='profit'?'profit':'') + '">'
+      + (m.badge ? '<span class="ms-badge">' + m.badge + '</span>' : '')
+      + '<div class="ms-label">' + m.label + '</div>'
+      + '<div class="ms-val ' + vc + '">' + m.val + '</div>'
+      + '<div class="ms-sub">' + (m.sub || '') + '</div></div>';
+  }
+  document.getElementById('roiMilestones').innerHTML = mHtml;
+
+  // ── Sensitivity Analysis ──
+  // Re-run engine with ±variation on 5 key parameters, record NPV change
+  var sensRows = [
+    { label: 'Tariff escalation',   param: 'import_esc',          base: inp.import_esc,          low: Math.max(0, inp.import_esc - 0.01), high: inp.import_esc + 0.01, fmt: function(v){ return (v*100).toFixed(1)+'%/yr'; } },
+    { label: 'Discount rate',       param: 'discount_rate',       base: inp.discount_rate,       low: inp.discount_rate + 0.02,           high: Math.max(0.01,inp.discount_rate - 0.02), fmt: function(v){ return (v*100).toFixed(0)+'%'; } },
+    { label: 'Panel degradation',   param: 'pv_degradation_rate', base: inp.pv_degradation_rate, low: inp.pv_degradation_rate + 0.003,   high: Math.max(0,inp.pv_degradation_rate - 0.003), fmt: function(v){ return (v*100).toFixed(1)+'%/yr'; } },
+    { label: 'Self-consumption',    param: 'direct_scr',          base: inp.direct_scr,          low: Math.max(0.1,inp.direct_scr-0.10), high: Math.min(1,inp.direct_scr+0.10), fmt: function(v){ return Math.round(v*100)+'%'; } },
+    { label: 'Feed-in tariff',      param: 'fit',                 base: inp.fit,                 low: Math.max(0,inp.fit-0.02),          high: inp.fit+0.02, fmt: function(v){ return (v*100).toFixed(1)+'c/kWh'; } },
+  ];
+  var sensHtml = '<div style="margin-top:18px"><div style="font-size:10px;font-weight:700;color:var(--muted,#888);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Sensitivity — NPV impact of ±1 step on key parameters</div>'
+    + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
+    + '<tr style="color:#888;font-size:10px"><th style="text-align:left;padding:3px 6px">Parameter</th><th style="text-align:right;padding:3px 6px">Base</th><th style="text-align:right;padding:3px 6px">Pessimistic NPV</th><th style="text-align:right;padding:3px 6px">Optimistic NPV</th></tr>';
+
+  sensRows.forEach(function(sr) {
+    var inpLow  = Object.assign({}, inp); inpLow[sr.param]  = sr.low;
+    var inpHigh = Object.assign({}, inp); inpHigh[sr.param] = sr.high;
+    var resLow  = runEngine(inpLow);
+    var resHigh = runEngine(inpHigh);
+    if (!resLow.ok || !resHigh.ok) return;
+    var npvL = resLow.summary.NPV, npvH = resHigh.summary.NPV;
+    var colL = npvL >= NPV ? '#4ade80' : '#f87171';
+    var colH = npvH >= NPV ? '#4ade80' : '#f87171';
+    var rowBg = sensRows.indexOf(sr) % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+    sensHtml += '<tr style="background:' + rowBg + '">'
+      + '<td style="padding:4px 6px;color:#ccc">' + sr.label + '</td>'
+      + '<td style="padding:4px 6px;text-align:right;color:#888">' + sr.fmt(sr.base) + '</td>'
+      + '<td style="padding:4px 6px;text-align:right;color:' + colL + '">' + fmtD(npvL) + '</td>'
+      + '<td style="padding:4px 6px;text-align:right;color:' + colH + '">' + fmtD(npvH) + '</td>'
+      + '</tr>';
+  });
+  sensHtml += '</table></div>';
+  var sensEl = document.getElementById('roiSensitivity');
+  if (sensEl) sensEl.innerHTML = sensHtml;
+
+  // Headline
+  var insight = document.getElementById('roiInsight');
+  if (dis_be && dis_be <= anlYrs) {
+    var pYrs = anlYrs - dis_be;
+    insight.innerHTML = '(OK) Discounted payback: <span style="color:#4ade80">Year ' + dis_frac + '</span> &nbsp;->&nbsp; <span style="color:#4ade80">' + pYrs + ' yrs of net positive</span> to yr ' + anlYrs;
+    insight.style.color = '#ccc';
+  } else {
+    insight.textContent = '(!!) No discounted payback within ' + anlYrs + ' year analysis period';
+    insight.style.color = '#f87171';
+  }
+
+  // -- Chart data --
+  var cumDCF_arr = [-year0_outflow];
+  for (var ri = 0; ri < annual_rows.length; ri++) cumDCF_arr.push(annual_rows[ri].CumDCF);
+  var labels = ['Now'];
+  for (var li = 0; li < annual_rows.length; li++) labels.push('Yr ' + annual_rows[li].t);
+
+  // -- Main cumulative DCF chart --
+  var ctx = document.getElementById('roiChart').getContext('2d');
+  if (roiChartInst) { roiChartInst.destroy(); roiChartInst = null; }
+
+  var profGrad = ctx.createLinearGradient(0,0,0,300);
+  profGrad.addColorStop(0,'rgba(74,222,128,.40)'); profGrad.addColorStop(1,'rgba(74,222,128,.05)');
+  var recvGrad = ctx.createLinearGradient(0,0,0,300);
+  recvGrad.addColorStop(0,'rgba(251,146,60,.05)'); recvGrad.addColorStop(1,'rgba(251,146,60,.32)');
+
+  var profFill = cumDCF_arr.map(function(v){ return v >= 0 ? v : 0; });
+  var recvFill = cumDCF_arr.map(function(v){ return v <  0 ? v : 0; });
+
+  var datasets = [
+    {label:'_rf',data:recvFill,borderColor:'transparent',backgroundColor:recvGrad,fill:true,tension:0.35,pointRadius:0,order:8},
+    {label:'_pf',data:profFill,borderColor:'transparent',backgroundColor:profGrad,fill:true,tension:0.35,pointRadius:0,order:8},
+    {label:'Cumulative Discounted CF (with solar)',data:cumDCF_arr,borderColor:'#ffffff',borderWidth:3.5,backgroundColor:'transparent',fill:false,tension:0.35,pointRadius:0,pointHoverRadius:6,order:1},
+    {label:'_zero',data:labels.map(function(){ return 0; }),borderColor:'rgba(255,255,255,.25)',borderWidth:1.5,borderDash:[2,4],backgroundColor:'transparent',pointRadius:0,fill:false,tension:0,order:9},
+
+  ];
+
+  // Milestone markers -- use sparse line datasets so they sit at correct label positions
+  // Labels array is ['Now', 'Yr 1', 'Yr 2', ...] so index = year number
+  function makeMarker(labelText, idx, yVal, color, radius, style) {
+    var pts = new Array(anlYrs + 1).fill(null);
+    pts[Math.round(idx)] = yVal;
+    return {
+      type:'line', label: labelText, showLine: false,
+      data: pts,
+      backgroundColor: color, borderColor: '#111', borderWidth: 1.5,
+      pointRadius: function(ctx) { return ctx.dataIndex === Math.round(idx) ? radius : 0; },
+      pointStyle: style, pointHoverRadius: radius + 2, order: 0
+    };
+  }
+
+  // Simple cash payback -- sits on the cumDCF line at that year
+  if (simple_pb != null && simple_pb <= anlYrs) {
+    var spbIdx = Math.min(Math.round(simple_pb), anlYrs);
+    var spbY = cumDCF_arr[spbIdx] != null ? cumDCF_arr[spbIdx] : 0;
+    datasets.push(makeMarker('$ Approx Simple Payback', spbIdx, spbY, '#f5c518', 10, 'triangle'));
+  }
+
+  // Annual CF positive -- sits on cumDCF at that year
+  if (ann_cf_pos && ann_cf_pos <= anlYrs) {
+    var cfpY = cumDCF_arr[ann_cf_pos] != null ? cumDCF_arr[ann_cf_pos] : 0;
+    datasets.push(makeMarker('CF+ Year — full annual NCF positive', ann_cf_pos, cfpY, '#fb923c', 10, 'rectRot'));
+  }
+
+  // Cumulative undiscounted breakeven -- sits on cumDCF at that year
+  if (undis_be && undis_be <= anlYrs) {
+    var bepIdx = Math.min(Math.round(undis_frac || undis_be), anlYrs);
+    var bepY = cumDCF_arr[bepIdx] != null ? cumDCF_arr[bepIdx] : 0;
+    datasets.push(makeMarker('BEP Break-Even Point (nominal)', bepIdx, bepY, '#38bdf8', 11, 'circle'));
+  }
+
+  // Discounted payback -- sits on the zero line
+  if (dis_be && dis_be <= anlYrs) {
+    var dpbIdx = Math.min(Math.round(dis_frac || dis_be), anlYrs);
+    datasets.push(makeMarker('DPB Discounted Payback', dpbIdx, 0, '#4ade80', 13, 'circle'));
+  }
+
+  // Inverter replacement -- sits on cumDCF at that year
+  if (invReplYr <= anlYrs) {
+    var invY = cumDCF_arr[invReplYr] != null ? cumDCF_arr[invReplYr] : 0;
+    datasets.push(makeMarker('Inverter replacement', invReplYr, invY, '#a78bfa', 10, 'rectRot'));
+  }
+
+  roiChartInst = new Chart(ctx, {
+    type:'line', data:{labels:labels, datasets:datasets},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{backgroundColor:'rgba(8,8,8,.9)',callbacks:{label:function(c){ return ' ' + c.dataset.label + ': ' + fmtD(c.parsed.y); }}}
+      },
+      scales:{
+        y:{ticks:{color:'#777',font:{size:9},callback:function(v){ var a=Math.abs(v); return (v<0?'-':'')+'$'+(a>=1000?(a/1000).toFixed(0)+'k':a); }},grid:{color:'rgba(255,255,255,.06)'},title:{display:true,text:'Cumulative $ Position',color:'#777',font:{size:9}}},
+        x:{ticks:{color:'#777',font:{size:9},maxTicksLimit:14},grid:{color:'rgba(255,255,255,.04)'}}
+      },
+      onHover:function(evt,els){ if(els&&els.length>0) updateCursorPanel(els[0].index, annual_rows, cumDCF_arr, year0_outflow, anlYrs); },
+      plugins: {
+        afterDraw: function(chart) {
+          var ctx2 = chart.ctx;
+          var ca   = chart.chartArea;
+          var xs   = chart.scales.x;
+          var ys   = chart.scales.y;
+          ctx2.save();
+
+          // ── Zone labels: PROFIT ZONE above zero, PAYING OFF SYSTEM below ──
+          if (ca && ys) {
+            var zeroY  = ys.getPixelForValue(0);
+            var rightX = ca.right;
+            // Only draw if there's enough room in each zone
+            if (zeroY > ca.top + 40) {
+              ctx2.font = 'bold 12px Arial, sans-serif';
+              ctx2.fillStyle = 'rgba(74,222,128,.35)';
+              ctx2.textAlign = 'right';
+              ctx2.fillText('PROFIT ZONE', rightX - 14, zeroY - 16);
+            }
+            if (zeroY < ca.bottom - 40) {
+              ctx2.font = 'bold 12px Arial, sans-serif';
+              ctx2.fillStyle = 'rgba(251,146,60,.35)';
+              ctx2.textAlign = 'right';
+              ctx2.fillText('PAYING OFF SYSTEM', rightX - 14, zeroY + 22);
+            }
+          }
+
+          // ── Milestone pill labels: $, CF+, BEP, DPB ──
+          var markerLabels = [];
+          if (simple_pb != null && simple_pb <= anlYrs) markerLabels.push({idx:Math.min(Math.round(simple_pb),anlYrs), label:'$', color:'#f5c518'});
+          if (ann_cf_pos && ann_cf_pos <= anlYrs)       markerLabels.push({idx:ann_cf_pos, label:'CF+', color:'#fb923c'});
+          if (undis_be && undis_be <= anlYrs)           markerLabels.push({idx:Math.min(Math.round(undis_frac||undis_be),anlYrs), label:'BEP', color:'#38bdf8'});
+          if (dis_be && dis_be <= anlYrs)               markerLabels.push({idx:Math.min(Math.round(dis_frac||dis_be),anlYrs), label:'DPB', color:'#4ade80'});
+          if (xs && ys) {
+            markerLabels.forEach(function(m) {
+              var px = xs.getPixelForValue(m.idx);
+              var py = ys.getPixelForValue(0) - 20;
+              ctx2.font = 'bold 10px Arial, sans-serif';
+              var tw = ctx2.measureText(m.label).width;
+              ctx2.fillStyle = 'rgba(0,0,0,0.65)';
+              ctx2.beginPath();
+              ctx2.roundRect ? ctx2.roundRect(px-tw/2-4, py-13, tw+8, 15, 3) : ctx2.rect(px-tw/2-4, py-13, tw+8, 15);
+              ctx2.fill();
+              ctx2.fillStyle = m.color;
+              ctx2.textAlign = 'center';
+              ctx2.fillText(m.label, px, py);
+            });
+          }
+
+          // ── Cursor tracking line ──
+          if (ca && xs && ys && roiChartInst && roiChartInst._cursorYr != null) {
+            var cYr = roiChartInst._cursorYr;
+            var cx  = xs.getPixelForValue(cYr);
+            if (cx >= ca.left && cx <= ca.right) {
+              ctx2.setLineDash([3,3]);
+              ctx2.strokeStyle = 'rgba(245,197,24,.6)';
+              ctx2.lineWidth   = 1.5;
+              ctx2.beginPath(); ctx2.moveTo(cx, ca.top); ctx2.lineTo(cx, ca.bottom); ctx2.stroke();
+              ctx2.setLineDash([]);
+              // Dot on white line
+              var cdArr = cumDCF_arr;
+              if (cdArr && cdArr[cYr] !== undefined) {
+                var dotY = ys.getPixelForValue(cdArr[cYr]);
+                var dotVal = cdArr[cYr];
+                ctx2.beginPath();
+                ctx2.arc(cx, dotY, 6, 0, Math.PI*2);
+                ctx2.fillStyle   = dotVal >= 0 ? '#4ade80' : '#f87171';
+                ctx2.strokeStyle = '#fff';
+                ctx2.lineWidth   = 2;
+                ctx2.fill(); ctx2.stroke();
+              }
+            }
+          }
+
+          ctx2.restore();
+        }
+      }
+    }
+  });
+
+  roiChartInst._cursorYr = dis_be || Math.round(anlYrs/2);
+  updateCursorPanel(roiChartInst._cursorYr, annual_rows, cumDCF_arr, year0_outflow, anlYrs);
+
+  var canvas = document.getElementById('roiChart');
+  canvas.onmousemove = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    if (roiChartInst && roiChartInst.scales && roiChartInst.scales.x) {
+      var pt = roiChartInst.scales.x.getValueForPixel(e.clientX - rect.left);
+      if (pt !== undefined) { var yr = Math.round(Math.max(0, Math.min(anlYrs, pt))); updateCursorPanel(yr, annual_rows, cumDCF_arr, year0_outflow, anlYrs); }
+    }
+  };
+  canvas.onmouseleave = function(){ canvas.style.cursor = 'default'; };
+
+  // Legend
+  var lgCfg = [
+    {c:'#fff', w:3.5, l:'Cumul. Discounted CF (with solar)'},
+
+    {c:'rgba(74,222,128,.40)', fill:true, l:'Net positive zone'},
+    {c:'rgba(251,146,60,.32)', fill:true, l:'Recovery zone'},
+  ];
+  if (simple_pb != null && simple_pb <= anlYrs)  lgCfg.push({c:'#f5c518',  tri:true,  l:'$ Approx Simple Payback'});
+  if (ann_cf_pos && ann_cf_pos <= anlYrs)         lgCfg.push({c:'#fb923c',  sq:true,   l:'CF+ Year — Annual NCF > 0'});
+  if (undis_be && undis_be <= anlYrs)             lgCfg.push({c:'#38bdf8',  dot:true,  l:'BEP Break-Even Point (nominal)'});
+  if (dis_be && dis_be <= anlYrs)                 lgCfg.push({c:'#4ade80',  dot:true,  l:'DPB Discounted Payback'});
+  if (invReplYr <= anlYrs)                        lgCfg.push({c:'#a78bfa',  sq:true,   l:'Inverter Replacement'});
+
+  document.getElementById('roiChartLegend').innerHTML = lgCfg.map(function(l){
+    var sym;
+    if (l.tri) {
+      sym = '<span style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:11px solid ' + l.c + ';display:inline-block"></span>';
+    } else if (l.sq) {
+      sym = '<span style="width:10px;height:10px;background:' + l.c + ';display:inline-block;transform:rotate(45deg)"></span>';
+    } else if (l.dot) {
+      sym = '<span style="width:12px;height:12px;background:' + l.c + ';border-radius:50%;display:inline-block;border:2px solid #111"></span>';
+    } else if (l.dash) {
+      sym = '<span style="width:22px;height:2px;background:' + l.c + ';display:inline-block;border-top:2px dashed ' + l.c + '"></span>';
+    } else if (l.fill) {
+      sym = '<span style="width:13px;height:10px;background:' + l.c + ';border-radius:2px;display:inline-block"></span>';
+    } else {
+      sym = '<span style="width:' + (l.w||2)*7 + 'px;height:' + (l.w||2) + 'px;background:' + l.c + ';display:inline-block"></span>';
+    }
+    return '<span style="display:flex;align-items:center;gap:5px">' + sym + '<span style="color:#bbb">' + l.l + '</span></span>';
+  }).join('');
+
+  // -- Annual CF bar chart --
+  var actx = document.getElementById('roiAnnualChart').getContext('2d');
+  if (roiAnnualChInst) { roiAnnualChInst.destroy(); roiAnnualChInst = null; }
+  roiAnnualChInst = new Chart(actx, {
+    type:'bar',
+    data:{
+      labels: annual_rows.map(function(r){ return 'Yr '+r.t; }),
+      datasets:[
+        {label:'Grid savings avoided',data:annual_rows.map(function(r){ return Math.round(r.savings); }),backgroundColor:'rgba(74,222,128,.7)',stack:'s'},
+        {label:'Loan repayments out',data:annual_rows.map(function(r){ return -Math.round(r.F_t); }),backgroundColor:'rgba(248,113,113,.7)',stack:'s'},
+        {label:'Maintenance + replacements',data:annual_rows.map(function(r){ return -Math.round(r.opex+r.R_t); }),backgroundColor:'rgba(80,80,80,.7)',stack:'s'},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){ return ' '+c.dataset.label+': '+fmtD(c.parsed.y); }}}},
+      scales:{
+        y:{stacked:true,ticks:{color:'#666',font:{size:8},callback:function(v){ return (v<0?'-':'')+'$'+Math.abs(Math.round(v/1000))+'k'; }},grid:{color:'rgba(255,255,255,.05)'}},
+        x:{ticks:{color:'#666',font:{size:8},maxTicksLimit:14},grid:{display:false}}
+      }
+    }
+  });
+
+  // -- Annual table --
+  var tbl = '<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr>'
+    + ['Yr','Savings ($)','Finance Out ($)','Opex + Replacements ($)','Annual NCF ($)','Discounted CF ($)','Cumulative Disc CF ($)'].map(function(h){
+        return '<th style="background:#1a1a1a;color:#f5c518;padding:4px 6px;text-align:right;white-space:nowrap">'+h+'</th>';
+      }).join('') + '</tr></thead><tbody>';
+  for (var ti = 0; ti < annual_rows.length; ti++) {
+    var r = annual_rows[ti];
+    var bg = ti%2===0 ? 'rgba(255,255,255,.02)' : 'transparent';
+    var cc = r.CumDCF >= 0 ? '#4ade80' : '#f87171';
+    tbl += '<tr style="background:'+bg+'">'
+      + '<td style="padding:3px 6px;text-align:right;color:#aaa">'+r.t+'</td>'
+      + '<td style="padding:3px 6px;text-align:right;color:#4ade80">'+fmtD(r.savings)+'</td>'
+      + '<td style="padding:3px 6px;text-align:right;color:#f87171">'+fmtD(-r.F_t)+'</td>'
+      + '<td style="padding:3px 6px;text-align:right;color:#f87171">'+fmtD(-(r.opex+r.R_t))+'</td>'
+      + '<td style="padding:3px 6px;text-align:right;font-weight:600">'+fmtD(r.CF_t)+'</td>'
+      + '<td style="padding:3px 6px;text-align:right">'+fmtD(r.DCF_t)+'</td>'
+      + '<td style="padding:3px 6px;text-align:right;font-weight:700;color:'+cc+'">'+fmtD(r.CumDCF)+'</td>'
+      + '</tr>';
+  }
+  document.getElementById('annualTable').innerHTML = tbl + '</tbody></table>';
+
+  // Footer note
+  var finNote = 'System cost: ' + fmtD(total_cost)
+    + (cash_deposit > 0 ? ' (' + fmtD(cash_deposit) + ' cash + ' + fmtD(loan_amt) + ' financed)' : '')
+    + (loan_amt > 0 && repayAmt > 0
+      ? ' | Loan repaid in ~' + loan_weeks.toFixed(1) + ' wks, total interest ' + fmtD(total_interest)
+      : ' | Cash purchase')
+    + '. Tariff esc ' + (tEsc*100).toFixed(1) + '%/yr. Panel deg 0.5%/yr. Estimates only.';
+  document.getElementById('roiNote').textContent = finNote;
+}
+function updateCursorPanel(yr,rows,cumDCF,C_upfront,anlYrs){
+  if(yr<0||yr>anlYrs) return;
+  if(roiChartInst) roiChartInst._cursorYr=yr;
+  const r = yr===0 ? null : rows[yr-1];
+  const cd = cumDCF[yr];
+  const dt = yr===0 ? 'Today' : yrToDate(yr);
+  document.getElementById('roiCursorPanel').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:12px;font-weight:800;color:#f5c518">${yr===0?'Today':'Year '+yr} ${dt?'('+dt+')':''}</span>
+      <span style="font-size:10px;color:#888">Drag along chart -></span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px 14px;font-size:11px">
+      <span style="color:#aaa">Cum. DCF</span>
+      <span style="font-weight:800;color:${cd>=0?'#4ade80':'#f87171'}">${fmtD(cd)}</span>
+      ${r?`<span style="color:#aaa">Annual savings</span><span style="color:#4ade80;font-weight:700">${fmtD(r.savings)}</span>
+      <span style="color:#aaa">Annual NCF</span><span style="color:${r.CF_t>=0?'#4ade80':'#f87171'};font-weight:700">${fmtD(r.CF_t)}</span>
+      <span style="color:#aaa">Grid import</span><span>${Math.round(r.E_grid_import).toLocaleString()} kWh</span>`:''}
+      <span style="color:#aaa">Status</span>
+      <span style="color:${cd>=0?'#4ade80':'#f87171'};font-size:11px;font-weight:700">${cd>=0?'OK Net positive':' Still recovering'}</span>
+    </div>`;
+  if(roiChartInst) roiChartInst.update('none');
+}
+
+function yrToDate(yr){
+  const d=new Date(); d.setFullYear(d.getFullYear()+yr);
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getFullYear();
+}
+
+// == Slider ==
+function onSliderChange() {
+  if (!result) return;
+  const panels=parseInt(document.getElementById('slPanels').value);
+  const batKwh=parseInt(document.getElementById('slBat').value);
+  const kw=panels*getPanelW()/1000, eff=(fv('efficiency')||85)/100;
+  const fitC=fv('fitC')||3.3;
+
+  document.getElementById('baselineBanner').style.display=panels===0?'block':'none';
+  document.getElementById('slPanelLabel').textContent=
+    panels===0?'No solar (baseline mode)':panels+' x '+getPanelW()+'W = '+kw.toFixed(2)+' kWp';
+  document.getElementById('slBatLabel').textContent=batKwh>0?batKwh+' kWh battery':'No battery';
+
+  const fin=clientFinancials(kw,eff,batKwh);
+  setText('lk-sav',  panels===0?'--':'$'+parseInt(fin.savings||0).toLocaleString());
+  setText('lk-pb',   panels===0?'--':(fin.payback||0)+' yr');
+  setText('lk-self', panels===0?'0%':(fin.selfPct||0)+'%');
+  setText('lk-exp',  panels===0?'0':parseInt(fin.exportKwh||0).toLocaleString());
+  setText('lk-waste',panels===0?'$0/yr':'$'+parseInt(fin.wasteVal||0)+'/yr');
+  setText('lk-gen',  panels===0?'0':parseInt(fin.genKwh||0).toLocaleString());
+
+  if (panels===0) {
+    document.getElementById('wasteMsg').innerHTML =
+      '<strong> Baseline view</strong> -- current usage, no solar. ' +
+      'Annual load: <strong>'+(result.fin.annualKwh||0).toLocaleString()+' kWh/yr</strong>. ' +
+      'Drag the panels slider right to see solar impact.';
+  } else {
+    const wKwh=parseInt(fin.exportKwh||0), wVal=parseInt(fin.wasteVal||0);
+    let msg=`<strong>~ ${wKwh.toLocaleString()} kWh</strong> exported/yr at <strong>${fitC}c = $${wVal}/yr</strong>.`;
+    if (batKwh===0&&wKwh>500) { const b=Math.round(wKwh*0.6),e=Math.round(b*(getEffTariff()/100-fitC/100)); msg+=` A battery could capture ~${b.toLocaleString()} kWh -- worth ~<strong>$${e}/yr extra</strong>.`; }
+    else if (batKwh>0) { msg+=` Battery capturing surplus -- export reduced.`; }
+    document.getElementById('wasteMsg').innerHTML=msg;
+  }
+
+  updateBillCard();
+  updateROI();
+  drawChart(curSeason, kw, eff, batKwh);
+  updateMonthlyBillTable();
+
+  // ?? "If you do nothing" cumulative cost box ??
+  var dnBox  = document.getElementById('doNothingBox');
+  var dnText = document.getElementById('doNothingText');
+  if (dnBox && dnText && result) {
+    var tariffC  = getEffTariff() / 100;
+    var connDay  = parseFloat(document.getElementById('connFeeCard').value || document.getElementById('connFee').value || 1.034);
+    var tEscDn   = (parseFloat(document.getElementById('tariffEsc').value) || 3) / 100;
+    var anlYrsDn = parseInt(document.getElementById('analysisYears').value) || 25;
+    var annLoad  = result.fin.annualKwh || 0;
+    var cumCost  = 0;
+    for (var dny = 1; dny <= anlYrsDn; dny++) {
+      var tImp = tariffC * Math.pow(1 + tEscDn, dny - 1);
+      var tSup = connDay * Math.pow(1 + tEscDn, dny - 1);
+      cumCost += annLoad * tImp + 365 * tSup;
+    }
+    var yr1bill = annLoad * tariffC + 365 * connDay;
+    dnBox.style.display = 'block';
+    dnText.innerHTML = ' Over ' + anlYrsDn + ' years you would spend approximately '
+      + '<strong style="color:#f87171;font-size:14px"> $' + Math.round(cumCost).toLocaleString() + '</strong>'
+      + ' on electricity at current rates (growing ' + (tEscDn*100).toFixed(0) + '%/yr).'
+      + ' That is <strong style="color:#f87171"> $' + Math.round(yr1bill).toLocaleString() + '/yr</strong> today'
+      + ' rising to <strong style="color:#f87171"> $' + Math.round(yr1bill * Math.pow(1+tEscDn, anlYrsDn-1)).toLocaleString() + '/yr</strong>'
+      + ' by year ' + anlYrsDn + '.';
+  }
+}
+
+var _noSolarMode   = false;
+var _selectedMonth = null;  // null = season average; number 1-12 = specific month
+
+// Returns the load profile (24 hourly Wh values) for current season or selected month
+function getLoadProfile(season) {
+  if (_selectedMonth !== null && result && result.monthlyProfiles && result.monthlyProfiles[_selectedMonth]) {
+    return result.monthlyProfiles[_selectedMonth].con;
+  }
+  // Fall back to season weighted average
+  return result.chartData[season].con;
+}
+
+// Label for the current selection — used in chart tooltip and baseline note
+function getLoadProfileLabel(season) {
+  if (_selectedMonth !== null && result && result.monthlyProfiles && result.monthlyProfiles[_selectedMonth]) {
+    var mp = result.monthlyProfiles[_selectedMonth];
+    return mp.name + ' avg (' + mp.days + ' days)';
+  }
+  return season + ' avg';
+}
+
+function onSolarToggle(checked) {
+  _noSolarMode = checked;
+  var track = document.getElementById('noSolarTrack');
+  var thumb = document.getElementById('noSolarThumb');
+  var label = document.getElementById('solarToggleLabel');
+  if (checked) {
+    track.style.background = 'rgba(239,68,68,.5)';
+    thumb.style.left = '17px';
+    thumb.style.background = '#f87171';
+    label.textContent = '☀ With Solar';
+    label.style.color = '#888';
+  } else {
+    track.style.background = 'rgba(255,255,255,.15)';
+    thumb.style.left = '2px';
+    thumb.style.background = '#aaa';
+    label.textContent = '☀ With Solar';
+    label.style.color = '#aaa';
+  }
+  const panels = parseInt(document.getElementById('slPanels').value);
+  const batKwh = parseInt(document.getElementById('slBat').value);
+  const kw = panels * getPanelW() / 1000;
+  const eff = (fv('efficiency') || 85) / 100;
+  drawChart(curSeason, kw, eff, batKwh);
+}
+
+function updateMonthChips(season) {
+  var chips = document.getElementById('monthChips');
+  var note  = document.getElementById('baselineNote');
+  if (!chips || !result || !result.monthlyProfiles) return;
+
+  var SEASON_MONTHS = { Summer:[12,1,2], Autumn:[3,4,5], Winter:[6,7,8], Spring:[9,10,11] };
+  var monthsInSeason = SEASON_MONTHS[season] || [];
+  var MONTH_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  var html = '<span style="font-size:9px;color:#666;text-transform:uppercase;letter-spacing:.8px">Month:</span>';
+
+  // "All" chip (season average)
+  var allActive = _selectedMonth === null;
+  html += '<button onclick="_selectedMonth=null;updateMonthChips(curSeason);redrawCurrentChart()" '
+    + 'style="font-size:9px;padding:2px 7px;border-radius:10px;cursor:pointer;border:1px solid '
+    + (allActive ? '#f5c518;background:rgba(245,197,24,.2);color:#f5c518' : 'rgba(255,255,255,.15);background:transparent;color:#888')
+    + '">' + season + ' avg</button>';
+
+  // One chip per month that has data
+  monthsInSeason.forEach(function(m) {
+    var mp = result.monthlyProfiles[m];
+    if (!mp) return;  // no data for this month
+    var active = _selectedMonth === m;
+    html += '<button onclick="_selectedMonth=' + m + ';updateMonthChips(curSeason);redrawCurrentChart()" '
+      + 'style="font-size:9px;padding:2px 7px;border-radius:10px;cursor:pointer;border:1px solid '
+      + (active ? '#60a5fa;background:rgba(96,165,250,.2);color:#60a5fa' : 'rgba(255,255,255,.15);background:transparent;color:#888')
+      + '">' + mp.name + ' <span style="color:#555">(' + mp.days + 'd)</span></button>';
+  });
+
+  chips.innerHTML = html;
+
+  // Update baseline note
+  var dr = result.dataRange || {};
+  var baseLabel = _selectedMonth ? (MONTH_NAMES[_selectedMonth] + ' ' + (dr.first ? dr.first.substring(0,4) : '')) : season;
+  if (note) {
+    note.innerHTML = '<span style="color:#555">Design baseline: </span>'
+      + '<span style="color:#666">' + getLoadProfileLabel(season) + '</span>'
+      + (dr.first ? ' <span style="color:#444">| Data: ' + dr.first + ' → ' + dr.last + '</span>' : '');
+  }
+}
+
+function redrawCurrentChart() {
+  var panels = parseInt(document.getElementById('slPanels').value);
+  var batKwh = parseInt(document.getElementById('slBat').value);
+  var kw = panels * getPanelW() / 1000;
+  var eff = (fv('efficiency') || 85) / 100;
+  drawChart(curSeason, kw, eff, batKwh);
+}
+
+function showSeason(s, btn) {
+  curSeason=s;
+  _selectedMonth = null;  // reset to season average when switching seasons
+  document.querySelectorAll('.stab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const panels=parseInt(document.getElementById('slPanels').value);
+  const batKwh=parseInt(document.getElementById('slBat').value);
+  const kw=panels*getPanelW()/1000, eff=(fv('efficiency')||85)/100;
+  updateMonthChips(s);
+  drawChart(s,kw,eff,batKwh);
+}
+
+// == CHART -- redesigned for clarity ==
+// Grid purchase = vivid red (the "cost" bars) -- most important signal
+// Total consumption = white dashed line -- shows peaks clearly
+// Solar generation = yellow bell curve
+function drawChart(season, kw, eff, batKwh) {
+  if (!result) return;
+  const d   = buildSeries(season, kw, eff, batKwh);
+  const lbl = Array.from({length:24},(_,i)=>i.toString().padStart(2,'0')+':00');
+  const ctx = document.getElementById('sChart').getContext('2d');
+  if (sChart) { sChart.destroy(); sChart=null; }
+
+  // Total load = design baseline for selected month or season
+  // Using getLoadProfile() so month chips can switch the baseline
+  const totalLoad = getLoadProfile(season);
+  const profileLabel = getLoadProfileLabel(season);
+
+  // Average consumption reference line (flat, for visual reference)
+  const avgLoad = Math.round(totalLoad.reduce((a,b)=>a+b,0)/24);
+
+  // ── No-Solar mode: show what the bill looks like without any solar/battery ──
+  const noSolarCostEl = document.getElementById('noSolarCost');
+  if (_noSolarMode) {
+    // Without solar, ALL load comes from grid — gridImp = totalLoad
+    const tariff = getTariff();
+    var dailyGridCost = 0;
+    for (var h = 0; h < 24; h++) {
+      dailyGridCost += (totalLoad[h] / 1000) * (tariffForHour(tariff, h) / 100);
+    }
+    var connDay = parseFloat(document.getElementById('connFeeCard').value) ||
+                  parseFloat(document.getElementById('connFee').value) || 1.034;
+    var totalDailyCost = dailyGridCost + connDay;
+    var withSolarEl2 = document.getElementById('withSolarStats');
+    if (withSolarEl2) withSolarEl2.style.display = 'none';
+    if (noSolarCostEl) {
+      noSolarCostEl.style.display = 'block';
+      noSolarCostEl.innerHTML =
+        '<strong style="color:#f87171">Without Solar — Pure Grid Cost</strong> &nbsp;|&nbsp; '
+        + 'Energy: <strong>$' + dailyGridCost.toFixed(2) + '/day</strong>'
+        + ' &nbsp;+&nbsp; Supply: <strong>$' + connDay.toFixed(2) + '/day</strong>'
+        + ' &nbsp;= &nbsp;<strong style="font-size:13px">$' + totalDailyCost.toFixed(2) + '/day from grid</strong>'
+        + ' &nbsp;&nbsp;<span style="color:#888">($' + Math.round(totalDailyCost * 365).toLocaleString() + '/yr)</span>';
+    }
+    // In no-solar mode, draw the chart with all load as grid purchase (red)
+    sChart = new Chart(ctx, {
+      data: {
+        labels: lbl,
+        datasets: [
+          {
+            type:'bar', label:'Grid purchase — no solar (cost)',
+            data: totalLoad,
+            backgroundColor:'rgba(239,68,68,.88)',
+            stack:'load', order:3
+          },
+          {
+            type:'line', label:'Avg Daily Consumption — ' + Math.round(avgLoad).toLocaleString() + ' Wh/hr avg (' + (Math.round(avgLoad*24/100)/10).toFixed(1) + ' kWh/day)',
+            data: new Array(24).fill(avgLoad),
+            borderColor:'#0d9488',
+            backgroundColor:'transparent',
+            borderWidth:2.5, borderDash:[6,4],
+            pointRadius:0, fill:false, order:0
+          }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins: {
+          legend: { display:false },
+          title: { display:true, text:'Without Solar — All Load From Grid', color:'#f87171', font:{size:11} },
+          tooltip: { mode:'index', intersect:false,
+            callbacks: { label: function(c) {
+              return c.dataset.label+': '+Math.round(c.parsed.y)+' Wh/hr';
+            }}
+          }
+        },
+        scales: {
+          x: { stacked:true, grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#9ca3af',font:{size:10}} },
+          y: { stacked:true, grid:{color:'rgba(255,255,255,.08)'}, ticks:{color:'#9ca3af',font:{size:10}},
+               title:{display:true,text:'Wh / hour',color:'#6b7280',font:{size:9}} }
+        }
+      }
+    });
+    return;  // don't fall through to with-solar chart
+  }
+
+  // With solar (normal mode)
+  if (noSolarCostEl) noSolarCostEl.style.display = 'none';
+
+  // ── With-solar stats bar (green) ──
+  var withSolarEl = document.getElementById('withSolarStats');
+  if (withSolarEl && d) {
+    var tariff = getTariff();
+    var dailyGenKwh    = d.gen.reduce(function(a,v){ return a+v; }, 0) / 1000;
+    var dailySelfKwh   = (d.directSolar.reduce(function(a,v){ return a+v; }, 0) +
+                          d.batToLoad.reduce(function(a,v){ return a+v; }, 0)) / 1000;
+    var dailyExportKwh = d.expWaste.reduce(function(a,v){ return a+v; }, 0) / 1000;
+    var dailyGridKwh   = d.gridImp.reduce(function(a,v){ return a+v; }, 0) / 1000;
+    var dailyGridCost  = 0;
+    for (var h = 0; h < 24; h++) {
+      dailyGridCost += (d.gridImp[h] / 1000) * (tariffForHour(tariff, h) / 100);
+    }
+    withSolarEl.style.display = 'block';
+    withSolarEl.innerHTML =
+      '<strong style="color:#052e16">☀ With Solar</strong>'
+      + ' &nbsp;|&nbsp; Generated: <strong>' + dailyGenKwh.toFixed(1) + ' kWh/day</strong>'
+      + ' &nbsp;|&nbsp; Self-consumed: <strong>' + dailySelfKwh.toFixed(1) + ' kWh/day</strong>'
+      + ' &nbsp;|&nbsp; Exported: <strong>' + dailyExportKwh.toFixed(1) + ' kWh/day</strong>'
+      + ' &nbsp;|&nbsp; Grid cost: <strong>$' + dailyGridCost.toFixed(2) + '/day</strong>'
+      + ' &nbsp;<span style="color:#166534">($' + Math.round(dailyGridCost * 365).toLocaleString() + '/yr)</span>';
+  } else if (withSolarEl) {
+    withSolarEl.style.display = 'none';
+  }
+
+  sChart = new Chart(ctx, {
+    data: {
+      labels: lbl,
+      datasets: [
+        // Stack 1: what covers consumption
+        {
+          type:'bar', label:'Solar direct to load',
+          data: d.directSolar,   // FIXED: only solar going direct to load (not battery discharge)
+          backgroundColor:'rgba(34,197,94,.82)',
+          stack:'load', order:3
+        },
+        {
+          type:'bar', label:'Grid purchase (cost)',
+          data: d.gridImp,
+          // v VIVID RED -- money leaving pocket
+          backgroundColor:'rgba(239,68,68,.88)',
+          borderColor:'rgba(220,38,38,.4)',
+          borderWidth:0,
+          stack:'load', order:3
+        },
+        // Stack 2: what solar produces beyond self-use
+        {
+          type:'bar', label:'Exported (low FiT rate)',
+          data: d.expWaste,
+          backgroundColor:'rgba(14,165,233,.65)',
+          stack:'export', order:4
+        },
+        ...(batKwh>0 ? [
+          {
+            type:'bar', label:'Battery discharge (stored solar)',
+            data: d.batToLoad,             // FIXED: battery energy going TO load
+            backgroundColor:'rgba(139,92,246,.75)',
+            stack:'load', order:3          // on LOAD stack -- it covers load
+          },
+          {
+            type:'bar', label:'Battery charged (from solar)',
+            data: d.batCapture,            // energy going INTO battery from solar
+            backgroundColor:'rgba(99,102,241,.55)',
+            stack:'export', order:4        // on EXPORT stack -- it leaves the solar output
+          }
+        ] : []),
+        // Solar generation bell curve -- prominent yellow line
+        {
+          type:'line', label:'Solar generation',
+          data: d.gen,
+          borderColor:'#f97316',
+          backgroundColor:'rgba(249,115,22,.12)',
+          borderWidth:3, pointRadius:0, fill:true, order:1, tension:0.18
+        },
+        // Total consumption bold dashed line -- shows PEAKS clearly
+        {
+          type:'line', label:'Avg Daily Consumption (design baseline: '+profileLabel+')',
+          data: totalLoad,
+          borderColor:'#e2e2e2',
+          backgroundColor:'transparent',
+          borderWidth:2.5,
+          borderDash:[],
+          pointRadius:0, fill:false, order:0, tension:0.3
+        },
+        // Avg daily consumption flat line — dark turquoise, clearly visible design reference
+        {
+          type:'line', label:'Avg Daily Consumption — ' + Math.round(avgLoad).toLocaleString() + ' Wh/hr (' + (Math.round(avgLoad*24/100)/10).toFixed(1) + ' kWh/day)',
+          data: new Array(24).fill(avgLoad),
+          borderColor:'#0d9488',
+          backgroundColor:'transparent',
+          borderWidth:2,
+          borderDash:[4,4],
+          pointRadius:0, fill:false, order:0, tension:0
+        }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: {
+          display: false,   // hidden — custom HTML legend is shown below chart instead
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label+': '+Math.round(ctx.parsed.y).toLocaleString()+' Wh'
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero:true, stacked:false,
+          title:{display:true, text:'Wh / hour', font:{size:10}},
+          ticks:{font:{size:9}},
+          grid:{ color:'rgba(0,0,0,.07)' }
+        },
+        x: {
+          ticks:{font:{size:9}, maxRotation:45},
+          grid:{ color:'rgba(0,0,0,.05)' }
+        }
+      }
+    }
+  });
+}
+
+// == PDF ==
+function doPDF() {
+  if (!result) return;
+  const clientName=document.getElementById('clientName').value.trim()||'Client';
+  const postcode  =document.getElementById('postcode').value.trim()||'3000';
+  const panels    =parseInt(document.getElementById('slPanels').value);
+  const batKwh    =parseInt(document.getElementById('slBat').value);
+  const systemKw  =(panels*getPanelW()/1000).toFixed(2);
+  const sysNet    =fv('sysNet')||0;
+  const fitC      =fv('fitC')||3.3;
+  const eff       =(fv('efficiency')||85)/100;
+  const sliderFin =clientFinancials(panels*getPanelW()/1000, eff, batKwh);
+  sliderFin.annualKwh=result.fin.annualKwh;
+  // Require Finance card engine has been run — no silent fallback to shortcut values
+  if (!_lastEngineResult || !_lastEngineResult.summary) {
+    setMsg('pdfStatus', '⚠ Please fill in System Cost in the Finance card and let it calculate before generating PDF. This ensures the PDF shows BEP/DPB/NPV from the full engine.', 'inf');
+    document.getElementById('btnPDF').disabled=false;
+    return;
+  }
+  const engineSummary = _lastEngineResult.summary;
+
+  // Build milestone rows from annual_rows for the PDF projection table
+  // This replaces the geometric 3% shortcut in buildReportHTML
+  const MILESTONE_YEARS = [1,2,3,5,7,10,15,20,25];
+  const annualRows = _lastEngineResult.annual_rows || [];
+  const milestones = MILESTONE_YEARS.map(function(yr) {
+    const row = annualRows.find(function(r){ return r.t === yr; });
+    return row ? {
+      yr: yr,
+      annNcf: row.Annual_NCF_t,
+      cumNcf: row.CumCF_exact,
+      netPosition: row.CumCF_exact  // CumCF_exact already starts from ICF0
+    } : null;
+  }).filter(Boolean);
+
+  // 25yr total from engine cumulative
+  const lastRow = annualRows[annualRows.length - 1];
+  const engineTotal25  = lastRow ? Math.round(lastRow.CumCF_exact + Math.abs(engineSummary.ICF0 || 0)) : null;
+  const engineProfit25 = lastRow ? Math.round(lastRow.CumCF_exact) : null;
+  const engineProjection = {
+    milestones:  milestones,
+    total25:     engineTotal25,
+    profit25:    engineProfit25
+  };
+
+  // Pass actual supply charge (not hardcoded $380)
+  const connFeeAnnual = (parseFloat(document.getElementById('connFeeCard').value) ||
+                         parseFloat(document.getElementById('connFee').value) || 1.034) * 365;
+  document.getElementById('btnPDF').disabled=true;
+  setMsg('pdfStatus','<span class="spin"></span> Building PDF...','inf');
+  google.script.run
+    .withSuccessHandler(res => { document.getElementById('btnPDF').disabled=false; setMsg('pdfStatus',res.error?res.error:'ok '+res.msg,res.error?'err':'ok'); })
+    .withFailureHandler(err => { document.getElementById('btnPDF').disabled=false; setMsg('pdfStatus','Failed: '+(err.message||err||'unknown'),'err'); })
+    .generateReport({clientName, postcode, result, systemKw, batteryKwh:batKwh, sysNet, fitC, sliderFin, engineSummary, connFeeAnnual, engineProjection});
+}
+
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function setMsg(id,html,type){const el=document.getElementById(id);el.innerHTML=html?`<div class="msg ${type}">${html}</div>`:'';}
+// =============================================================================
+// SYSTEM OPTIMISER
+// Analyses actual NEM12 load profiles + solar generation model to find the
+// ideal panel count and battery size for this specific home.
+//
+// Goals (in priority order):
+//   1. Maximise self-consumption rate (solar used directly, not exported)
+//   2. Minimise grid import fraction (cover as much load as possible)
+//   3. Right-size battery: absorb actual daily surplus, deliver to evening peak
+//   4. Avoid massive over-generation (export > 40% of gen = wasteful)
+// =============================================================================
+
+var _optimiseResult = null;
+
+function runOptimiser() {
+  if (!result) return;
+
+  var btn = document.getElementById('btnOptimise');
+  btn.disabled = true;
+  btn.textContent = 'Analysing...';
+
+  // Run async so UI can update
+  setTimeout(function() {
+    try {
+      _optimiseResult = optimiseSystem();
+      showOptimiseResult(_optimiseResult);
+    } catch(e) {
+      console.error('Optimiser error:', e);
+    }
+    btn.disabled = false;
+    btn.textContent = '!! Optimise System for This Home';
+  }, 50);
+}
+
+function optimiseSystem() {
+  var eff       = (fv('efficiency') || 85) / 100;
+  var panelW    = getPanelW();
+  var fitC      = (fv('fitC') || 3.3) / 100;          // export value $/kWh
+  var tariff    = getEffTariff() / 100;                 // import cost $/kWh
+  var annLoad   = result.fin.annualKwh;
+
+  // Pricing rates from estimator (or defaults)
+  var prRates   = typeof getPriceRates === 'function' ? getPriceRates() : {pw:0.92, pkwh:780};
+  var ratePerW  = prRates.pw;
+  var ratePerKwh= prRates.pkwh;
+
+  var BAT_SIZES  = [0, 5, 10, 13.5, 17, 20, 27, 30, 40, 42];
+  var BAT_RTE    = 0.90;
+  var BAT_MAX_DOD= 0.90;
+  var MAX_PAYBACK= 15;   // years -- won't recommend anything worse than this
+  var MAX_PANELS = 44;
+
+  var seasons    = ['Summer','Autumn','Winter','Spring'];
+  var sdays      = { Summer:90, Autumn:92, Winter:92, Spring:91 };
+  var PEAK_HRS   = [15,16,17,18,19,20,21]; // 3pm-9pm -- high tariff hours
+
+  // ?? Pre-calculate hourly load profiles (weighted average day per season) ??
+  // Weighted = (5*weekday + 2*weekend) / 7
+  var avgLoad = {}; // avgLoad[season][hour] = Wh
+  for (var si=0; si<seasons.length; si++) {
+    var s = seasons[si];
+    avgLoad[s] = new Array(24);
+    for (var h=0; h<24; h++) {
+      avgLoad[s][h] = (5*result.profiles[s].weekday[h] + 2*result.profiles[s].weekend[h]) / 7;
+    }
+  }
+
+  // ?? Score a specific (panels, batKwh) combination ??
+  // Returns { savings, gridImport, export, selfCon, cost, payback }
+  function scoreCombo(panels, batKwh) {
+    var kw = panels * panelW / 1000;
+    var batCapWh = batKwh * 1000 * BAT_MAX_DOD;
+
+    var totSelf=0, totExp=0, totGrid=0, totGen=0;
+
+    for (var si=0; si<seasons.length; si++) {
+      var s    = seasons[si];
+      var days = sdays[s];
+      var genPkw = result.genPerKw[s];
+      var load   = avgLoad[s];
+
+      // Simulate a typical day for this season with battery dispatch
+      // Charge battery from midday surplus, dispatch in evening peak
+      var genH  = new Array(24);
+      for (var h=0; h<24; h++) genH[h] = genPkw[h] * kw * eff;
+
+      if (batKwh === 0) {
+        // No battery -- simple hour-by-hour
+        for (var h=0; h<24; h++) {
+          var g = genH[h], l = load[h];
+          var self = Math.min(g, l);
+          var exp  = Math.max(g - l, 0);
+          var grid = Math.max(l - g, 0);
+          totSelf += self * days;
+          totExp  += exp  * days;
+          totGrid += grid * days;
+          totGen  += g    * days;
+        }
+      } else {
+        // With battery -- two-pass dispatch:
+        // Pass 1: charge battery from surplus (solar > load), prioritise midday
+        // Pass 2: discharge battery into evening peak deficit
+        var soc = 0; // start empty each day
+        var charge = new Array(24).fill(0);
+        var discharge = new Array(24).fill(0);
+
+        // Sort hours by generation surplus (highest first) for charging
+        var surplusH = [];
+        for (var h=0; h<24; h++) {
+          var surplus = genH[h] - load[h];
+          if (surplus > 0) surplusH.push({h:h, surplus:surplus});
+        }
+        surplusH.sort(function(a,b){ return b.surplus - a.surplus; });
+
+        // Charge battery from surplus hours
+        var batSoc = 0;
+        for (var ci=0; ci<surplusH.length; ci++) {
+          var sh = surplusH[ci];
+          var canCharge = Math.min(sh.surplus, batCapWh - batSoc) * BAT_RTE;
+          charge[sh.h] = canCharge / BAT_RTE; // PV energy used to charge
+          batSoc += canCharge;
+          if (batSoc >= batCapWh) break;
+        }
+
+        // Discharge battery into deficit hours -- prioritise peak hours first
+        var deficitH = [];
+        for (var h=0; h<24; h++) {
+          var deficit = load[h] - genH[h];
+          if (deficit > 0) {
+            var priority = PEAK_HRS.indexOf(h) !== -1 ? 2 : 1;
+            deficitH.push({h:h, deficit:deficit, priority:priority});
+          }
+        }
+        deficitH.sort(function(a,b){ return b.priority - a.priority || b.deficit - a.deficit; });
+
+        var batDischarge = batSoc; // available stored energy
+        for (var di=0; di<deficitH.length; di++) {
+          var dh = deficitH[di];
+          var canDischarge = Math.min(dh.deficit, batDischarge * BAT_RTE);
+          discharge[dh.h] = canDischarge;
+          batDischarge -= canDischarge / BAT_RTE;
+          if (batDischarge <= 0) break;
+        }
+
+        // Final hour-by-hour accounting
+        for (var h=0; h<24; h++) {
+          var g = genH[h], l = load[h];
+          var batChg = charge[h];      // PV energy going into battery
+          var batDis = discharge[h];   // battery energy going to load
+
+          var directSelf = Math.min(g, l);           // solar direct to load
+          var exp  = Math.max(g - l - batChg, 0);   // remaining surplus exported
+          var grid = Math.max(l - g - batDis, 0);    // remaining deficit from grid
+          var self = directSelf + batDis;             // total from solar (direct + battery)
+
+          totSelf += self * days;
+          totExp  += exp  * days;
+          totGrid += grid * days;
+          totGen  += g    * days;
+        }
+      }
+    }
+
+    // Convert Wh to kWh
+    totSelf  /= 1000; totExp  /= 1000;
+    totGrid  /= 1000; totGen  /= 1000;
+
+    // Dollar savings = avoided grid purchases + export income
+    var savings  = totSelf * tariff + totExp * fitC;
+    var sysCost  = (kw * 1000 * ratePerW) + (batKwh * ratePerKwh);
+    var payback  = sysCost > 0 && savings > 0 ? sysCost / savings : 999;
+    var scr      = totGen > 0 ? totSelf / totGen : 0;
+    var sfrac    = annLoad > 0 ? totSelf / annLoad : 0;
+    var expFrac  = totGen > 0 ? totExp  / totGen  : 0;
+    var gridFrac = annLoad > 0 ? totGrid / annLoad : 0;
+
+    return {
+      panels: panels, batKwh: batKwh, kw: kw,
+      savings: savings, sysCost: sysCost, payback: payback,
+      totSelf: totSelf, totExp: totExp, totGrid: totGrid, totGen: totGen,
+      scr: scr, sfrac: sfrac, expFrac: expFrac, gridFrac: gridFrac
+    };
+  }
+
+  // ?? Evaluate all combinations ??
+  var bestByPanels = {}; // best battery for each panel count
+  var allResults   = [];
+
+  for (var p=1; p<=MAX_PANELS; p++) {
+    var bestForThisPanelCount = null;
+    for (var bi=0; bi<BAT_SIZES.length; bi++) {
+      var combo = scoreCombo(p, BAT_SIZES[bi]);
+      allResults.push(combo);
+      if (combo.payback <= MAX_PAYBACK) {
+        if (!bestForThisPanelCount || combo.savings > bestForThisPanelCount.savings) {
+          bestForThisPanelCount = combo;
+        }
+      }
+    }
+    if (bestForThisPanelCount) bestByPanels[p] = bestForThisPanelCount;
+  }
+
+  // ?? Find the optimal: highest savings with payback <= MAX_PAYBACK ??
+  // Also find the "best value" = highest savings per dollar spent (best ROI)
+  var optMaxSavings = null;   // absolute maximum savings within payback limit
+  var optBestROI    = null;   // best savings/$  (most efficient use of money)
+  var prevSavings   = 0;
+  var MARGINAL_THRESHOLD = 50; // stop if adding more panels saves < $50/yr extra
+
+  for (var p2=1; p2<=MAX_PANELS; p2++) {
+    var res = bestByPanels[p2];
+    if (!res) continue;
+    var marginal = res.savings - prevSavings;
+    if (marginal < MARGINAL_THRESHOLD && p2 > 5) break; // diminishing returns
+    prevSavings = res.savings;
+
+    if (!optMaxSavings || res.savings > optMaxSavings.savings) {
+      optMaxSavings = res;
+    }
+    var roi = res.sysCost > 0 ? res.savings / res.sysCost : 0;
+    if (!optBestROI || roi > optBestROI.roi) {
+      optBestROI = Object.assign({roi: roi}, res);
+    }
+  }
+
+  // ── Tier 1 result: highest savings within payback limit
+  var opt = optMaxSavings || optBestROI || scoreCombo(15, 0);
+
+  // ── Tier 2: run full DCF engine on top shortlist (by savings), rank by NPV
+  // Fast screen found candidates — now promote via proper finance metrics
+  var shortlist = allResults
+    .filter(function(c){ return c.payback <= MAX_PAYBACK && c.savings > 0; })
+    .sort(function(a,b){ return b.savings - a.savings; })
+    .slice(0, 10);  // top 10 by savings
+
+  var optNPV = null;  // tier-2 NPV-optimal recommendation
+  if (shortlist.length > 0) {
+    var connDay = parseFloat(document.getElementById('connFeeCard').value) ||
+                  parseFloat(document.getElementById('connFee').value) || 1.034;
+    var t2Disc  = (parseFloat(document.getElementById('discountRate').value) || 7) / 100;
+    var t2Esc   = (parseFloat(document.getElementById('tariffEsc').value) || 3) / 100;
+    var t2Yrs   = parseInt(document.getElementById('analysisYears').value) || 25;
+    var t2Maint = parseFloat(document.getElementById('maintCost').value) || 0;
+    var t2Repay = parseFloat(document.getElementById('finPayment').value) || 0;
+    var t2Per   = document.getElementById('finPeriod').value;
+    var t2Ppy   = t2Per === 'week' ? 52 : t2Per === 'fortnight' ? 26 : 12;
+    var t2Rate  = (parseFloat(document.getElementById('finInterestRate').value) || 5) / 100;
+    var t2TC    = parseFloat(document.getElementById('finTotalCost').value) || 0;
+    var t2Dep   = parseFloat(document.getElementById('finCashDeposit').value) || 0;
+
+    shortlist.forEach(function(c) {
+      // Build a cost estimate for this combo based on existing pricing tier rates
+      var panelW = getPanelW();
+      // Run full DCF engine for this combo
+      var t2Inp = {
+        gen_kwh_yr1:     c.kw / (eff || 0.85) * (result.fin ? result.fin.annualKwh : 5000) / (result.fin ? result.fin.annualKwh : 5000) * c.savings * 100 / Math.max(1, tariff),
+        annual_load:     result.fin ? result.fin.annualKwh : 5000,
+        direct_scr:      c.kw > 0 ? (c.selfKwh || c.kw * 1200 * 0.35) / (c.kw * 1400) : 0.35,
+        bat_kwh:         c.batKwh,
+        bat_rte:         0.90,
+        total_cost:      c.sysCost || t2TC,
+        cash_deposit:    t2Dep,
+        repayment_per_period: t2Repay,
+        ppy:             t2Ppy,
+        annual_rate:     t2Rate,
+        import_tariff:   tariff / 100,
+        import_esc:      t2Esc,
+        fit:             fitC / 100,
+        analysis_years:  t2Yrs,
+        discount_rate:   t2Disc,
+        maint_yr1:       t2Maint,
+        supply_daily:    connDay,
+      };
+      var t2Eng = runEngine(t2Inp);
+      if (t2Eng.ok) {
+        c._npv = t2Eng.summary.NPV;
+        c._irr = t2Eng.summary.IRR;
+        if (!optNPV || t2Eng.summary.NPV > optNPV._npv) optNPV = c;
+      }
+    });
+  }
+
+  // Compute daily surplus and evening deficit for explanation
+  var kw_opt = opt.kw;
+  var avgSurplusKwh = 0, avgEveDefKwh = 0;
+  for (var si3=0; si3<seasons.length; si3++) {
+    var s3 = seasons[si3];
+    var genPkw3 = result.genPerKw[s3];
+    var load3   = avgLoad[s3];
+    var surp=0, eveDef=0;
+    for (var h=0; h<24; h++) {
+      var g3 = genPkw3[h] * kw_opt * eff;
+      surp   += Math.max(g3 - load3[h], 0);
+      if (PEAK_HRS.indexOf(h) !== -1) eveDef += Math.max(load3[h] - g3, 0);
+    }
+    avgSurplusKwh += surp / 1000;
+    avgEveDefKwh  += eveDef / 1000;
+  }
+  avgSurplusKwh /= 4;
+  avgEveDefKwh  /= 4;
+
+  return {
+    panels:       opt.panels,
+    kw:           opt.kw,
+    batKwh:       opt.batKwh,
+    scr:          Math.round(opt.scr  * 1000) / 10,
+    sfrac:        Math.round(opt.sfrac * 1000) / 10,
+    expFrac:      Math.round(opt.expFrac * 1000) / 10,
+    gridFrac:     Math.round(opt.gridFrac * 1000) / 10,
+    annualGen:    Math.round(opt.totGen),
+    annualSelf:   Math.round(opt.totSelf),
+    annualExp:    Math.round(opt.totExp),
+    annualGrid:   Math.round(opt.totGrid),
+    annualLoad:   Math.round(annLoad),
+    annualSavings:Math.round(opt.savings),
+    sysCost:      Math.round(opt.sysCost),
+    payback:      Math.round(opt.payback * 10) / 10,
+    avgSurplusKwh: Math.round(avgSurplusKwh * 10) / 10,
+    avgEveDefKwh:  Math.round(avgEveDefKwh * 10) / 10,
+    ratePerW:     ratePerW,
+    ratePerKwh:   ratePerKwh,
+  };
+}
+
+function showOptimiseResult(opt) {
+  var panelW = getPanelW();
+  var panel  = document.getElementById('optimiseResult');
+  var details= document.getElementById('optimiseDetails');
+  if (!panel || !details) return;
+
+  var batStr   = opt.batKwh > 0 ? opt.batKwh + ' kWh battery' : 'No battery';
+  var expNote  = opt.expFrac < 5  ? 'Virtually zero export -- nearly all generation used on-site.'
+               : opt.expFrac < 20 ? 'Low export (' + opt.expFrac + '% of gen) -- good value.'
+               : 'Export ' + opt.expFrac + '% of gen -- a larger battery would capture more.';
+  var gridNote = opt.gridFrac < 20 ? 'Excellent grid independence -- only ' + opt.gridFrac + '% still from grid.'
+               : opt.gridFrac < 40 ? opt.gridFrac + '% of load still from grid (mostly overnight).'
+               : opt.gridFrac + '% still from grid -- high overnight-consumption home.';
+  var fitVal   = Math.round(fv('fitC') || 3.3);
+  var tariffVal= Math.round(getEffTariff());
+
+  details.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
+    + '<div style="background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.3);border-radius:7px;padding:10px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:800;color:#f5c518">' + opt.panels + ' x ' + panelW + 'W</div>'
+    + '<div style="font-size:10px;color:#aaa;margin-top:2px">' + opt.kw.toFixed(2) + ' kWp solar</div></div>'
+    + '<div style="background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.25);border-radius:7px;padding:10px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:800;color:#4ade80">$' + opt.annualSavings.toLocaleString() + '/yr</div>'
+    + '<div style="font-size:10px;color:#aaa;margin-top:2px">Est. annual savings</div></div>'
+    + '<div style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);border-radius:7px;padding:10px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:800;color:#38bdf8">' + opt.payback + ' yr</div>'
+    + '<div style="font-size:10px;color:#aaa;margin-top:2px">Simple payback</div></div>'
+    + '</div>'
+    + '<div style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.25);border-radius:7px;padding:10px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
+    + '<div><div style="font-size:14px;font-weight:800;color:#a78bfa">' + batStr + '</div>'
+    + '<div style="font-size:10px;color:#aaa;margin-top:2px">Daily surplus: ' + opt.avgSurplusKwh + ' kWh &nbsp;|&nbsp; Evening peak deficit: ' + opt.avgEveDefKwh + ' kWh</div></div>'
+    + '<div style="text-align:right;font-size:11px;color:#888">System est.<br><strong style="color:#fff;font-size:14px">$' + opt.sysCost.toLocaleString() + '</strong></div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 16px;font-size:11px;margin-bottom:10px">'
+    + '<div style="color:#aaa">Self-consumption rate</div><div><strong style="color:#4ade80">' + opt.scr + '%</strong> of solar used on-site</div>'
+    + '<div style="color:#aaa">Solar covers load</div><div><strong style="color:#4ade80">' + opt.sfrac + '%</strong> of annual consumption</div>'
+    + '<div style="color:#aaa">Export to grid</div><div><strong style="color:#38bdf8">' + opt.annualExp.toLocaleString() + ' kWh</strong> (' + opt.expFrac + '%) @ ' + fitVal + 'c</div>'
+    + '<div style="color:#aaa">Still from grid</div><div><strong style="color:#f87171">' + opt.annualGrid.toLocaleString() + ' kWh</strong> (' + opt.gridFrac + '% of load)</div>'
+    + '</div>'
+    + '<div style="font-size:11px;color:#ccc;border-top:1px solid rgba(255,255,255,.1);padding-top:8px">'
+    + '<strong style="color:#f5c518">Why this system?</strong> '
+    + 'Optimised for maximum dollar savings -- each kWh self-consumed avoids ' + tariffVal + 'c grid cost vs only ' + fitVal + 'c for export. '
+    + (opt.batKwh > 0
+      ? 'Battery dispatches daytime surplus into the evening peak, converting low-value export into high-value grid avoidance. '
+      : 'This load profile matches solar generation hours well -- battery adds minimal extra value for this home. ')
+    + expNote + ' ' + gridNote
+    + '</div>';
+
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+
+function applyOptimisation() {
+  if (!_optimiseResult) return;
+  var opt = _optimiseResult;
+
+  // Set panel slider
+  document.getElementById('slPanels').value = opt.panels;
+
+  // Set battery slider
+  document.getElementById('slBat').value = opt.batKwh;
+
+  // Update system size dropdown to closest match or custom
+  var kwSel = document.getElementById('systemKw');
+  var kwStr = opt.kw.toFixed(1);
+  var matched = false;
+  for (var i=0; i<kwSel.options.length; i++) {
+    if (parseFloat(kwSel.options[i].value) === parseFloat(kwStr)) {
+      kwSel.value = kwSel.options[i].value;
+      matched = true;
+      break;
+    }
+  }
+  if (!matched) {
+    kwSel.value = 'custom';
+    document.getElementById('customKw').value = kwStr;
+    document.getElementById('customWrap').style.display = '';
+  }
+
+  // Update battery field in step 2
+  var batEl = document.getElementById('batteryKwh');
+  if (batEl) batEl.value = opt.batKwh;
+
+  // Hide the result panel and trigger full recalc
+  document.getElementById('optimiseResult').style.display = 'none';
+  onSliderChange();
+
+  // Update the price estimator with the new system size and battery
+  if (typeof updatePriceEstimate === 'function') updatePriceEstimate();
+
+  // Flash the price card gold to signal it updated
+  var pc = document.getElementById('priceCard');
+  if (pc) {
+    pc.style.borderColor = '#f5c518';
+    pc.style.boxShadow = '0 0 18px rgba(245,197,24,.4)';
+    setTimeout(function(){
+      pc.style.borderColor = '';
+      pc.style.boxShadow = '';
+    }, 2000);
+  }
+
+  // Scroll to the price estimator so the user sees the updated cost
+  setTimeout(function(){
+    var pe = document.getElementById('priceBreakdown');
+    if (pe) pe.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 150);
+
+  // Then scroll to results after a moment
+  setTimeout(function(){
+    var rp = document.getElementById('resultPanel');
+    if (rp) rp.scrollIntoView({behavior:'smooth'});
+  }, 1200);
+}
+
+// =============================================================================
+// QUICK PRICE ESTIMATOR
+// Base rates (2026 VIC, fully installed, after STC + federal battery rebate)
+// Solar $/W:    Budget $0.80 | Standard $0.92 | Premium $1.15
+// Battery $/kWh: Budget $650 | Standard $780  | Premium $1,000
+// Source: Solar Choice Price Index, SolarQuotes, BYD/Alpha ESS/Tesla data Mar 2026
+// =============================================================================
+
+// =============================================================================
+// BATTERY REBATE ENGINE -- Cheaper Home Battery Program 2026
+// Pre-May:  flat STC rate 8.4 * $37/STC = $311/kWh rebate (all sizes)
+// Post-May: tiered STC factor + rate drops to 6.8
+//   0-14 kWh:  100% factor -> $252/kWh rebate
+//   14-28 kWh:  60% factor -> $151/kWh rebate
+//   28-50 kWh:  15% factor ->  $38/kWh rebate
+// STC rate continues declining every 6 months after May 2026
+// Source: CHBP government announcement Dec 2025 / Amber Industry Briefing Mar 2026
+// =============================================================================
+
+var REBATE_CLIFF_DATE = new Date('2026-05-01');
+
+function isPostMayRebate() {
+  return new Date() >= REBATE_CLIFF_DATE;
+}
+
+function calcBatteryRebate(kwh) {
+  // Returns total rebate $ for a given battery size
+  // Uses $37.00/STC for battery (matching Greenbank calculator)
+  // Uses floor() on STCs to match Clean Energy Regulator rounding
+  if (kwh <= 0) return 0;
+  var postMay = isPostMayRebate();
+  var STC_PRICE = 37.00; // battery STC price (Greenbank verified)
+
+  if (!postMay) {
+    // Pre-May: flat 8.4 STC rate, 100% factor
+    var stcs = Math.floor(kwh * 8.4);
+    return stcs * STC_PRICE;
+  } else {
+    // Post-May: 6.8 STC rate, tiered factor
+    var rebate = 0;
+    var t1 = Math.min(kwh, 14);
+    rebate += Math.floor(t1 * 6.8 * 1.00) * STC_PRICE;
+    var t2 = Math.max(0, Math.min(kwh - 14, 14));
+    rebate += Math.floor(t2 * 6.8 * 0.60) * STC_PRICE;
+    var t3 = Math.max(0, Math.min(kwh - 28, 22));
+    rebate += Math.floor(t3 * 6.8 * 0.15) * STC_PRICE;
+    return rebate;
+  }
+}
+
+function calcNetBatteryCost(kwh, grossPerKwh) {
+  // Net installed cost after rebate
+  if (kwh <= 0) return 0;
+  var gross  = kwh * grossPerKwh;
+  var rebate = calcBatteryRebate(kwh);
+  return Math.max(gross - rebate, gross * 0.3); // floor at 30% of gross
+}
+
+// Gross installed $/kWh BEFORE rebate (from market data 2026)
+var GROSS_BAT_PER_KWH = {
+  budget:   950,   // Alpha ESS / BYD entry gross
+  standard: 1100,  // BYD HVM / Sungrow gross
+  premium:  1380,  // Tesla Powerwall 3 gross
+};
+
+var PRICE_TIERS = {
+  budget:   { pw: 0.80, pkwh: 650,  grossBat: 950,  label: 'Budget (Alpha ESS / BYD entry-level)' },
+  standard: { pw: 0.92, pkwh: 780,  grossBat: 1100, label: 'Standard (BYD HVM / Sungrow / Alpha SMILE)' },
+  premium:  { pw: 1.15, pkwh: 1000, grossBat: 1380, label: 'Premium (Tesla Powerwall 3 / Fronius)' },
+};
+
+var _lastPriceEstimate = null;
+
+function getPriceRates() {
+  var tier = document.getElementById('priceTier').value;
+  if (tier === 'custom') {
+    return {
+      pw:   parseFloat(document.getElementById('pricePerW').value)   || 0.92,
+      pkwh: parseFloat(document.getElementById('pricePerKwh').value) || 780,
+      label: 'Custom rates'
+    };
+  }
+  return PRICE_TIERS[tier] || PRICE_TIERS.standard;
+}
+
+function updatePriceEstimate() {
+  var tier    = document.getElementById('priceTier').value;
+  document.getElementById('customRateWrap').style.display = tier === 'custom' ? '' : 'none';
+  document.getElementById('customBatWrap').style.display  = tier === 'custom' ? '' : 'none';
+
+  var rates   = getPriceRates();
+  var kwSel   = document.getElementById('systemKw').value;
+  var kw      = kwSel === 'custom'
+    ? (parseFloat(document.getElementById('customKw').value) || 0)
+    : (kwSel === '0' ? 0 : parseFloat(kwSel) || 0);
+  var batKwh  = parseFloat(document.getElementById('batteryKwh').value) || 0;
+  var panelW  = getPanelW();
+
+  if (kw <= 0) {
+    document.getElementById('priceBreakdown').innerHTML = '<div style="color:#888;font-style:italic">Set system size above to see estimate</div>';
+    return;
+  }
+
+  var panels  = Math.ceil(kw * 1000 / panelW);
+  var postMay = isPostMayRebate();
+  var grossBat= rates.grossBat || 1100;
+
+  // ?? SOLAR PANELS (wholesale + margin) ??
+  // rates.pw is the retail installed $/W after STC -- panels only, no BOS
+  // We back-calculate panel-only cost as ~45% of total installed $/W
+  var panelCost = kw * 1000 * rates.pw * 0.45;
+
+  // ?? INVERTER ??
+  // Hybrid inverter if battery, string inverter if no battery
+  var inverterCost;
+  if (batKwh > 0) {
+    inverterCost = kw <= 5 ? 2800 : kw <= 8 ? 3200 : kw <= 10 ? 3600 : 4200;
+  } else {
+    inverterCost = kw <= 3.5 ? 1300 : kw <= 5 ? 1500 : kw <= 8 ? 1900 : kw <= 10 ? 2200 : 2600;
+  }
+
+  // ?? MOUNTING SYSTEM (rails, clamps, flashings, tilt legs) ??
+  // From GSES pricelist: ECO Rail $30 wholesale, clamps $3.20, tile interface $12
+  // Retail ~2.2x, ~1 rail per 2 panels, 2 clamps per panel, 1 interface per 4 panels
+  var mountCost = panels * (
+    (30 * 2.2 / 2) +       // 1 rail per 2 panels @ $66 retail
+    (3.2 * 2.2 * 2) +      // 2 clamps per panel @ $7 retail each
+    (12 * 2.2 / 4)         // 1 tile interface per 4 panels @ $26 retail
+  );
+  mountCost = Math.round(mountCost);
+
+  // ?? DC CABLING + CONNECTORS ??
+  // 4mm XLPE DC cable, ~8m per panel avg; MC4 x2 per panel; WEEBs x2 per panel
+  // From GSES: DC-4.0 XLPE $3/m, MC4 $3 each, WEEB $2 each -- retail ~2x
+  var dcCableCost = panels * (8 * 3 * 2 + 3*2*2 + 2*2*2); // $68/panel
+
+  // ?? DC ISOLATORS ??
+  // 1 per string (~4 panels/string); IMO SI25 $60 wholesale -> $132 retail
+  var strings  = Math.ceil(panels / 4);
+  var dcIsoCost= strings * 132;
+
+  // ?? AC CABLING + ISOLATORS ??
+  // 2.5mm XLPE AC cable ~20m to switchboard: $2.5/m wholesale -> $5.5/m retail
+  // AC isolator: $65 wholesale -> $143 retail
+  // Earth cable 15m: $2.5/m wholesale -> $5.5/m retail
+  // Conduit 10m: $10/m wholesale -> $22/m retail
+  var acCost = (20 * 5.5) + 143 + (15 * 5.5) + (10 * 22);
+  acCost = Math.round(acCost); // ~$540
+
+  // ?? MISC (stickers, lugs, dektite, sundries) ??
+  // Sticker kit $14->$31, Dektite w/flashing $60->$132, lugs $3->$7 x4
+  var miscCost = 31 + 132 + (7*4) + 50; // ~$241
+
+  // ?? LABOUR ??
+  // Base: 4 hrs for first 10 panels; +0.4 hrs per extra panel; battery +2 hrs
+  // Labour rate: $120/hr (2 person crew avg)
+  var LABOUR_RATE = 120;
+  var labourHrs = 4 + Math.max(0, panels - 10) * 0.4 + (batKwh > 0 ? 2 : 0);
+  var labourCost = Math.round(labourHrs * LABOUR_RATE);
+
+  // ?? SWITCHBOARD / METER WORK ??
+  var sbCost = 450; // circuit breaker, CT meter, safety switch check -- fixed
+
+  // ?? BATTERY UNIT ??
+  var batCostNet = batKwh > 0 ? calcNetBatteryCost(batKwh, grossBat) : 0;
+  var batRebate  = batKwh > 0 ? calcBatteryRebate(batKwh) : 0;
+
+  // ?? BATTERY BOS (extra cabling, isolators, commissioning) ??
+  var batBOS = batKwh > 0 ? 640 : 0;
+
+  // ?? STC REBATE (solar panels) ??
+  var ZONE_RATING = 1.382; // VIC Zone 3
+  var DEEMING_YRS = 5;
+  var STC_PRICE   = 37.20;
+  var stcs        = Math.floor(kw * ZONE_RATING * DEEMING_YRS);
+  var stcValue    = stcs * STC_PRICE;
+
+  // ?? TOTALS ??
+  // Total: use GROSS battery then deduct rebate (matches display)
+  var subtotal   = panelCost + inverterCost + mountCost + dcCableCost + dcIsoCost
+                 + acCost + miscCost + labourCost + sbCost + (batKwh>0 ? batKwh*grossBat : 0) + batBOS;
+  var totalAfterSTC = Math.round((subtotal - stcValue - batRebate) / 100) * 100;
+  totalAfterSTC = Math.max(totalAfterSTC, 100);
+
+  // Lifetime $/kWh of generation
+  var lifetimeGen    = kw * 1400 * 25;
+  var costPerKwhGen  = lifetimeGen > 0 ? ((panelCost + inverterCost) / lifetimeGen).toFixed(3) : 0;
+
+  _lastPriceEstimate = {
+    solarCost:  Math.round(panelCost + inverterCost),
+    batCostGross: Math.round(batKwh * grossBat),
+    batCostNet:   Math.round(batCostNet),
+    totalCost:  totalAfterSTC,
+    kw: kw, batKwh: batKwh, panels: panels,
+    stcs: stcs, stcValue: stcValue, batRebate: batRebate
+  };
+
+  // ?? RENDER BREAKDOWN ??
+  // Always-visible key lines: panels, inverter, battery, rebates
+  function renderRow(label, val, isGreen) {
+    return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+      + '<span style="color:' + (isGreen?'#4ade80':'#ccc') + ';font-size:11px">' + label + '</span>'
+      + '<span style="font-weight:600;color:' + (isGreen?'#4ade80':'#fff') + '">' + val + '</span>'
+      + '</div>';
+  }
+
+  var keyHtml = ''
+    + renderRow('Solar panels (' + panels + ' x ' + panelW + 'W = ' + kw.toFixed(2) + 'kWp)', '$' + Math.round(panelCost).toLocaleString(), false)
+    + renderRow('Inverter (' + (batKwh>0?'Hybrid ':'String ') + kw.toFixed(1) + 'kW)', '$' + inverterCost.toLocaleString(), false)
+    + (batKwh>0 ? renderRow('Battery (' + batKwh + ' kWh usable, gross before rebate)', '$' + Math.round(batKwh * grossBat).toLocaleString(), false) : '')
+    + (batKwh>0 ? renderRow('Less: Federal battery rebate (' + (postMay?'tiered post-May':'pre-May full rate') + ')', '-$' + Math.round(batRebate).toLocaleString(), true) : '')
+    + renderRow('Less: Solar STC rebate (' + stcs + ' STCs @ $' + STC_PRICE + ')', '-$' + stcValue.toLocaleString(), true);
+
+  var bosTotal = mountCost + Math.round(dcCableCost) + dcIsoCost + acCost + sbCost + miscCost + labourCost + (batKwh>0?batBOS:0);
+  var detailHtml = ''
+    + renderRow('Mounting system (rails, clamps, flashings)', '$' + mountCost.toLocaleString(), false)
+    + renderRow('DC cabling + MC4 connectors + WEEBs', '$' + Math.round(dcCableCost).toLocaleString(), false)
+    + renderRow('DC isolators (' + strings + ' string' + (strings>1?'s':'') + ')', '$' + dcIsoCost.toLocaleString(), false)
+    + renderRow('AC cabling + isolator + earth + conduit', '$' + acCost.toLocaleString(), false)
+    + renderRow('Switchboard / meter work', '$' + sbCost.toLocaleString(), false)
+    + renderRow('Misc (dektite, stickers, lugs, sundries)', '$' + miscCost.toLocaleString(), false)
+    + renderRow('Labour (' + labourHrs.toFixed(1) + ' hrs @ $' + LABOUR_RATE + '/hr)', '$' + labourCost.toLocaleString(), false)
+    + (batKwh>0 ? renderRow('Battery install BOS (cabling, isolators, commissioning)', '$' + batBOS.toLocaleString(), false) : '');
+
+  var html = keyHtml
+    + '<div id="bosDetailWrap" style="display:none">' + detailHtml + '</div>'
+    + '<div onclick="toggleBOSDetail()" style="font-size:10px;color:#f5c518;cursor:pointer;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+    + '<span id="bosToggleBtn">+ Show installation breakdown ($' + bosTotal.toLocaleString() + ' -- mounting, cabling, labour)</span>'
+    + '</div>'
+  document.getElementById('priceBreakdown').innerHTML = html;
+}
+
+function applyPriceEstimate() {
+  if (!_lastPriceEstimate) { updatePriceEstimate(); return; }
+  var est = _lastPriceEstimate;
+
+  // Fill Net System Cost field
+  var sysNetEl = document.getElementById('sysNet');
+  if (sysNetEl) sysNetEl.value = est.totalCost;
+
+  // Fill finance total cost field
+  var tcEl = document.getElementById('finTotalCost');
+  if (tcEl) { tcEl.value = est.totalCost; tcEl._userEdited = true; }
+
+  // Sync finance amount
+  if (typeof syncFinanceAmt === 'function') syncFinanceAmt();
+  if (typeof updateROI === 'function') updateROI();
+
+  // Visual confirmation
+  var btn = event.target;
+  var orig = btn.textContent;
+  btn.textContent = 'Applied!';
+  btn.style.background = '#4ade80';
+  setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 1500);
+}
+
+// Auto-update price estimate when system size or battery changes
+var _origUpdatePanelCount = typeof updatePanelCount === 'function' ? updatePanelCount : function(){};
+
+
+// =============================================================================
+// MONTHLY BILL ESTIMATOR
+// Shows per-month grid cost (before and after solar) directly on chart card
+// Uses actual NEM12 seasonal profiles + irradiance model
+// =============================================================================
+
+function updateMonthlyBillTable() {
+  var tbl = document.getElementById('monthlyBillTable');
+  var rows = document.getElementById('monthlyBillRows');
+  var totals = document.getElementById('monthlyBillTotals');
+  if (!tbl || !rows || !result) return;
+
+  var panels   = parseInt(document.getElementById('slPanels').value);
+  var batKwh   = parseInt(document.getElementById('slBat').value);
+  var kw       = panels * getPanelW() / 1000;
+  var eff      = (fv('efficiency') || 85) / 100;
+  var tariff   = getEffTariff() / 100;      // $/kWh import
+  var fitC     = (fv('fitC') || 3.3) / 100; // $/kWh export
+  var connDay  = parseFloat(document.getElementById('connFeeCard').value
+                  || document.getElementById('connFee').value || 1.034);
+
+  // Month definitions
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var MDAYS  = [31,28,31,30,31,30,31,31,30,31,30,31];
+  // Map each month to a season profile
+  var MSEASON= ['Summer','Summer','Autumn','Autumn','Autumn','Winter','Winter','Winter','Spring','Spring','Spring','Summer'];
+  var BAT_EFF = 0.92;
+
+  var totalBefore = 0, totalAfter = 0, totalSaved = 0;
+  var htmlRows = '<div style="display:grid;grid-template-columns:52px 1fr 1fr 80px;gap:0">'
+    + '<div style="padding:5px 8px;background:#f0f0ee;font-weight:700;color:#666;font-size:10px;text-transform:uppercase">Month</div>'
+    + '<div style="padding:5px 8px;background:#f0f0ee;font-weight:700;color:#c04040;font-size:10px;text-transform:uppercase">Before Solar</div>'
+    + '<div style="padding:5px 8px;background:#f0f0ee;font-weight:700;color:#1a6a1a;font-size:10px;text-transform:uppercase">With Solar</div>'
+    + '<div style="padding:5px 8px;background:#f0f0ee;font-weight:700;color:#1a6a1a;font-size:10px;text-transform:uppercase">Saving</div>';
+
+  for (var m = 0; m < 12; m++) {
+    var s    = MSEASON[m];
+    var days = MDAYS[m];
+    var loadWD = result.profiles[s].weekday;
+    var loadWE = result.profiles[s].weekend;
+
+    // Weighted average day load (Wh/hr)
+    var loadH = new Array(24);
+    for (var h = 0; h < 24; h++) {
+      loadH[h] = (5 * loadWD[h] + 2 * loadWE[h]) / 7;
+    }
+
+    // Generation for this month
+    var genH = new Array(24);
+    for (var h = 0; h < 24; h++) {
+      genH[h] = (result.genPerKw[s][h] || 0) * kw * eff;
+    }
+
+    // Simulate with battery (if any)
+    var dailyGridKwh = 0, dailyExpKwh = 0;
+    if (batKwh === 0 || kw === 0) {
+      for (var h = 0; h < 24; h++) {
+        dailyGridKwh += Math.max(0, loadH[h] - genH[h]) / 1000;
+        dailyExpKwh  += Math.max(0, genH[h] - loadH[h]) / 1000;
+      }
+    } else {
+      var batCapWh = batKwh * 1000 * 0.90;
+      var soc = batCapWh * 0.2;
+      for (var h = 0; h < 24; h++) {
+        var g = genH[h], l = loadH[h];
+        if (g >= l) {
+          var chg = Math.min((g-l)*BAT_EFF, batCapWh-soc); soc += chg;
+          dailyExpKwh += Math.max(0, g-l-chg/BAT_EFF) / 1000;
+        } else {
+          var need = l-g;
+          var use  = Math.min(need, soc*BAT_EFF); soc -= use/BAT_EFF;
+          dailyGridKwh += Math.max(0, need-use) / 1000;
+        }
+      }
+    }
+
+    // Daily load
+    var dailyLoadKwh = loadH.reduce(function(a,b){ return a+b; }, 0) / 1000;
+
+    // Monthly costs
+    // Supply charge is the same before and after solar -- it cancels in savings calc
+    // Saving = self-consumed * import_tariff + exported * FiT  (matches clientFinancials)
+    var connCost     = connDay * days;
+    var dailySelfKwh = dailyLoadKwh - dailyGridKwh; // kWh covered by solar+battery
+    var beforeCost   = dailyLoadKwh * tariff * days + connCost;
+    var afterCost    = dailyGridKwh  * tariff * days - dailyExpKwh * fitC * days + connCost;
+    afterCost = Math.max(connCost * 0.1, afterCost); // supply charge always applies
+    var saving       = dailySelfKwh * tariff * days + dailyExpKwh * fitC * days;
+
+    totalBefore += beforeCost;
+    totalAfter  += afterCost;
+    totalSaved  += saving;
+
+    var savPct = beforeCost > 0 ? Math.round(saving / beforeCost * 100) : 0;
+    // Season background colours (subtle tint)
+    var seasonBg = {
+      Summer: 'rgba(251,191,36,.10)',   // warm amber -- Jan,Feb,Dec
+      Autumn: 'rgba(217,119,6,.08)',    // earthy orange -- Mar,Apr,May
+      Winter: 'rgba(59,130,246,.08)',   // cool blue -- Jun,Jul,Aug
+      Spring: 'rgba(34,197,94,.08)'     // fresh green -- Sep,Oct,Nov
+    };
+    var seasonBorder = {
+      Summer: 'rgba(251,191,36,.25)',
+      Autumn: 'rgba(217,119,6,.25)',
+      Winter: 'rgba(59,130,246,.20)',
+      Spring: 'rgba(34,197,94,.20)'
+    };
+    var rowBg  = seasonBg[s];
+    var rowBdr = seasonBorder[s];
+    var savCol = saving > 0 ? '#1a6a1a' : '#888';
+    var seasonLabel = (m === 0 ? 'Summer' : m === 2 ? 'Autumn' : m === 5 ? 'Winter' : m === 8 ? 'Spring' : '');
+    var monthDisplay = MONTHS[m] + (seasonLabel ? ' <span style="font-size:8px;color:#888;font-weight:400">' + seasonLabel + '</span>' : '');
+
+    htmlRows +=
+      '<div style="padding:5px 8px;background:' + rowBg + ';border-top:1px solid ' + rowBdr + ';font-weight:600;color:#333">' + monthDisplay + '</div>'
+      + '<div style="padding:5px 8px;background:' + rowBg + ';border-top:1px solid ' + rowBdr + ';color:#c04040">'
+        + '$' + Math.round(beforeCost) + '</div>'
+      + '<div style="padding:5px 8px;background:' + rowBg + ';border-top:1px solid ' + rowBdr + ';color:#1a6a1a;font-weight:' + (panels>0?'700':'400') + '">'
+        + '$' + Math.round(afterCost) + '</div>'
+      + '<div style="padding:5px 8px;background:' + rowBg + ';border-top:1px solid ' + rowBdr + ';color:' + savCol + ';font-weight:700">'
+        + (saving > 0 ? '-$' + Math.round(saving) + ' (' + savPct + '%)' : '--') + '</div>';
+  }
+
+  htmlRows += '</div>';
+  rows.innerHTML = htmlRows;
+
+  // Totals bar -- always visible, acts as the toggle header
+  totals.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;width:100%">'
+    + '<div style="padding:6px 10px">'
+    + '<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.3px">Before Solar</div>'
+    + '<div style="font-size:15px;font-weight:800;color:#c04040">$' + Math.round(totalBefore).toLocaleString() + '/yr</div>'
+    + '</div>'
+    + '<div style="padding:6px 10px;border-left:1px solid #ddd">'
+    + '<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.3px">With Solar</div>'
+    + '<div style="font-size:15px;font-weight:800;color:#1a6a1a">$' + Math.round(totalAfter).toLocaleString() + '/yr</div>'
+    + '</div>'
+    + '<div style="padding:6px 10px;border-left:1px solid #ddd">'
+    + '<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.3px">Annual Saving</div>'
+    + '<div style="font-size:15px;font-weight:800;color:#1a6a1a">$' + Math.round(totalSaved).toLocaleString() + '/yr</div>'
+    + '</div>'
+    + '</div>';
+
+  tbl.style.display = '';
+}
+
+function toggleMonthlyDetail() {
+  var detail = document.getElementById('monthlyBillDetail');
+  var btn    = document.getElementById('monthlyToggleBtn');
+  if (!detail) return;
+  var open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : '';
+  btn.textContent = open ? '+ Show monthly breakdown' : '- Hide monthly breakdown';
+}
+
+
+function priceCurrentSystem() {
+  if (!result) return;
+
+  var panels  = parseInt(document.getElementById('slPanels').value);
+  var batKwh  = parseInt(document.getElementById('slBat').value);
+  var kw      = panels * getPanelW() / 1000;
+  var panelW  = getPanelW();
+
+  if (panels === 0) {
+    alert('Set the panel slider above 0 first.');
+    return;
+  }
+
+  // Update the Step 2 system size dropdown to match current slider
+  var kwSel = document.getElementById('systemKw');
+  var matched = false;
+  for (var i = 0; i < kwSel.options.length; i++) {
+    if (Math.abs(parseFloat(kwSel.options[i].value) - kw) < 0.05) {
+      kwSel.value = kwSel.options[i].value;
+      matched = true;
+      break;
+    }
+  }
+  if (!matched) {
+    kwSel.value = 'custom';
+    document.getElementById('customKw').value = kw.toFixed(2);
+    document.getElementById('customWrap').style.display = '';
+  }
+
+  // Update the battery field in Step 2
+  var batEl = document.getElementById('batteryKwh');
+  if (batEl) batEl.value = batKwh;
+
+  // Update the price estimator
+  updatePriceEstimate();
+
+  // Flash the price card
+  var pc = document.getElementById('priceCard');
+  if (pc) {
+    pc.style.borderColor = '#f5c518';
+    pc.style.boxShadow   = '0 0 18px rgba(245,197,24,.4)';
+    setTimeout(function(){
+      pc.style.borderColor = '';
+      pc.style.boxShadow   = '';
+    }, 2500);
+  }
+
+  // Scroll to the price card in Step 2
+  var priceSection = document.getElementById('priceCard');
+  if (priceSection) {
+    priceSection.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  // Visual feedback on button
+  var btns = document.querySelectorAll('.btn');
+  btns.forEach(function(b){
+    if (b.textContent.indexOf('Price This System') !== -1) {
+      var orig = b.textContent;
+      b.textContent = 'Priced! Scroll up to Step 2';
+      b.style.background = '#4ade80';
+      b.style.color = '#111';
+      setTimeout(function(){
+        b.textContent = orig;
+        b.style.background = '';
+        b.style.color = '';
+      }, 2500);
+    }
+  });
+}
+
+
+// =============================================================================
+// REBATE CLIFF BANNER -- hide after May 1 2026, show countdown before
+// =============================================================================
+function updateRebateCliffBanner() {
+  var banner = document.getElementById('rebateCliffBanner');
+  if (!banner) return;
+  var now     = new Date();
+  var cliff   = new Date('2026-05-01');
+  var msLeft  = cliff - now;
+
+  if (msLeft <= 0) {
+    // After May 1 -- replace banner with post-cliff warning
+    banner.style.borderColor = 'rgba(248,113,113,.5)';
+    banner.style.background  = 'linear-gradient(135deg,rgba(248,113,113,.12),rgba(248,113,113,.05))';
+    banner.innerHTML =
+      '<div style="font-size:12px;font-weight:800;color:#f87171;margin-bottom:4px">!! Battery Rebate Changes Now Active (Post 1 May 2026)</div>'
+      + '<div style="font-size:11px;color:#e0e0e0;line-height:1.6">'
+      + 'The tiered CHBP rebate is now in effect. Batteries over 14 kWh are significantly less subsidised. '
+      + 'Pricing shown below reflects the post-May tiered rebate structure. '
+      + 'For batteries above 28 kWh, only 15% of the STC factor applies -- make sure the ROI case is rock solid before recommending large systems.'
+      + '</div>';
+  } else {
+    // Before May 1 -- show countdown
+    var daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+    var dayStr   = daysLeft === 1 ? '1 day' : daysLeft + ' days';
+    var urgency  = daysLeft <= 7  ? '#f87171'
+                 : daysLeft <= 21 ? '#f5c518'
+                 : '#4ade80';
+    var firstLine = banner.querySelector('div');
+    if (firstLine) {
+      firstLine.innerHTML = '!! Battery Rebate Cliff -- <span style="color:' + urgency + '">' + dayStr + ' remaining</span> (locks in 30 April 2026)';
+    }
+  }
+}
+
+
+function toggleBOSDetail() {
+  var d = document.getElementById('bosDetailWrap');
+  var b = document.getElementById('bosToggleBtn');
+  if (!d || !b) return;
+  if (d.style.display === 'none') {
+    d.style.display = '';
+    b.textContent = '- Hide installation breakdown';
+  } else {
+    d.style.display = 'none';
+    // re-run estimator to restore label with correct amount
+    updatePriceEstimate();
+  }
+}
+
+updatePanelCount();
+updatePriceEstimate();
+updateRebateCliffBanner();
+// ── Resume data preload (injected by doGet when ?resume= param present) ──
+(function() {
+  var rd = <?= resumeData ?>;
+  if (!rd) return;
+  var fields = {'clientName':'clientName','postcode':'postcode','clientAddress':'clientAddress','clientPhone':'clientPhone'};
+  try {
+    Object.keys(rd).forEach(function(k){
+      var el = document.getElementById(k);
+      if (el && rd[k] !== undefined) { el.value = rd[k]; }
+    });
+    var banner = document.createElement('div');
+    banner.innerHTML = '<div style="background:linear-gradient(135deg,#1a1a1a,#232);border-radius:10px;padding:14px 20px;margin-bottom:14px;color:#fff;display:flex;align-items:center;justify-content:space-between"><div><div style=\'font-size:13px;font-weight:800;color:#f5c518;margin-bottom:4px\'>↩ Welcome back — your previous analysis has been pre-loaded</div><div style=\'font-size:12px;color:#aaa\'>Some values (rebates, pricing) may need updating. Review before signing.</div></div><button onclick="this.parentElement.parentElement.remove()" style=\'background:transparent;border:none;color:#666;font-size:18px;cursor:pointer\'>×</button></div>';
+    var main = document.querySelector('.main');
+    if (main) main.insertBefore(banner.firstChild, main.firstChild);
+    if (rd.postcode) detectZone();
+  } catch(e) {}
+})();
+
+// ── URL param prefill (from HEA dashboard direct link) ──
+(function() {
+  try {
+    var pd = <?!= prefillData ?>;
+    if (!pd || !pd.clientName) return;
+
+    // Fill core client fields
+    ['clientName','clientAddress','clientPhone','postcode'].forEach(function(k) {
+      var el = document.getElementById(k);
+      if (el && pd[k]) el.value = pd[k];
+    });
+    if (pd.postcode) detectZone();
+
+    // Build household summary card
+    var lines = [];
+    if (pd.occupants)     lines.push('Occupants: ' + pd.occupants);
+    if (pd.homeDaytime)   lines.push('Home daytime: ' + pd.homeDaytime);
+    if (pd.hotWater)      lines.push('Hot water: ' + pd.hotWater);
+    if (pd.gasAppliances) lines.push('Gas appliances: ' + pd.gasAppliances);
+    if (pd.ev)            lines.push('EV: ' + pd.ev);
+    if (pd.annualBill)    lines.push('Annual bill (client-reported): $' + pd.annualBill);
+    if (pd.driveUrl)      lines.push('<a href="' + pd.driveUrl + '" target="_blank" style="color:#1a3a7a">📁 Client folder (NMI Data)</a>');
+
+    var banner = document.getElementById('intakeBanner');
+    if (banner && lines.length > 0) {
+      banner.style.display = 'block';
+      banner.innerHTML = '<strong style="color:#1a3a7a">✅ Pre-filled from HEA intake</strong><br>' + lines.join(' &nbsp;·&nbsp; ');
+    }
+  } catch(e) {}
+})();
+
+// ── SECRET BACKEND ──
+// Desktop : type H → E → A anywhere on the page (not in an input) to toggle
+// Mobile  : long-press the HEA logo for 2 seconds to toggle
+// Same gesture closes it — slide right panel on desktop, bottom drawer on mobile
+(function() {
+  var seq = [], seqTimer, isOpen = false;
+  var TRIGGER = ['h','e','a'];
+
+  function openBackend() {
+    var ov = document.getElementById('heaSecretOverlay');
+    if (!ov) return;
+    isOpen = true;
+    ov.classList.add('hea-open');
+  }
+
+  function closeBackend() {
+    var ov = document.getElementById('heaSecretOverlay');
+    if (!ov) return;
+    isOpen = false;
+    ov.classList.remove('hea-open');
+  }
+
+  function toggleBackend() {
+    if (isOpen) closeBackend(); else openBackend();
+  }
+
+  // Expose globally so SecretBackend's own HEA click can call them
+  window.closeHeaBackend  = closeBackend;
+  window.toggleHeaBackend = toggleBackend;
+
+  // ── DESKTOP: H → E → A key sequence ──
+  document.addEventListener('keydown', function(e) {
+    var tag = (e.target || e.srcElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    seq.push(e.key.toLowerCase());
+    clearTimeout(seqTimer);
+    seqTimer = setTimeout(function() { seq = []; }, 1500);
+    if (seq.length >= 3) {
+      var last3 = seq.slice(-3);
+      if (last3[0] === TRIGGER[0] && last3[1] === TRIGGER[1] && last3[2] === TRIGGER[2]) {
+        seq = [];
+        toggleBackend();
+      }
+    }
+  });
+
+  // ── MOBILE: long-press the HEA logo for 2 seconds ──
+  // ── DESKTOP: triple-click the HEA logo ──
+  var logo = document.querySelector('.hdr img');
+  if (logo) {
+    // Long-press (mobile)
+    var pressTimer;
+    logo.addEventListener('touchstart', function() {
+      pressTimer = setTimeout(function() { toggleBackend(); }, 2000);
+    }, { passive: true });
+    logo.addEventListener('touchend',  function() { clearTimeout(pressTimer); });
+    logo.addEventListener('touchmove', function() { clearTimeout(pressTimer); });
+    // Triple-click (desktop)
+    var clicks = 0, clickTimer;
+    logo.addEventListener('click', function() {
+      clicks++;
+      clearTimeout(clickTimer);
+      if (clicks >= 3) {
+        clicks = 0;
+        toggleBackend();
+      } else {
+        clickTimer = setTimeout(function() { clicks = 0; }, 600);
+      }
+    });
+  }
+})();
+</script>
+<?!= include('Quote') ?>
+<?!= include('SecretBackend') ?>
+</body>
+</html>

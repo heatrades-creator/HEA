@@ -19,6 +19,7 @@ const Schema = z.object({
   hotWater:      z.string().max(60).optional(),
   gasAppliances: z.string().max(60).optional(),
   ev:            z.string().max(60).optional(),
+  annualBill:    z.string().max(20).optional(),
   goals:         z.string().max(500).optional(),
   systemSize:    z.string().max(100).optional(),
   batterySize:   z.string().max(100).optional(),
@@ -206,23 +207,31 @@ export async function POST(req: NextRequest) {
 
   // ── Notify Jobs API (GAS) ────────────────────────────────────────────────────
   let gasJobNumber: string | undefined
+  let gasDriveUrl:  string | undefined
   if (process.env.JOBS_GAS_URL) {
     try {
       const gasRes = await fetch(process.env.JOBS_GAS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action:     "createJob",
-          clientName: d.name,
-          phone:      d.phone,
-          email:      d.email,
-          address:    d.address,
-          notes:      `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
+          action:        "createJob",
+          clientName:    d.name,
+          phone:         d.phone,
+          email:         d.email,
+          address:       d.address,
+          notes:         `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
+          annualBill:    d.annualBill    ?? '',
+          occupants:     d.occupants    ?? '',
+          homeDaytime:   d.homeDaytime  ?? '',
+          hotWater:      d.hotWater     ?? '',
+          gasAppliances: d.gasAppliances ?? '',
+          ev:            d.ev           ?? '',
         }),
       })
       if (gasRes.ok) {
         const gasData = await gasRes.json()
         gasJobNumber = gasData.jobNumber
+        gasDriveUrl  = gasData.driveUrl
       } else {
         console.error("GAS createJob non-OK:", gasRes.status, await gasRes.text())
       }
@@ -241,9 +250,9 @@ export async function POST(req: NextRequest) {
       data: {
         firstName,
         lastName,
-        email:   d.email,
-        phone:   d.phone,
-        address: d.address,
+        email:        d.email,
+        phone:        d.phone,
+        address:      d.address,
         suburb,
         state,
         postcode,
@@ -251,7 +260,14 @@ export async function POST(req: NextRequest) {
         leadSource:   "website",
         status:       "pending_review",
         gasJobNumber: gasJobNumber ?? null,
+        gasDriveUrl:  gasDriveUrl  ?? null,
         nmiConsentAt: d.nmiConsent ? new Date(d.nmiConsentAt) : null,
+        annualBillAud: d.annualBill ? (parseInt(d.annualBill, 10) || null) : null,
+        occupants:     d.occupants     ?? null,
+        homeDaytime:   d.homeDaytime   ?? null,
+        hotWater:      d.hotWater      ?? null,
+        gasAppliances: d.gasAppliances ?? null,
+        ev:            d.ev            ?? null,
         auditLog: {
           create: {
             action: "lead_received",

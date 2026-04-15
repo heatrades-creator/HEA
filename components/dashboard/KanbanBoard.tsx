@@ -36,6 +36,12 @@ export type Job = {
   driveUrl?: string;
   notes?: string;
   createdDate?: string;
+  annualBill?: string;
+  occupants?: string;
+  homeDaytime?: string;
+  hotWater?: string;
+  gasAppliances?: string;
+  ev?: string;
 };
 
 export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {

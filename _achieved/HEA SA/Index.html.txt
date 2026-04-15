@@ -3134,6 +3134,19 @@ updateRebateCliffBanner();
   } catch(e) {}
 })();
 
+// ── URL param prefill (from HEA dashboard direct link) ──
+(function() {
+  try {
+    var pd = <?= prefillData ?>;
+    if (!pd || !pd.clientName) return;
+    ['clientName','clientAddress','clientPhone','postcode'].forEach(function(k) {
+      var el = document.getElementById(k);
+      if (el && pd[k]) el.value = pd[k];
+    });
+    if (pd.postcode) detectZone();
+  } catch(e) {}
+})();
+
 // ── SECRET BACKEND ──
 // Desktop : type H → E → A anywhere on the page (not in an input) to toggle
 // Mobile  : long-press the HEA logo for 2 seconds to toggle

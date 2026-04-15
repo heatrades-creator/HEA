@@ -134,5 +134,26 @@ export async function POST(req: NextRequest) {
     // Non-fatal — return the URL so Jesse can share it manually
   }
 
+  // ── Save payment record to client's Drive folder via GAS ─────────────────────
+  if (process.env.JOBS_GAS_URL) {
+    try {
+      await fetch(process.env.JOBS_GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action:      'savePaymentRecord',
+          jobNumber,
+          milestone,
+          amount:      amountDisplay,
+          clientEmail,
+          checkoutUrl,
+        }),
+      })
+    } catch (gasErr) {
+      console.error('Failed to save payment record to Drive:', gasErr)
+      // Non-fatal
+    }
+  }
+
   return NextResponse.json({ success: true, url: checkoutUrl, emailSent, amount: amountDisplay })
 }

@@ -115,6 +115,40 @@ function doPost(e) {
     }
   }
 
+  if (action === 'savePaymentRecord') {
+    try {
+      const job = findJobByNumber(sheet, body.jobNumber);
+      if (!job) return jsonResponse({ error: 'Job not found' }, 404);
+      if (!job.driveUrl) return jsonResponse({ error: 'No Drive folder on this job' }, 400);
+
+      const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+      if (!folderId) return jsonResponse({ error: 'Cannot parse folder ID from driveUrl' }, 400);
+
+      const folder = DriveApp.getFolderById(folderId[1]);
+      const ts = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Melbourne' });
+      const content = [
+        'HEA Payment Request Record',
+        '==========================',
+        'Job:        ' + body.jobNumber,
+        'Client:     ' + (job.clientName || ''),
+        'Milestone:  ' + body.milestone,
+        'Amount:     ' + body.amount,
+        'Sent to:    ' + (body.clientEmail || ''),
+        'Date sent:  ' + ts,
+        '',
+        'Payment link (expires after payment):',
+        body.checkoutUrl,
+      ].join('\n');
+
+      const fileName = 'Payment Request — ' + body.milestone + ' — ' + ts.replace(/[/:,]/g, '-') + '.txt';
+      const file = folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
+      return jsonResponse({ success: true, fileUrl: file.getUrl() });
+    } catch (err) {
+      console.error('savePaymentRecord error:', err);
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
   return jsonResponse({ error: 'Unknown action' }, 400);
 }
 

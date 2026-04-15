@@ -62,26 +62,41 @@ export default function JobDetail({ job }: { job: any }) {
   return (
     <div className="bg-white rounded-xl border border-[#e5e9f0] overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-[#e5e9f0] flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <span className="text-[#ffd100] font-mono font-bold text-lg">{job.jobNumber}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STAGE_COLORS[status] ?? 'bg-[#3a3a3a] text-[#aaa]'}`}>
-              {status}
-            </span>
+      <div className="px-6 py-5 border-b border-[#e5e9f0]">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-[#ffd100] font-mono font-bold text-lg">{job.jobNumber}</span>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STAGE_COLORS[status] ?? 'bg-[#3a3a3a] text-[#aaa]'}`}>
+                {status}
+              </span>
+            </div>
+            <h1 className="text-[#111827] text-xl font-semibold">{job.clientName}</h1>
+            {job.address && <p className="text-[#6b7280] text-sm mt-0.5">{job.address}</p>}
           </div>
-          <h1 className="text-[#111827] text-xl font-semibold">{job.clientName}</h1>
-          {job.address && <p className="text-[#6b7280] text-sm mt-0.5">{job.address}</p>}
+          <p className="text-[#6b7280] text-xs whitespace-nowrap">{job.createdDate}</p>
         </div>
-        <p className="text-[#6b7280] text-xs whitespace-nowrap">{job.createdDate}</p>
+        {/* Contact strip — always visible */}
+        <div className="flex flex-wrap gap-3">
+          {job.phone && (
+            <a href={`tel:${job.phone}`}
+              className="inline-flex items-center gap-1.5 text-sm text-[#111827] font-medium bg-[#f5f7fa] border border-[#e5e9f0] rounded-lg px-3 py-1.5 hover:border-[#ffd100] transition-colors">
+              📞 {job.phone}
+            </a>
+          )}
+          {job.email && (
+            <a href={`mailto:${job.email}`}
+              className="inline-flex items-center gap-1.5 text-sm text-[#111827] font-medium bg-[#f5f7fa] border border-[#e5e9f0] rounded-lg px-3 py-1.5 hover:border-[#ffd100] transition-colors">
+              ✉️ {job.email}
+            </a>
+          )}
+          {!job.phone && !job.email && (
+            <p className="text-xs text-[#9ca3af] italic">No contact details on file</p>
+          )}
+        </div>
       </div>
 
       <div className="p-6 space-y-7">
-        {/* Contact info (read-only) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <ReadField label="Phone" value={job.phone} href={`tel:${job.phone}`} />
-          <ReadField label="Email" value={job.email} href={`mailto:${job.email}`} />
-        </div>
 
         {/* Stage selector */}
         <div>
@@ -252,9 +267,9 @@ function PaymentMilestone({
   jobNumber: string; totalPrice?: string; clientEmail?: string; clientName?: string;
   paid?: string | null;
 }) {
-  const [sending, setSending] = useState(false);
-  const [sent, setSent]       = useState(false);
-  const [error, setError]     = useState('');
+  const [sending, setSending]   = useState(false);
+  const [result, setResult]     = useState<{ url: string; emailSent: boolean; amount: string } | null>(null);
+  const [error, setError]       = useState('');
 
   const total = totalPrice ? parseFloat(String(totalPrice).replace(/[^0-9.]/g, '')) : 0;
   const pct   = milestone === 'completion' ? 0.80 : 0.10;
@@ -265,6 +280,7 @@ function PaymentMilestone({
   async function sendLink() {
     setSending(true);
     setError('');
+    setResult(null);
     try {
       const res = await fetch('/api/stripe/create-checkout', {
         method: 'POST',
@@ -273,13 +289,12 @@ function PaymentMilestone({
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setSent(true);
-        setTimeout(() => setSent(false), 6000);
+        setResult({ url: data.url, emailSent: data.emailSent, amount: data.amount });
       } else {
-        setError(data.error ?? 'Failed — check Stripe config');
+        setError(data.error ?? 'Failed — check Stripe config in Vercel');
       }
     } catch {
-      setError('Network error');
+      setError('Network error — check your connection');
     }
     setSending(false);
   }
@@ -291,40 +306,46 @@ function PaymentMilestone({
       <p className={`text-sm font-semibold mb-0.5 ${paid ? 'text-green-800' : 'text-[#374151]'}`}>{label}</p>
       <p className="text-xs text-[#6b7280] mb-2">{description}</p>
       {amount && !paid && (
-        <p className="text-sm font-bold text-[#111827] mb-3">{amount}</p>
+        <p className="text-base font-bold text-[#111827] mb-1">{amount}</p>
+      )}
+      {clientEmail && !paid && (
+        <p className="text-[11px] text-[#9ca3af] mb-3">→ {clientEmail}</p>
       )}
       {paid ? (
         <p className="text-xs text-green-700 font-medium">✓ Paid {new Date(paid).toLocaleDateString('en-AU')}</p>
+      ) : result ? (
+        <div className="space-y-2">
+          {result.emailSent ? (
+            <p className="text-xs text-green-700 font-semibold">✅ Email sent to {clientEmail}</p>
+          ) : (
+            <p className="text-xs text-orange-600 font-semibold">⚠️ Link created but email failed — copy link below</p>
+          )}
+          <p className="text-[10px] text-[#6b7280]">Saved to client Drive folder automatically.</p>
+          <a href={result.url} target="_blank" rel="noopener noreferrer"
+            className="block text-[10px] text-blue-600 underline break-all">
+            {result.url}
+          </a>
+          <button onClick={() => { navigator.clipboard.writeText(result.url); }}
+            className="text-[10px] text-[#6b7280] hover:text-[#111827] underline">
+            Copy link
+          </button>
+        </div>
       ) : (
         <>
           <button
             onClick={sendLink}
-            disabled={sending || sent || !canSend}
-            title={!clientEmail ? 'No client email on file' : !total ? 'Save a Quote Value first' : 'Email payment link to client'}
+            disabled={sending || !canSend}
+            title={!clientEmail ? 'No client email on file' : !total ? 'Save a Quote Value first' : 'Create Stripe link and email to client'}
             className="inline-block bg-[#ffd100] text-[#111827] text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {sending ? '⏳ Creating…' : sent ? '✅ Link sent to client!' : 'Send Payment Link →'}
+            {sending ? '⏳ Creating…' : 'Send Payment Link →'}
           </button>
-          {error && <p className="text-red-500 text-[11px] mt-1.5">{error}</p>}
+          {error && (
+            <p className="text-red-500 text-[11px] mt-1.5 leading-snug">{error}</p>
+          )}
           {!clientEmail && <p className="text-[#9ca3af] text-[11px] mt-1.5">No email on file</p>}
           {!total && !error && <p className="text-[#9ca3af] text-[11px] mt-1.5">Set Quote Value to calculate</p>}
         </>
-      )}
-    </div>
-  );
-}
-
-function ReadField({ label, value, href }: { label: string; value?: string; href?: string }) {
-  if (!value) return null;
-  return (
-    <div>
-      <p className="text-[#374151] text-xs uppercase tracking-wider mb-1">{label}</p>
-      {href ? (
-        <a href={href} className="text-white hover:text-[#ffd100] transition-colors text-sm">
-          {value}
-        </a>
-      ) : (
-        <p className="text-[#111827] text-sm">{value}</p>
       )}
     </div>
   );

@@ -275,7 +275,7 @@ function JobCard({
   onClick,
 }: {
   job: Job;
-  styles: { border: string; badge: string };
+  styles: { border: string; badge: string; dotFill: string };
   onMove: (stage: Stage) => void;
   onClick: () => void;
 }) {

@@ -268,7 +268,7 @@ function PaymentMilestone({
   paid?: string | null;
 }) {
   const [sending, setSending]   = useState(false);
-  const [result, setResult]     = useState<{ url: string; emailSent: boolean; amount: string } | null>(null);
+  const [result, setResult]     = useState<{ url: string; emailSent: boolean; amount: string; emailError?: string } | null>(null);
   const [error, setError]       = useState('');
 
   const total = totalPrice ? parseFloat(String(totalPrice).replace(/[^0-9.]/g, '')) : 0;
@@ -289,7 +289,7 @@ function PaymentMilestone({
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setResult({ url: data.url, emailSent: data.emailSent, amount: data.amount });
+        setResult({ url: data.url, emailSent: data.emailSent, amount: data.amount, emailError: data.emailError });
       } else {
         setError(data.error ?? 'Failed — check Stripe config in Vercel');
       }
@@ -318,7 +318,12 @@ function PaymentMilestone({
           {result.emailSent ? (
             <p className="text-xs text-green-700 font-semibold">✅ Email sent to {clientEmail}</p>
           ) : (
-            <p className="text-xs text-orange-600 font-semibold">⚠️ Link created but email failed — copy link below</p>
+            <>
+              <p className="text-xs text-orange-600 font-semibold">⚠️ Link created but email failed — copy link below</p>
+              {result.emailError && (
+                <p className="text-[10px] text-red-500 mt-0.5">{result.emailError}</p>
+              )}
+            </>
           )}
           <p className="text-[10px] text-[#6b7280]">Saved to client Drive folder automatically.</p>
           <a href={result.url} target="_blank" rel="noopener noreferrer"

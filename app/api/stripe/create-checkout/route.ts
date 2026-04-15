@@ -87,51 +87,72 @@ export async function POST(req: NextRequest) {
 
   // ── Email payment link to client ─────────────────────────────────────────────
   const firstName = clientName ? clientName.split(' ')[0] : 'there'
-  let emailSent = false
-  try {
-    await resend.emails.send({
-      from:    FROM,
-      to:      clientEmail,
-      subject: `Payment due — ${info.label} | HEA Group`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;color:#1a1a1a;">
-          <div style="background:#1a1a1a;padding:24px 28px;border-radius:8px 8px 0 0;text-align:center;">
-            <p style="color:#fbbf24;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
-              Heffernan Electrical Automation
-            </p>
-            <h1 style="color:white;font-size:20px;margin:0;font-weight:700;">
-              ${info.label} — ${amountDisplay}
-            </h1>
-          </div>
-          <div style="background:white;padding:28px 32px;border:1px solid #e8e8e6;border-top:none;border-radius:0 0 8px 8px;">
-            <p style="margin:0 0 16px;">Hi ${firstName},</p>
-            <p style="margin:0 0 16px;">
-              Your payment of <strong>${amountDisplay}</strong> is now due —
-              <em>${info.description.toLowerCase()}</em>.
-            </p>
-            <div style="text-align:center;margin:28px 0;">
-              <a href="${checkoutUrl}"
-                 style="background:#ffd100;color:#111827;font-weight:bold;padding:14px 36px;
-                        border-radius:10px;text-decoration:none;font-size:16px;display:inline-block;">
-                Pay ${amountDisplay} securely →
-              </a>
+  let emailSent  = false
+  let emailError = ''
+
+  // Guard: Resend v6 returns { data, error } tuples — it does NOT throw on API errors.
+  // Always destructure and check the error field.
+  if (!clientEmail || !clientEmail.trim()) {
+    emailError = 'No client email address on file for this job'
+    console.error('Payment email skipped:', emailError)
+  } else {
+    try {
+      const { data: emailData, error: resendError } = await resend.emails.send({
+        from:    FROM,
+        to:      clientEmail.trim(),
+        subject: `Payment due — ${info.label} | HEA Group`,
+        html: `
+          <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;color:#1a1a1a;">
+            <div style="background:#1a1a1a;padding:24px 28px;border-radius:8px 8px 0 0;text-align:center;">
+              <p style="color:#fbbf24;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">
+                Heffernan Electrical Automation
+              </p>
+              <h1 style="color:white;font-size:20px;margin:0;font-weight:700;">
+                ${info.label} — ${amountDisplay}
+              </h1>
             </div>
-            <p style="font-size:13px;color:#666;margin:0 0 8px;">
-              Payments are processed securely by Stripe. We accept all major credit and debit cards.
-            </p>
-            <p style="font-size:12px;color:#999;margin:0;">Job reference: ${jobNumber}</p>
-            <p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:16px;margin-top:20px;">
-              Heffernan Electrical Automation &nbsp;·&nbsp; 0481 267 812 &nbsp;·&nbsp; hea-group.com.au<br>
-              REC 37307
-            </p>
+            <div style="background:white;padding:28px 32px;border:1px solid #e8e8e6;border-top:none;border-radius:0 0 8px 8px;">
+              <p style="margin:0 0 16px;">Hi ${firstName},</p>
+              <p style="margin:0 0 16px;">
+                Your payment of <strong>${amountDisplay}</strong> is now due —
+                <em>${info.description.toLowerCase()}</em>.
+              </p>
+              <div style="text-align:center;margin:28px 0;">
+                <a href="${checkoutUrl}"
+                   style="background:#ffd100;color:#111827;font-weight:bold;padding:14px 36px;
+                          border-radius:10px;text-decoration:none;font-size:16px;display:inline-block;">
+                  Pay ${amountDisplay} securely →
+                </a>
+              </div>
+              <p style="font-size:13px;color:#666;margin:0 0 8px;">
+                Payments are processed securely by Stripe. We accept all major credit and debit cards.
+              </p>
+              <p style="font-size:12px;color:#999;margin:0;">Job reference: ${jobNumber}</p>
+              <p style="font-size:12px;color:#888;border-top:1px solid #eee;padding-top:16px;margin-top:20px;">
+                Heffernan Electrical Automation &nbsp;·&nbsp; 0481 267 812 &nbsp;·&nbsp; hea-group.com.au<br>
+                REC 37307
+              </p>
+            </div>
           </div>
-        </div>
-      `,
-    })
-    emailSent = true
-  } catch (emailErr) {
-    console.error('Payment link email failed:', emailErr)
-    // Non-fatal — return the URL so Jesse can share it manually
+        `,
+      })
+
+      if (resendError) {
+        // Resend v6 API error (domain not verified, invalid key, rate limit, etc.)
+        emailError = `Resend error: ${resendError.name} — ${resendError.message}`
+        console.error('Payment link email rejected by Resend:', resendError)
+      } else if (emailData?.id) {
+        emailSent = true
+        console.log('Payment email sent, Resend ID:', emailData.id)
+      } else {
+        emailError = 'Resend returned no data and no error — check Resend dashboard'
+        console.error('Payment email: ambiguous Resend response', { emailData })
+      }
+    } catch (err: any) {
+      // Network-level failure (DNS, timeout, etc.)
+      emailError = `Network error sending email: ${err.message}`
+      console.error('Payment link email network error:', err)
+    }
   }
 
   // ── Save payment record to client's Drive folder via GAS ─────────────────────
@@ -155,5 +176,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, url: checkoutUrl, emailSent, amount: amountDisplay })
+  return NextResponse.json({ success: true, url: checkoutUrl, emailSent, emailError: emailError || undefined, amount: amountDisplay })
 }

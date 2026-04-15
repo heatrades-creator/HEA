@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM   = process.env.EMAIL_FROM ?? 'noreply@hea-group.com.au'
+const FROM   = process.env.EMAIL_FROM ?? 'payments@hea-group.com.au'
 
 const MILESTONES = {
   deposit:    { label: '10% Deposit',         pct: 0.10, description: 'Components ordered and delivered to site' },

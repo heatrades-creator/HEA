@@ -29,10 +29,19 @@ const Schema = z.object({
   batterySize:   z.string().max(100).optional(),
   nmiConsent:    z.boolean(),
   nmiConsentAt:  z.string().datetime(),
+  // Optional roof details from client
+  roofMaterial:    z.string().max(100).optional(),
+  roofOrientation: z.string().max(100).optional(),
+  shadingIssues:   z.string().max(100).optional(),
+  phases:          z.string().max(60).optional(),
   // Optional bill upload — base64, capped at ~6 MB encoded (~4.5 MB raw)
   billBase64:    z.string().max(8_000_000).optional(),
   billName:      z.string().max(200).optional(),
   billMime:      z.string().max(60).optional(),
+  // Optional roof photo upload
+  roofPhotoBase64: z.string().max(8_000_000).optional(),
+  roofPhotoName:   z.string().max(200).optional(),
+  roofPhotoMime:   z.string().max(60).optional(),
 })
 
 // Parse suburb/state/postcode from a combined Australian address string
@@ -65,20 +74,24 @@ export async function POST(req: NextRequest) {
   const timestamp = melbourneTimestamp()
 
   const intakeData: IntakeData = {
-    name:          d.name,
-    email:         d.email,
-    phone:         d.phone,
-    address:       d.address,
-    service:       d.service,
+    name:             d.name,
+    email:            d.email,
+    phone:            d.phone,
+    address:          d.address,
+    service:          d.service,
     timestamp,
-    occupants:     d.occupants,
-    homeDaytime:   d.homeDaytime,
-    hotWater:      d.hotWater,
-    gasAppliances: d.gasAppliances,
-    ev:            d.ev,
-    goals:         d.goals,
-    systemSize:    d.systemSize,
-    batterySize:   d.batterySize,
+    occupants:        d.occupants,
+    homeDaytime:      d.homeDaytime,
+    hotWater:         d.hotWater,
+    gasAppliances:    d.gasAppliances,
+    ev:               d.ev,
+    goals:            d.goals,
+    systemSize:       d.systemSize,
+    batterySize:      d.batterySize,
+    roofMaterial:     d.roofMaterial,
+    roofOrientation:  d.roofOrientation,
+    shadingIssues:    d.shadingIssues,
+    phases:           d.phases,
   }
 
   // ── Run PDF generation and GAS createJob in parallel ───────────────────────
@@ -216,6 +229,9 @@ export async function POST(req: NextRequest) {
     ...(d.billBase64 && d.billName
       ? [{ filename: d.billName, content: d.billBase64 }]
       : []),
+    ...(d.roofPhotoBase64 && d.roofPhotoName
+      ? [{ filename: d.roofPhotoName, content: d.roofPhotoBase64 }]
+      : []),
   ]
 
   try {
@@ -241,7 +257,17 @@ export async function POST(req: NextRequest) {
           <h3 style="margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#888;">Household</h3>
           <table style="border-collapse:collapse;width:100%;margin-bottom:20px;">${householdRows}</table>
 
+          ${d.roofMaterial || d.roofOrientation || d.shadingIssues || d.phases ? `
+          <h3 style="margin:0 0 8px;font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#888;">Roof (client-supplied)</h3>
+          <table style="border-collapse:collapse;width:100%;margin-bottom:20px;">
+            ${d.roofMaterial    ? `<tr><td style="padding:4px 12px 4px 0;font-weight:600;">Roof material</td><td style="color:#444;">${d.roofMaterial}</td></tr>` : ""}
+            ${d.roofOrientation ? `<tr><td style="padding:4px 12px 4px 0;font-weight:600;">Orientation</td><td style="color:#444;">${d.roofOrientation}</td></tr>` : ""}
+            ${d.shadingIssues   ? `<tr><td style="padding:4px 12px 4px 0;font-weight:600;">Shading</td><td style="color:#444;">${d.shadingIssues}</td></tr>` : ""}
+            ${d.phases          ? `<tr><td style="padding:4px 12px 4px 0;font-weight:600;">Phases</td><td style="color:#444;">${d.phases}</td></tr>` : ""}
+          </table>` : ""}
+
           ${billSection}
+          ${d.roofPhotoBase64 ? `<p><strong>Roof photo:</strong> Attached (${d.roofPhotoName})</p>` : ""}
 
           ${photoPortalLink ? `
           <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 16px;margin:16px 0;">

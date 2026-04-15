@@ -16,20 +16,24 @@ const GREEN_FILL = rgb(0.94, 0.99, 0.96)
 const GREEN_BDR  = rgb(0.73, 0.97, 0.81)
 
 export interface IntakeData {
-  name:          string
-  email:         string
-  phone:         string
-  address:       string
-  service:       string
-  timestamp:     string
-  occupants?:    string
-  homeDaytime?:  string
-  hotWater?:     string
-  gasAppliances?:string
-  ev?:           string
-  goals?:        string
-  systemSize?:   string
-  batterySize?:  string
+  name:             string
+  email:            string
+  phone:            string
+  address:          string
+  service:          string
+  timestamp:        string
+  occupants?:       string
+  homeDaytime?:     string
+  hotWater?:        string
+  gasAppliances?:   string
+  ev?:              string
+  goals?:           string
+  systemSize?:      string
+  batterySize?:     string
+  roofMaterial?:    string
+  roofOrientation?: string
+  shadingIssues?:   string
+  phases?:          string
 }
 
 // ── Wrapped text helper ───────────────────────────────────────────────────────
@@ -277,12 +281,23 @@ export async function generateJobCardPdf(data: IntakeData): Promise<Uint8Array> 
 
   hr(page, y, width); y -= 16
 
-  // ── Roof assessment (blank fill-in) ──────────────────────────────────────────
+  // ── Roof assessment ───────────────────────────────────────────────────────────
   sectionLabel(page, "ROOF ASSESSMENT (FILL IN ON-SITE OR FROM SATELLITE)", y, bold); y -= 14
-  const roofFields = ["Roof material", "Main orientation", "Shading issues", "Phases (Single / Three)", "Meter location", "Switchboard"]
-  for (const lbl of roofFields) {
+  const roofFieldData: [string, string | undefined][] = [
+    ["Roof material",           data.roofMaterial],
+    ["Main orientation",        data.roofOrientation],
+    ["Shading issues",          data.shadingIssues],
+    ["Phases (Single / Three)", data.phases],
+    ["Meter location",          undefined],
+    ["Switchboard",             undefined],
+  ]
+  for (const [lbl, val] of roofFieldData) {
     page.drawText(`${lbl}:`, { x: 56, y, font: bold, size: 10, color: BLACK })
-    page.drawLine({ start: { x: 165, y: y + 1 }, end: { x: 460, y: y + 1 }, thickness: 0.5, color: LIGHT_GREY })
+    if (val) {
+      page.drawText(val, { x: 165, y, font, size: 10, color: DARK_GREY })
+    } else {
+      page.drawLine({ start: { x: 165, y: y + 1 }, end: { x: 460, y: y + 1 }, thickness: 0.5, color: LIGHT_GREY })
+    }
     y -= 16
   }
   y -= 6

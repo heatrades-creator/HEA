@@ -208,25 +208,31 @@ export default function JobDetail({ job }: { job: any }) {
             <PaymentMilestone
               label="10% Deposit"
               description="Ordered and delivered to site"
-              stripeLink={process.env.NEXT_PUBLIC_STRIPE_DEPOSIT_LINK}
+              milestone="deposit"
               jobNumber={job.jobNumber}
-              email={job.email}
+              totalPrice={totalPrice}
+              clientEmail={job.email}
+              clientName={job.clientName}
               paid={job.depositPaidAt}
             />
             <PaymentMilestone
               label="80% Completion"
               description="Works complete"
-              stripeLink={process.env.NEXT_PUBLIC_STRIPE_COMPLETION_LINK}
+              milestone="completion"
               jobNumber={job.jobNumber}
-              email={job.email}
+              totalPrice={totalPrice}
+              clientEmail={job.email}
+              clientName={job.clientName}
               paid={job.completionPaidAt}
             />
             <PaymentMilestone
               label="10% ESV Certificate"
               description="After ESV cert returned"
-              stripeLink={process.env.NEXT_PUBLIC_STRIPE_ESV_LINK}
+              milestone="esv"
               jobNumber={job.jobNumber}
-              email={job.email}
+              totalPrice={totalPrice}
+              clientEmail={job.email}
+              clientName={job.clientName}
               paid={job.esvPaidAt}
             />
           </div>
@@ -240,32 +246,69 @@ export default function JobDetail({ job }: { job: any }) {
 }
 
 function PaymentMilestone({
-  label, description, stripeLink, jobNumber, email, paid,
+  label, description, milestone, jobNumber, totalPrice, clientEmail, clientName, paid,
 }: {
-  label: string; description: string; stripeLink?: string;
-  jobNumber: string; email?: string; paid?: string | null;
+  label: string; description: string; milestone: string;
+  jobNumber: string; totalPrice?: string; clientEmail?: string; clientName?: string;
+  paid?: string | null;
 }) {
-  const href = stripeLink
-    ? `${stripeLink}?client_reference_id=${encodeURIComponent(jobNumber)}${email ? `&prefilled_email=${encodeURIComponent(email)}` : ''}`
-    : undefined;
+  const [sending, setSending] = useState(false);
+  const [sent, setSent]       = useState(false);
+  const [error, setError]     = useState('');
+
+  const total = totalPrice ? parseFloat(String(totalPrice).replace(/[^0-9.]/g, '')) : 0;
+  const pct   = milestone === 'completion' ? 0.80 : 0.10;
+  const amount = total > 0
+    ? new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(total * pct)
+    : null;
+
+  async function sendLink() {
+    setSending(true);
+    setError('');
+    try {
+      const res = await fetch('/api/stripe/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobNumber, milestone, totalPrice, clientEmail, clientName }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSent(true);
+        setTimeout(() => setSent(false), 6000);
+      } else {
+        setError(data.error ?? 'Failed — check Stripe config');
+      }
+    } catch {
+      setError('Network error');
+    }
+    setSending(false);
+  }
+
+  const canSend = !!clientEmail && total > 0;
 
   return (
     <div className={`rounded-xl border p-4 ${paid ? 'border-green-300 bg-green-50' : 'border-[#e5e9f0] bg-[#f9fafb]'}`}>
       <p className={`text-sm font-semibold mb-0.5 ${paid ? 'text-green-800' : 'text-[#374151]'}`}>{label}</p>
-      <p className="text-xs text-[#6b7280] mb-3">{description}</p>
+      <p className="text-xs text-[#6b7280] mb-2">{description}</p>
+      {amount && !paid && (
+        <p className="text-sm font-bold text-[#111827] mb-3">{amount}</p>
+      )}
       {paid ? (
         <p className="text-xs text-green-700 font-medium">✓ Paid {new Date(paid).toLocaleDateString('en-AU')}</p>
-      ) : href ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block bg-[#ffd100] text-[#111827] text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors"
-        >
-          Send Payment Link →
-        </a>
       ) : (
-        <p className="text-xs text-[#9ca3af] italic">Stripe not configured</p>
+        <>
+          <button
+            onClick={sendLink}
+            disabled={sending || sent || !canSend}
+            title={!clientEmail ? 'No client email on file' : !total ? 'Save a Quote Value first' : 'Email payment link to client'}
+            className="inline-block bg-[#ffd100] text-[#111827] text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {sending ? '⏳ Creating…' : sent ? '✅ Link sent to client!' : 'Send Payment Link →'}
+          </button>
+          {error && <p className="text-red-500 text-[11px] mt-1.5">{error}</p>}
+          {!clientEmail && <p className="text-[#9ca3af] text-[11px] mt-1.5">No email on file</p>}
+          {!total && !error && <p className="text-[#9ca3af] text-[11px] mt-1.5">Set Quote Value to calculate</p>}
+        </>
       )}
     </div>
   );

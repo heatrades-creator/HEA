@@ -12,14 +12,22 @@ function doGet(e) {
     if (session) resumeData = JSON.stringify(session);
   }
 
-  // Pre-fill from HEA dashboard link params (?name=&address=&phone=&email=&annualBill=)
+  // Pre-fill from HEA dashboard link params
+  // (?name=&address=&phone=&annualBill=&occupants=&homeDaytime=&hotWater=&gasAppliances=&ev=&driveUrl=)
   const addr = params.address || '';
   const postcodeMatch = addr.match(/\b(\d{4})\b/);
   const prefillData = JSON.stringify({
-    clientName:    params.name    || '',
+    clientName:    params.name         || '',
     clientAddress: addr,
-    clientPhone:   params.phone   || '',
+    clientPhone:   params.phone        || '',
     postcode:      postcodeMatch ? postcodeMatch[1] : '',
+    annualBill:    params.annualBill   || '',
+    occupants:     params.occupants    || '',
+    homeDaytime:   params.homeDaytime  || '',
+    hotWater:      params.hotWater     || '',
+    gasAppliances: params.gasAppliances|| '',
+    ev:            params.ev           || '',
+    driveUrl:      params.driveUrl     || '',
   });
 
   const tmpl = HtmlService.createTemplateFromFile('Index');

@@ -13,6 +13,7 @@
  *   E: Address     F: Status       G: Drive URL  H: Notes  I: Created Date
  *   J: System Size (kW)  K: Battery Size (kWh)  L: Quote Value ($)
  *   M: Est. Annual Bill ($)  N: Finance Required
+ *   O: Occupants   P: Home Daytime  Q: Hot Water  R: Gas Appliances  S: EV
  */
 
 const SHEET_NAME = 'HEA Jobs';
@@ -34,6 +35,11 @@ const COL = {
   TOTAL_PRICE:      12, // L
   ANNUAL_BILL:      13, // M
   FINANCE_REQUIRED: 14, // N
+  OCCUPANTS:        15, // O
+  HOME_DAYTIME:     16, // P
+  HOT_WATER:        17, // Q
+  GAS_APPLIANCES:   18, // R
+  EV:               19, // S
 };
 
 // ---------------------------------------------------------------------------
@@ -167,9 +173,10 @@ function getSheet() {
       'Address', 'Status', 'Drive URL', 'Notes', 'Created Date',
       'System Size (kW)', 'Battery Size (kWh)', 'Quote Value ($)',
       'Est. Annual Bill ($)', 'Finance Required',
+      'Occupants', 'Home Daytime', 'Hot Water', 'Gas Appliances', 'EV',
     ]);
     sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 14).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 19).setFontWeight('bold');
   }
 
   return sheet;
@@ -198,7 +205,7 @@ function createJob(sheet, data) {
   try {
     const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
     const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
-    ['01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
+    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
       getOrCreateDriveFolder_(clientFolder, sub);
     });
     driveUrl = clientFolder.getUrl();
@@ -221,6 +228,11 @@ function createJob(sheet, data) {
     data.totalPrice      || '',
     data.annualBill      || '',
     data.financeRequired || false,
+    data.occupants       || '',
+    data.homeDaytime     || '',
+    data.hotWater        || '',
+    data.gasAppliances   || '',
+    data.ev              || '',
   ]);
 
   return {
@@ -238,6 +250,11 @@ function createJob(sheet, data) {
     totalPrice:      data.totalPrice      || '',
     annualBill:      data.annualBill      || '',
     financeRequired: data.financeRequired || false,
+    occupants:       data.occupants       || '',
+    homeDaytime:     data.homeDaytime     || '',
+    hotWater:        data.hotWater        || '',
+    gasAppliances:   data.gasAppliances   || '',
+    ev:              data.ev              || '',
   };
 }
 
@@ -253,14 +270,19 @@ function updateJob(sheet, data) {
   if (data.totalPrice      !== undefined) sheet.getRange(row, COL.TOTAL_PRICE).setValue(data.totalPrice);
   if (data.annualBill      !== undefined) sheet.getRange(row, COL.ANNUAL_BILL).setValue(data.annualBill);
   if (data.financeRequired !== undefined) sheet.getRange(row, COL.FINANCE_REQUIRED).setValue(data.financeRequired);
+  if (data.occupants       !== undefined) sheet.getRange(row, COL.OCCUPANTS).setValue(data.occupants);
+  if (data.homeDaytime     !== undefined) sheet.getRange(row, COL.HOME_DAYTIME).setValue(data.homeDaytime);
+  if (data.hotWater        !== undefined) sheet.getRange(row, COL.HOT_WATER).setValue(data.hotWater);
+  if (data.gasAppliances   !== undefined) sheet.getRange(row, COL.GAS_APPLIANCES).setValue(data.gasAppliances);
+  if (data.ev              !== undefined) sheet.getRange(row, COL.EV).setValue(data.ev);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 14).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
 }
 
 function findJobByNumber(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return null;
-  return rowToJob(sheet.getRange(row, 1, 1, 14).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
 }
 
 function findRowByJobNumber(sheet, jobNumber) {
@@ -276,7 +298,7 @@ function findRowByJobNumber(sheet, jobNumber) {
 function getAllJobs(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 14).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
   return values
     .filter(row => row[0])
     .map(rowToJob)
@@ -299,6 +321,11 @@ function rowToJob(row) {
     totalPrice:      String(row[11] || ''),
     annualBill:      String(row[12] || ''),
     financeRequired: row[13] === true || String(row[13]).toLowerCase() === 'true',
+    occupants:       String(row[14] || ''),
+    homeDaytime:     String(row[15] || ''),
+    hotWater:        String(row[16] || ''),
+    gasAppliances:   String(row[17] || ''),
+    ev:              String(row[18] || ''),
   };
 }
 

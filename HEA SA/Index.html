@@ -3139,11 +3139,29 @@ updateRebateCliffBanner();
   try {
     var pd = <?!= prefillData ?>;
     if (!pd || !pd.clientName) return;
+
+    // Fill core client fields
     ['clientName','clientAddress','clientPhone','postcode'].forEach(function(k) {
       var el = document.getElementById(k);
       if (el && pd[k]) el.value = pd[k];
     });
     if (pd.postcode) detectZone();
+
+    // Build household summary card
+    var lines = [];
+    if (pd.occupants)     lines.push('Occupants: ' + pd.occupants);
+    if (pd.homeDaytime)   lines.push('Home daytime: ' + pd.homeDaytime);
+    if (pd.hotWater)      lines.push('Hot water: ' + pd.hotWater);
+    if (pd.gasAppliances) lines.push('Gas appliances: ' + pd.gasAppliances);
+    if (pd.ev)            lines.push('EV: ' + pd.ev);
+    if (pd.annualBill)    lines.push('Annual bill (client-reported): $' + pd.annualBill);
+    if (pd.driveUrl)      lines.push('<a href="' + pd.driveUrl + '" target="_blank" style="color:#1a3a7a">📁 Client folder (NMI Data)</a>');
+
+    var banner = document.getElementById('intakeBanner');
+    if (banner && lines.length > 0) {
+      banner.style.display = 'block';
+      banner.innerHTML = '<strong style="color:#1a3a7a">✅ Pre-filled from HEA intake</strong><br>' + lines.join(' &nbsp;·&nbsp; ');
+    }
   } catch(e) {}
 })();
 

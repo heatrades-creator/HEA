@@ -67,11 +67,17 @@ function MobileJobCard({
   const fullAddress = job.address ?? '';
 
   const analyserUrl = `/solar-analyser?${new URLSearchParams({
-    name:       fullName,
-    email:      job.email      ?? '',
-    phone:      job.phone      ?? '',
-    address:    fullAddress,
-    annualBill: '',
+    name:          fullName,
+    email:         job.email         ?? '',
+    phone:         job.phone         ?? '',
+    address:       fullAddress,
+    annualBill:    job.annualBill    ?? '',
+    occupants:     job.occupants     ?? '',
+    homeDaytime:   job.homeDaytime   ?? '',
+    hotWater:      job.hotWater      ?? '',
+    gasAppliances: job.gasAppliances ?? '',
+    ev:            job.ev            ?? '',
+    driveUrl:      job.driveUrl      ?? '',
   }).toString()}`;
 
   async function sendFollowup() {
@@ -617,11 +623,17 @@ function JobRow({ job, isEven, onMove, onClick }: {
   const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
 
   const analyserUrl = `/solar-analyser?${new URLSearchParams({
-    name:       job.clientName,
-    email:      job.email      ?? '',
-    phone:      job.phone      ?? '',
-    address:    job.address    ?? '',
-    annualBill: '',
+    name:          job.clientName,
+    email:         job.email         ?? '',
+    phone:         job.phone         ?? '',
+    address:       job.address       ?? '',
+    annualBill:    job.annualBill    ?? '',
+    occupants:     job.occupants     ?? '',
+    homeDaytime:   job.homeDaytime   ?? '',
+    hotWater:      job.hotWater      ?? '',
+    gasAppliances: job.gasAppliances ?? '',
+    ev:            job.ev            ?? '',
+    driveUrl:      job.driveUrl      ?? '',
   }).toString()}`;
 
   // OpenSolar link — direct project link if confirmed, else admin panel

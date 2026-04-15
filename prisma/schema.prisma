@@ -30,6 +30,13 @@ model Lead {
   notes         String?
   leadSource    String    @default("website") // "website" | "ada_widget" | "referral"
 
+  // Household profile (from intake form — used to size system in HEA SA)
+  occupants     String?   // "1–2" | "3–4" | "5–6" | "7+"
+  homeDaytime   String?   // "Yes, most days" | "Sometimes" | "Rarely / no"
+  hotWater      String?   // "Gas" | "Electric" | "Heat pump / other"
+  gasAppliances String?   // "Yes" | "No"
+  ev            String?   // "No" | "Yes — I have one" | "Yes — planning to buy"
+
   // Status machine
   // "pending_review" | "opensolar_created" | "rejected" | "duplicate" | "auto_qualified"
   status String @default("pending_review")

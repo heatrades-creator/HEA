@@ -13,16 +13,29 @@ function getDriveFiles(adminPin) {
   try {
     const parent = DriveApp.getFolderById(CFG.FOLDER_ID);
     const items  = [];
-    const subs   = parent.getFolders();
-    while (subs.hasNext()) {
-      const sub = subs.next();
-      const fn  = sub.getName();
-      const fls = sub.getFiles();
+
+    function scanFolder(folder, folderLabel) {
+      const fls = folder.getFiles();
       while (fls.hasNext()) {
         const f  = fls.next();
         const nm = f.getName().toLowerCase();
         if (nm.endsWith('.csv') || nm.includes('interval') || nm.includes('nem12'))
-          items.push({ id:f.getId(), name:f.getName(), folder:fn });
+          items.push({ id:f.getId(), name:f.getName(), folder:folderLabel });
+      }
+    }
+
+    const subs = parent.getFolders();
+    while (subs.hasNext()) {
+      const clientFolder = subs.next();
+      const clientName   = clientFolder.getName();
+
+      // Search files directly in client folder (legacy location)
+      scanFolder(clientFolder, clientName);
+
+      // Search specifically in 00_NMI_Data subfolder (new standard location)
+      const nmiIter = clientFolder.getFoldersByName('00_NMI_Data');
+      if (nmiIter.hasNext()) {
+        scanFolder(nmiIter.next(), clientName + '/00_NMI_Data');
       }
     }
     return items.sort((a,b) => b.folder.localeCompare(a.folder));

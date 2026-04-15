@@ -3137,7 +3137,7 @@ updateRebateCliffBanner();
 // ── URL param prefill (from HEA dashboard direct link) ──
 (function() {
   try {
-    var pd = <?= prefillData ?>;
+    var pd = <?!= prefillData ?>;
     if (!pd || !pd.clientName) return;
     ['clientName','clientAddress','clientPhone','postcode'].forEach(function(k) {
       var el = document.getElementById(k);

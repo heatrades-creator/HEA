@@ -49,10 +49,20 @@ async function getUsage(): Promise<UsageStats> {
 const STAGE_STYLES: Record<string, string> = {
   Lead:          'bg-[#3a3a3a] text-[#aaa]',
   Quoted:        'bg-blue-900/40 text-blue-300',
+  Contract:      'bg-orange-900/40 text-orange-300',
   Booked:        'bg-purple-900/40 text-purple-300',
   'In Progress': 'bg-yellow-900/40 text-[#ffd100]',
   Complete:      'bg-green-900/40 text-green-400',
 };
+
+const PIPELINE_STAGES = [
+  { name: 'Lead',        bg: 'bg-[#f0f0f0]',   text: 'text-[#6b7280]' },
+  { name: 'Quoted',      bg: 'bg-blue-50',      text: 'text-blue-600' },
+  { name: 'Contract',    bg: 'bg-orange-50',    text: 'text-orange-600' },
+  { name: 'Booked',      bg: 'bg-purple-50',    text: 'text-purple-600' },
+  { name: 'In Progress', bg: 'bg-yellow-50',    text: 'text-yellow-700' },
+  { name: 'Complete',    bg: 'bg-green-50',     text: 'text-green-600' },
+] as const;
 
 function currentMonth() {
   const now = new Date();
@@ -122,6 +132,27 @@ export default async function DashboardPage() {
         />
       </div>
 
+      {/* ── Customer Pipeline funnel ── */}
+      <div className="mb-6 bg-white border border-[#e5e9f0] rounded-xl p-4">
+        <h2 className="text-[#374151] text-xs uppercase tracking-wider font-medium mb-3">Customer Pipeline</h2>
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {PIPELINE_STAGES.map((stage, i) => {
+            const count = jobs.filter((j) => j.status === stage.name).length;
+            return (
+              <div key={stage.name} className="flex items-center gap-1 flex-shrink-0">
+                <div className={`flex flex-col items-center px-3 py-2 rounded-lg ${stage.bg} min-w-[80px]`}>
+                  <span className={`text-lg font-bold tabular-nums leading-none ${stage.text}`}>{count}</span>
+                  <span className={`text-[10px] text-center mt-1 ${stage.text} opacity-80 whitespace-nowrap`}>{stage.name}</span>
+                </div>
+                {i < PIPELINE_STAGES.length - 1 && (
+                  <span className="text-[#c8d0db] text-sm">→</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Bottom row: Recent Jobs + AI Usage ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Jobs — takes 2/3 width */}
@@ -152,7 +183,7 @@ export default async function DashboardPage() {
                 recentJobs.map((job, i) => (
                   <tr
                     key={job.jobNumber}
-                    className={`border-b border-[#edf0f5] hover:bg-gray-100 transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
+                    className={`border-b border-[#edf0f5] hover:bg-[#fef9e7] transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-[#f5f7fb]'}`}
                   >
                     <td className="px-5 py-3">
                       <Link

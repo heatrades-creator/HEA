@@ -5,15 +5,25 @@ import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import JobListView from './JobListView';
 
-const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 export type Stage = (typeof STAGES)[number];
 
-const STAGE_STYLES: Record<Stage, { border: string; badge: string; header: string }> = {
-  Lead:          { border: 'border-[#3a3a3a]', badge: 'bg-[#3a3a3a] text-[#aaa]',         header: 'text-[#aaa]' },
-  Quoted:        { border: 'border-blue-800',   badge: 'bg-blue-900/40 text-blue-300',       header: 'text-blue-300' },
-  Booked:        { border: 'border-purple-800', badge: 'bg-purple-900/40 text-purple-300',   header: 'text-purple-300' },
-  'In Progress': { border: 'border-yellow-700', badge: 'bg-yellow-900/40 text-[#ffd100]',    header: 'text-[#ffd100]' },
-  Complete:      { border: 'border-green-800',  badge: 'bg-green-900/40 text-green-400',     header: 'text-green-400' },
+const STAGE_STYLES: Record<Stage, { border: string; badge: string; header: string; dotFill: string }> = {
+  Lead:          { border: 'border-[#3a3a3a]',   badge: 'bg-[#3a3a3a] text-[#aaa]',           header: 'text-[#aaa]',       dotFill: 'bg-[#6b7280]' },
+  Quoted:        { border: 'border-blue-800',     badge: 'bg-blue-900/40 text-blue-300',         header: 'text-blue-300',     dotFill: 'bg-blue-400' },
+  Contract:      { border: 'border-orange-700',   badge: 'bg-orange-900/40 text-orange-300',     header: 'text-orange-300',   dotFill: 'bg-orange-400' },
+  Booked:        { border: 'border-purple-800',   badge: 'bg-purple-900/40 text-purple-300',     header: 'text-purple-300',   dotFill: 'bg-purple-400' },
+  'In Progress': { border: 'border-yellow-700',   badge: 'bg-yellow-900/40 text-[#ffd100]',      header: 'text-[#ffd100]',    dotFill: 'bg-[#ffd100]' },
+  Complete:      { border: 'border-green-800',    badge: 'bg-green-900/40 text-green-400',       header: 'text-green-400',    dotFill: 'bg-green-400' },
+};
+
+const NEXT_ACTION: Record<Stage, string> = {
+  Lead:          'Book meeting · prep bill & NMI',
+  Quoted:        'Run HEA SA · load to OpenSolar',
+  Contract:      'Send 10% deposit link',
+  Booked:        'Create as-builts PDF',
+  'In Progress': 'Upload photos · request 80%',
+  Complete:      'ESV sign-off · send final 10%',
 };
 
 export type Job = {
@@ -299,6 +309,20 @@ function JobCard({
       {job.createdDate && (
         <p className="text-[#6b7280] text-xs mt-2">{job.createdDate}</p>
       )}
+
+      {/* Pipeline progress dots */}
+      <div className="flex gap-1 mt-3">
+        {STAGES.map((s, i) => {
+          const stageIndex = STAGES.indexOf(job.status);
+          return (
+            <div
+              key={s}
+              className={`h-1 flex-1 rounded-full transition-colors ${i <= stageIndex ? styles.dotFill : 'bg-[#e5e9f0]'}`}
+            />
+          );
+        })}
+      </div>
+      <p className="text-[#6b7280] text-[10px] mt-1.5 truncate">{NEXT_ACTION[job.status]}</p>
 
       {/* Move stage */}
       <div className="mt-3 relative" onClick={(e) => e.stopPropagation()}>

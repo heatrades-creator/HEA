@@ -1,0 +1,364 @@
+<!-- FinanceEngine.html
+     HEA Solar Analyser — pure computation module
+     Included into Index.html via <?!= include('FinanceEngine') ?>
+     No DOM access. No google.script.run calls. Pure functions only.
+     Functions: ENGINE_DEFAULTS, buildFinanceOutflows, computeIRR, computeMIRR,
+                checkLoanServicability, runEngine
+-->
+// (included inside Index.html <script> block — no wrapper needed)
+const ENGINE_DEFAULTS = {
+  analysis_years: 25,
+  discount_rate: 0.07,
+  pv_degradation_rate: 0.005,
+  import_esc: 0.03,
+  fit_esc: 0.00,
+  supply_esc: 0.03,
+  opex_esc: 0.025,
+  inv_repl_yr: 12,
+  inv_repl_frac: 0.20,
+  bat_repl_yr: 12,
+  bat_repl_frac: 0.60,
+};
+
+// Build per-year finance outflows from exact amortisation schedule
+// ── ASSUMPTION_PROVENANCE — structured classification of every ENGINE_DEFAULTS parameter
+// source:     'NEM12'            = derived from uploaded interval data (measured)
+//             'user_input'       = explicitly entered by Jesse or client in the UI
+//             'market_default'   = published industry/regulatory benchmark
+//             'hea_commercial'   = HEA internal pricing or operational assumption
+// confidence: 'measured'  = from actual data
+//             'estimated'  = modelled or benchmarked
+//             'assumed'    = informed judgement, should be reviewed periodically
+const ASSUMPTION_PROVENANCE = {
+  analysis_years:       { source: 'user_input',      confidence: 'assumed',   label: 'User-set analysis period' },
+  discount_rate:        { source: 'user_input',       confidence: 'assumed',   label: 'Customer hurdle rate / opportunity cost' },
+  pv_degradation_rate:  { source: 'market_default',   confidence: 'estimated', label: 'Manufacturer spec, Tier-1 panels 0.4–0.55%/yr', ref: 'IEC 61215' },
+  bat_deg:              { source: 'market_default',   confidence: 'estimated', label: 'BYD stated cycle degradation curve', ref: 'BYD HVM spec' },
+  import_esc:           { source: 'market_default',   confidence: 'estimated', label: 'AER historical retail tariff growth ~3%/yr', ref: 'AER State of Energy Market' },
+  fit_esc:              { source: 'market_default',   confidence: 'estimated', label: 'FiT trend — currently declining, assumed flat', ref: 'AER FiT review' },
+  supply_esc:           { source: 'market_default',   confidence: 'estimated', label: 'Distribution network price escalation ~3%/yr' },
+  opex_esc:             { source: 'market_default',   confidence: 'assumed',   label: 'Maintenance cost tracks CPI ~2.5%/yr' },
+  maint_yr1:            { source: 'hea_commercial',   confidence: 'assumed',   label: 'HEA standard maintenance allowance (cleaning, monitoring)' },
+  inv_repl_yr:          { source: 'hea_commercial',   confidence: 'estimated', label: 'Typical string inverter lifespan 12–15 years' },
+  inv_repl_frac:        { source: 'hea_commercial',   confidence: 'assumed',   label: 'HEA historical inverter replacement cost 15–25% of system' },
+  bat_repl_yr:          { source: 'hea_commercial',   confidence: 'estimated', label: 'BYD 10yr warranty to 70% — replacement at yr 12 is conservative' },
+  bat_repl_frac:        { source: 'market_default',   confidence: 'estimated', label: 'Battery price decline ~8–10%/yr → replacement at 60% of original', ref: 'BloombergNEF' },
+  import_tariff:        { source: 'user_input',       confidence: 'measured',  label: 'Entered by Jesse from customer bill' },
+  fit:                  { source: 'user_input',       confidence: 'measured',  label: 'Entered by Jesse — current retailer FiT offer' },
+  annual_load:          { source: 'NEM12',            confidence: 'measured',  label: 'Derived from uploaded NEM12 interval data' },
+  direct_scr:           { source: 'NEM12',            confidence: 'estimated', label: 'From load profile analysis against generation model' },
+  bat_rte:              { source: 'market_default',   confidence: 'estimated', label: 'Battery round-trip efficiency — BYD HVM 90%', ref: 'BYD HVM spec' },
+};
+
+function buildFinanceOutflows(principal, repayment_per_period, ppy, annual_rate, analysis_years) {
+  if (principal <= 0 || repayment_per_period <= 0) return new Array(analysis_years).fill(0);
+  var r_p = annual_rate / ppy;
+  var n_periods;
+  if (r_p < 1e-9) {
+    n_periods = principal / repayment_per_period;
+  } else {
+    var ratio = principal * r_p / repayment_per_period;
+    if (ratio >= 1) {
+      // Repayment <= interest accrual — loan cannot amortise (negative amortisation)
+      // Return special sentinel so caller can show validation error
+      return { invalid: true, reason: 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period is too low — it does not cover the interest of $' + (principal * r_p).toFixed(2) + ' per period. The loan will never be paid off. Increase repayments.' };
+    }
+    n_periods = -Math.log(1 - ratio) / Math.log(1 + r_p);
+  }
+  var outflows = new Array(analysis_years).fill(0);
+  var full_periods = Math.floor(n_periods);
+  var partial_frac = n_periods - full_periods;
+  for (var p = 1; p <= full_periods; p++) {
+    var yr = Math.ceil(p / ppy);
+    if (yr <= analysis_years) outflows[yr-1] += repayment_per_period;
+  }
+  if (partial_frac > 0) {
+    var yr2 = Math.ceil((full_periods + 1) / ppy);
+    if (yr2 <= analysis_years) outflows[yr2-1] += repayment_per_period * partial_frac;
+  }
+  return outflows;
+}
+
+// ── IRR computation (Newton-Raphson bisection hybrid)
+// cashflows = [ICF0, NCF_1, ..., NCF_N]
+// Returns IRR as decimal (e.g. 0.12 = 12%) or null if not meaningful
+function computeIRR(cashflows) {
+  // IRR only meaningful if cashflows change sign at least once
+  var hasPos = false, hasNeg = false;
+  for (var i = 0; i < cashflows.length; i++) {
+    if (cashflows[i] > 0) hasPos = true;
+    if (cashflows[i] < 0) hasNeg = true;
+  }
+  if (!hasPos || !hasNeg) return null;
+
+  function npvAtRate(r) {
+    return cashflows.reduce(function(s, cf, t) {
+      return s + cf / Math.pow(1 + r, t);
+    }, 0);
+  }
+
+  // Bisection: find bracket first
+  var lo = -0.99, hi = 10.0;
+  if (npvAtRate(lo) * npvAtRate(hi) > 0) {
+    // Try to find a sign change
+    for (var r = -0.9; r < 5; r += 0.05) {
+      if (npvAtRate(r) * npvAtRate(r + 0.05) < 0) { lo = r; hi = r + 0.05; break; }
+    }
+  }
+  // Bisect 60 iterations
+  for (var iter = 0; iter < 60; iter++) {
+    var mid = (lo + hi) / 2;
+    var nmid = npvAtRate(mid);
+    if (Math.abs(nmid) < 1e-8) return mid;
+    if (npvAtRate(lo) * nmid < 0) hi = mid; else lo = mid;
+    if (hi - lo < 1e-10) return (lo + hi) / 2;
+  }
+  return (lo + hi) / 2;
+}
+
+// ── MIRR — Modified IRR (avoids multiple-IRR problem)
+// financeRate = cost of negative flows (e.g. loan rate or opportunity cost)
+// reinvestRate = return on positive flows (e.g. discount rate)
+function computeMIRR(cashflows, financeRate, reinvestRate) {
+  var n = cashflows.length - 1;
+  var pvNeg = 0, fvPos = 0;
+  for (var t = 0; t <= n; t++) {
+    if (cashflows[t] < 0) pvNeg += cashflows[t] / Math.pow(1 + financeRate, t);
+    if (cashflows[t] > 0) fvPos += cashflows[t] * Math.pow(1 + reinvestRate, n - t);
+  }
+  if (pvNeg >= 0 || fvPos <= 0) return null;
+  return Math.pow(fvPos / Math.abs(pvNeg), 1 / n) - 1;
+}
+
+// ── Negative amortisation guard — checked by updateROI before calling runEngine
+function checkLoanServicability(principal, repayment_per_period, ppy, annual_rate) {
+  if (principal <= 0 || repayment_per_period <= 0 || annual_rate <= 0) return null;
+  var r_p = annual_rate / ppy;
+  if (r_p < 1e-9) return null;
+  if (principal * r_p >= repayment_per_period) {
+    return 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period does not cover interest ($' + (principal * r_p).toFixed(2) + ' per period). Increase repayments or reduce the loan amount.';
+  }
+  return null;
+}
+
+function runEngine(inp) {
+  var cfg = Object.assign({}, ENGINE_DEFAULTS, inp);
+
+  // Cost structure
+  var total_cost    = cfg.total_cost   || 0;
+  var cash_deposit  = cfg.cash_deposit || 0;
+  var loan_amt      = (cfg.loan_amount != null) ? cfg.loan_amount : Math.max(0, total_cost - cash_deposit);
+  // CUSTOMER_CASHFLOW_VIEW (per external review):
+  // Initial_Cash_Flow_0 = -Deposit (negative = outflow to customer)
+  // Upfront_Fees = 0 (no separate fees tracked in this model)
+  // Upfront_Rebates = 0 (rebates already baked into net system cost / sysNet)
+  var ICF0          = -cash_deposit;  // Initial_Cash_Flow_0 -- negative outflow
+  var year0_outflow = cash_deposit;   // kept positive for chart array indexing
+
+  // Finance schedule
+  var repayment  = cfg.repayment_per_period || 0;
+  var ppy        = cfg.ppy || 52;
+  var ann_rate   = cfg.annual_rate || 0;
+  var fin_outflows_raw = buildFinanceOutflows(loan_amt, repayment, ppy, ann_rate, cfg.analysis_years);
+  if (fin_outflows_raw && fin_outflows_raw.invalid) {
+    return { ok: false, error: fin_outflows_raw.reason };
+  }
+  var fin_outflows = fin_outflows_raw;
+
+  // Loan summary
+  var loan_periods = 0, total_interest = 0;
+  if (loan_amt > 0 && repayment > 0) {
+    var r_p2 = ann_rate / ppy;
+    if (r_p2 < 1e-9) {
+      loan_periods = loan_amt / repayment;
+    } else {
+      var ratio2 = loan_amt * r_p2 / repayment;
+      if (ratio2 < 1) loan_periods = -Math.log(1 - ratio2) / Math.log(1 + r_p2);
+    }
+    total_interest = Math.max(0, repayment * loan_periods - loan_amt);
+  }
+  var loan_weeks = loan_periods * (52 / ppy);
+
+  // Replacement costs
+  var inv_repl_cost = (cfg.inv_repl_cost != null) ? cfg.inv_repl_cost : total_cost * cfg.inv_repl_frac;
+  var bat_repl_cost = (cfg.bat_repl_cost != null) ? cfg.bat_repl_cost : (cfg.bat_cost || 0) * cfg.bat_repl_frac;
+
+  var rows = [];
+
+  for (var t = 1; t <= cfg.analysis_years; t++) {
+    // Energy
+    var E_pv_t    = cfg.gen_kwh_yr1 * Math.pow(1 - cfg.pv_degradation_rate, t - 1);
+    var E_pv_self = Math.min(E_pv_t * (cfg.direct_scr || 0), cfg.annual_load || 0);
+    var E_pv_excess = Math.max(E_pv_t - E_pv_self, 0);
+
+    var E_bat_to_load = 0, E_pv_to_bat = 0;
+    var bat_rte = cfg.bat_rte || 0.90;
+    if (cfg.bat_kwh > 0) {
+      var bat_usable = cfg.bat_kwh * (cfg.battery_max_dod || 0.90) * Math.pow(1 - (cfg.bat_deg || 0.025), t-1);
+      // Constrain by actual excess PV available -- do NOT assume daily full cycling
+      E_pv_to_bat   = Math.min(E_pv_excess, bat_usable);
+      E_bat_to_load = Math.min(E_pv_to_bat * bat_rte, cfg.shiftable_load || 0, Math.max((cfg.annual_load||0) - E_pv_self, 0));
+    }
+
+    // Enforce energy balance
+    var E_pv_export   = Math.max(E_pv_t - E_pv_self - E_pv_to_bat, 0);
+    var E_grid_import = Math.max((cfg.annual_load||0) - E_pv_self - E_bat_to_load, 0);
+
+    // Self-consumption % = (direct + bat_to_load) / generation -- only 100% if export=0
+    var self_pct = E_pv_t > 0 ? (E_pv_self + E_bat_to_load) / E_pv_t * 100 : 0;
+
+    // Tariffs
+    var T_imp = cfg.import_tariff * Math.pow(1 + cfg.import_esc, t - 1);
+    var T_fit = cfg.fit           * Math.pow(1 + cfg.fit_esc,    t - 1);
+    var T_sup = (cfg.supply_daily || 0) * Math.pow(1 + cfg.supply_esc, t - 1);
+
+    // Savings (bill with system vs without)
+    var baseline  = (cfg.annual_load||0) * T_imp + 365 * T_sup;
+    var post_sys  = E_grid_import * T_imp - E_pv_export * T_fit + 365 * T_sup;
+    var savings   = baseline - post_sys;
+
+    // Opex
+    var esc_o = Math.pow(1 + cfg.opex_esc, t - 1);
+    var opex  = (cfg.maint_yr1 || 0) * esc_o;
+
+    // Replacements
+    var R_inv = (t === cfg.inv_repl_yr) ? inv_repl_cost : 0;
+    var R_bat = (cfg.bat_kwh > 0 && t === cfg.bat_repl_yr) ? bat_repl_cost : 0;
+    var R_t   = R_inv + R_bat;
+
+    // Finance outflow this year
+    var F_t = fin_outflows[t-1];
+
+    // Annual_NCF_t = Savings_t - Maintenance_t - Replacements_t - Loan_Repayments_t
+    // (leaner version per review: Fees=0, Insurance=0, Taxes=0, Incentives=0, Residual=0)
+    var Annual_NCF_t = savings - opex - R_t - F_t;
+    var DCF_t        = Annual_NCF_t / Math.pow(1 + cfg.discount_rate, t);
+
+    rows.push({ t: t, E_pv: E_pv_t, E_pv_self: E_pv_self, E_pv_to_bat: E_pv_to_bat,
+      E_bat_to_load: E_bat_to_load, E_pv_export: E_pv_export, E_grid_import: E_grid_import,
+      self_pct: self_pct, T_imp: T_imp, T_fit: T_fit, baseline: baseline,
+      post_sys: post_sys, savings: savings, opex: opex, R_inv: R_inv, R_bat: R_bat,
+      R_t: R_t, F_t: F_t,
+      Annual_NCF_t: Annual_NCF_t,
+      CF_t: Annual_NCF_t,   // alias kept for backward compat in table/chart rendering
+      DCF_t: DCF_t, CumDCF: 0, CumCF: 0 });
+  }
+
+  // Cumulative series — both start from ICF0 = -cash_deposit (per CUSTOMER_CASHFLOW_VIEW)
+  // Cumulative_Nominal_NCF_t = ICF0 + SUM(Annual_NCF_i) for i=1..t
+  // Cumulative_DCF_t         = ICF0 + SUM(DCF_i)        for i=1..t
+  var cumUndis = ICF0;
+  var cumDis   = ICF0;
+  var undis_be = null, dis_be = null;
+
+  for (var i = 0; i < rows.length; i++) {
+    cumUndis += rows[i].Annual_NCF_t;
+    cumDis   += rows[i].DCF_t;
+    rows[i].CumCF_exact  = cumUndis;           // exact value — used for fracPB interpolation
+    rows[i].CumDCF_exact = cumDis;
+    rows[i].CumCF  = Math.round(cumUndis);     // rounded — display only
+    rows[i].CumDCF = Math.round(cumDis);
+    if (undis_be === null && cumUndis >= 0) undis_be = rows[i].t;
+    if (dis_be   === null && cumDis   >= 0) dis_be   = rows[i].t;
+  }
+
+  // Fractional payback interpolation (per optional higher-rigor improvement in review)
+  // BEP_Fractional = (t-1) + ABS(Cumulative_Nominal_NCF_(t-1)) / Annual_NCF_t
+  function fracPB(rows, cumKey, cfKey, be_yr) {
+    // Uses _exact values (not rounded) for correct interpolation — Bug fix #8
+    var exactKey = cumKey + '_exact';
+    if (be_yr === null) return null;
+    if (be_yr === 1) {
+      var cf1 = rows[0][cfKey];
+      return cf1 > 0 ? Math.abs(ICF0) / cf1 : 1;
+    }
+    var prev = rows[be_yr-2][exactKey] !== undefined ? rows[be_yr-2][exactKey] : rows[be_yr-2][cumKey];
+    var dcf  = rows[be_yr-1][cfKey];
+    return dcf > 0 ? (be_yr - 1) + Math.abs(prev) / dcf : be_yr;
+  }
+
+  // Approx_Simple_Payback = Upfront_Cost / Year_1_Net_Savings (customer cashflow view)
+  // Upfront_Cost = cash_deposit only (rebates already in net cost, no separate upfront fees)
+  // Year_1_Net_Savings = Savings_1 - Maintenance_1 (lean model; Fees/Insurance/Taxes = 0)
+  var upfront_cost      = cash_deposit;
+  var yr1_net_savings   = rows[0] ? (rows[0].savings - rows[0].opex) : 0;
+  var simple_pb         = (upfront_cost > 0 && yr1_net_savings > 0) ? upfront_cost / yr1_net_savings : null;
+  // Edge case A: if Year_1_Net_Savings <= 0, simple payback is undefined
+  var simple_pb_label   = simple_pb != null ? null : (upfront_cost <= 0 ? 'Cash purchase — no deposit' : 'Year 1 net savings ≤ 0');
+  var undis_frac = fracPB(rows, 'CumCF',  'CF_t',  undis_be);
+  var dis_frac   = fracPB(rows, 'CumDCF', 'DCF_t', dis_be);
+  // CF_Plus_Year = first year t where Annual_NCF_t > 0 (full NCF, all inflows and outflows)
+  // Edge case B: if no year has Annual_NCF_t > 0, cf_plus_yr = null
+  var ann_cf_pos = null, cum_undis_pos = null, cum_dis_pos = null;
+  for (var j = 0; j < rows.length; j++) {
+    if (ann_cf_pos    === null && rows[j].Annual_NCF_t > 0) ann_cf_pos = rows[j].t;
+    if (cum_undis_pos === null && rows[j].CumCF >= 0) cum_undis_pos = rows[j].t;
+    if (cum_dis_pos   === null && rows[j].CumDCF>= 0) cum_dis_pos   = rows[j].t;
+  }
+
+  // NPV = Initial_Cash_Flow_0 + SUM(DCF_t for t=1..N)
+  // Do NOT subtract full system cost if loan repayments are already in Annual_NCF_t
+  var NPV = rows.reduce(function(s,r){ return s + r.DCF_t; }, ICF0);
+
+  // Build cashflow array for IRR/MIRR: [ICF0, NCF_1, ..., NCF_N]
+  var irrCashflows = [ICF0].concat(rows.map(function(r){ return r.Annual_NCF_t; }));
+  var irrVal  = computeIRR(irrCashflows);
+  var mirrVal = computeMIRR(irrCashflows, cfg.annual_rate || 0.05, cfg.discount_rate || 0.07);
+
+  // Loan finish year
+  var loan_finish_yr = null;
+  if (loan_amt > 0 && fin_outflows) {
+    for (var lfi = fin_outflows.length - 1; lfi >= 0; lfi--) {
+      if (fin_outflows[lfi] > 0) { loan_finish_yr = lfi + 1; break; }
+    }
+  }
+
+  return {
+    ok: true,
+    summary: {
+      total_cost: total_cost, cash_deposit: cash_deposit,
+      loan_amt: loan_amt, year0_outflow: year0_outflow,
+      loan_weeks: Math.round(loan_weeks * 10) / 10,
+      total_interest: Math.round(total_interest),
+      NPV: Math.round(NPV),
+      IRR:  irrVal  != null ? Math.round(irrVal  * 1000) / 10 : null,  // as %
+      MIRR: mirrVal != null ? Math.round(mirrVal * 1000) / 10 : null,
+      loan_finish_yr: loan_finish_yr,
+      simple_pb:    simple_pb    != null ? Math.round(simple_pb    * 100) / 100 : null,
+      undis_frac:   undis_frac   != null ? Math.round(undis_frac   * 10)  / 10  : null,
+      dis_frac:     dis_frac     != null ? Math.round(dis_frac     * 10)  / 10  : null,
+      undis_be: undis_be, dis_be: dis_be,
+      ann_cf_pos_yr: ann_cf_pos,
+      cum_undis_pos_yr: cum_undis_pos,
+      cum_dis_pos_yr:   cum_dis_pos,
+      year1_savings:    rows[0] ? Math.round(rows[0].savings)   : 0,
+      year1_ncf:        rows[0] ? Math.round(rows[0].Annual_NCF_t) : 0,
+      upfront_cost:     Math.round(upfront_cost),
+      yr1_net_savings:  Math.round(yr1_net_savings),
+      simple_pb_label:  simple_pb_label,
+      ICF0:             Math.round(ICF0),
+      inv_repl_yr:      cfg.inv_repl_yr,
+      bat_repl_yr:      cfg.bat_repl_yr,
+      // Assumptions snapshot — passed to PDF for the assumptions page
+      assumptions: {
+        discount_rate:   cfg.discount_rate,
+        import_esc:      cfg.import_esc,
+        pv_degradation:  cfg.pv_degradation_rate,
+        bat_deg:         cfg.bat_deg,
+        opex_esc:        cfg.opex_esc,
+        maint_yr1:       cfg.maint_yr1 || 0,
+        inv_repl_yr:     cfg.inv_repl_yr,
+        inv_repl_frac:   cfg.inv_repl_frac,
+        bat_repl_yr:     cfg.bat_repl_yr,
+        bat_repl_frac:   cfg.bat_repl_frac,
+        analysis_years:  cfg.analysis_years,
+      }
+    },
+    annual_rows: rows,
+    inv_repl_cost: Math.round(inv_repl_cost),
+    bat_repl_cost: Math.round(bat_repl_cost),
+    fin_outflows: fin_outflows,
+  };
+}
+
+// -- Helper: format dollar --

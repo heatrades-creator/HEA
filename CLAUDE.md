@@ -16,7 +16,7 @@
 
 ## Auto-Deploy: GAS via Clasp
 
-Push to `main` touching `HEA INTAKE/**` or `GAS/**` → `.github/workflows/deploy-gas.yml` runs → clasp pushes to Google Apps Script.
+Push to `main` touching `HEA INTAKE/**`, `GAS/**`, or `HEA SA/**` → `.github/workflows/deploy-gas.yml` runs → clasp pushes to Google Apps Script.
 
 **Credentials:** GitHub secret `CLASPRC_JSON` is written to 4 locations in the workflow (all of them — clasp v3 is inconsistent about which it reads).
 

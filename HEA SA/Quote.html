@@ -1,0 +1,736 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     HEA QUOTE OVERLAY — Quote.html  v4
+     Design: hea-solar-quote.html (full document format)
+     Data:   auto-populated from analyser via qCurrentPayload
+     ═══════════════════════════════════════════════════════════════════ -->
+<style>
+#qOverlay{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px)}
+#qOverlay.q-show{display:block;padding:24px 12px 80px}
+#qDoc{max-width:820px;margin:0 auto;background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6);font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a}
+#qCloseBtn2{position:fixed;top:16px;right:20px;z-index:9100;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);color:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1;backdrop-filter:blur(4px);font-family:inherit}
+.q-cover{background:#1a1a1a;position:relative;overflow:hidden}
+.q-cover-stripe{position:absolute;top:0;right:0;width:6px;height:100%;background:#f5c518}
+.q-cover-noise{position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");opacity:.5}
+.q-cover-top{padding:32px 44px 0;position:relative}
+.q-cover-logo{height:40px;margin-bottom:24px}
+.q-cover-badge{display:inline-flex;align-items:center;background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.3);border-radius:20px;padding:4px 14px;margin-bottom:14px}
+.q-cover-badge span{color:#f5c518;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.q-cover-hl{font-size:44px;font-weight:900;color:#fff;line-height:1;letter-spacing:-1px;margin-bottom:8px;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-cover-hl .qa{color:#f5c518}
+.q-cover-sub{font-size:14px;color:rgba(255,255,255,.5);margin-bottom:28px}
+.q-cover-band{background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.1);padding:18px 44px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr}
+.q-ccb{padding-right:18px}.q-ccb:not(:last-child){border-right:1px solid rgba(255,255,255,.1);margin-right:18px}
+.q-ccb-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.35);margin-bottom:4px}
+.q-ccb-val{font-size:14px;font-weight:700;color:#fff}
+.q-ccb-val.gold{color:#f5c518}
+.q-cover-hero{background:linear-gradient(135deg,#111,#1c1c1c);padding:22px 44px;border-top:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:repeat(3,1fr)}
+.q-hkpi{text-align:center;padding:0 14px}
+.q-hkpi:not(:last-child){border-right:1px solid rgba(255,255,255,.08)}
+.q-hkpi-val{font-size:36px;font-weight:900;line-height:1;color:#f5c518;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-hkpi-lbl{font-size:9px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+.q-section{padding:34px 44px;border-bottom:1px solid #e8e6e0}
+.q-section:last-child{border-bottom:none}
+.q-sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+.q-sec-num{width:30px;height:30px;background:#1a1a1a;color:#f5c518;font-size:14px;font-weight:800;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.q-sec-title{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.q-spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:20px}
+.q-sc{background:#f9f8f5;border-radius:10px;padding:15px;border:1px solid #e8e6e0}
+.q-sc.dark{background:#1a1a1a}
+.q-sc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px}
+.q-sc.dark .q-sc-lbl{color:rgba(255,255,255,.4)}
+.q-sc-val{font-size:24px;font-weight:800;color:#1a1a1a;line-height:1;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-sc.dark .q-sc-val{color:#f5c518}
+.q-sc-sub{font-size:11px;color:#888;margin-top:3px}
+.q-sc.dark .q-sc-sub{color:rgba(255,255,255,.35)}
+.q-equip{width:100%;border-collapse:collapse;font-size:13px}
+.q-equip th{text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:#888;padding:8px 12px;border-bottom:1.5px solid #e8e6e0;font-weight:700}
+.q-equip th:last-child{text-align:right}
+.q-equip td{padding:11px 12px;border-bottom:1px solid #e8e6e0}
+.q-equip td:last-child{text-align:right;font-weight:600}
+.q-equip tr:last-child td{border-bottom:none}
+.q-sav-banner{background:#1a1a1a;border-radius:10px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.q-sav-lbl{color:rgba(255,255,255,.45);font-size:9.5px;text-transform:uppercase;letter-spacing:.8px}
+.q-sav-val{font-size:32px;font-weight:900;color:#f5c518;line-height:1;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-sav-sub{font-size:10.5px;color:rgba(255,255,255,.3);margin-top:2px}
+.q-compare{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:18px}
+.q-col{border-radius:10px;padding:16px;border:1.5px solid #e8e6e0}
+.q-col.before{background:#fafaf8}.q-col.after{background:#f0faf2;border-color:#b5e5c0}
+.q-col-hd{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;margin-bottom:11px}
+.q-col.before .q-col-hd{color:#888}.q-col.after .q-col-hd{color:#16a34a}
+.q-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(0,0,0,.06);font-size:13px}
+.q-row:last-child{border-bottom:none}
+.q-rl{color:#666}.q-rv{font-weight:700}
+.q-rv.big{font-size:20px;font-weight:800;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-rv.red{color:#dc2626}.q-rv.grn{color:#16a34a}
+.q-pb-bar{height:11px;background:#e8e6e0;border-radius:6px;overflow:hidden;margin:8px 0 4px}
+.q-pb-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,#f87171,#f5c518,#4ade80);transition:width .5s}
+.q-pb-ticks{display:flex;justify-content:space-between;font-size:9px;color:#bbb;margin-bottom:16px}
+.q-proj{width:100%;border-collapse:collapse;font-size:12px}
+.q-proj th{text-align:right;font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#888;padding:7px 10px;border-bottom:1.5px solid #e8e6e0;font-weight:700}
+.q-proj th:first-child{text-align:left}
+.q-proj td{padding:7px 10px;border-bottom:1px solid #e8e6e0;text-align:right;font-weight:600}
+.q-proj td:first-child{text-align:left;color:#888;font-weight:400}
+.q-proj tr:last-child td{border-bottom:none;font-weight:800;background:#f9f8f5}
+.q-proj td.pos{color:#16a34a}.q-proj td.neg{color:#dc2626}
+.q-inv-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:16px}
+.q-inv-tbl thead tr{background:#1a1a1a;color:#fff}
+.q-inv-tbl th{padding:10px 13px;text-align:left;font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+.q-inv-tbl th:nth-child(n+2){text-align:right}
+.q-inv-tbl td{padding:11px 13px;border-bottom:1px solid #e8e6e0}
+.q-inv-tbl td:nth-child(n+2){text-align:right;font-weight:600}
+.q-inv-tbl .q-sub-row td{background:#f9f8f5;font-weight:700}
+.q-inv-tbl .q-reb-row td{color:#16a34a;font-size:12px}
+.q-inv-tbl .q-tot-row td{background:#1a1a1a;color:#fff;font-size:16px;font-weight:800}
+.q-valid-note{background:rgba(245,197,24,.1);border:1.5px solid rgba(245,197,24,.4);border-radius:8px;padding:11px 14px;font-size:12px;color:#7a5200;margin-bottom:16px}
+.q-cliff{background:linear-gradient(135deg,rgba(245,197,24,.08),rgba(220,38,38,.05));border:1.5px solid rgba(245,197,24,.4);border-radius:8px;padding:12px 16px;margin-bottom:16px}
+.q-cliff-title{font-size:12px;font-weight:800;color:#b45309;margin-bottom:4px}
+.q-cliff-body{font-size:11.5px;color:#7a5200;line-height:1.7}
+.q-tc{font-size:11.5px;color:#555;line-height:1.85}
+.q-tc h4{font-size:14px;font-weight:800;color:#1a1a1a;margin:13px 0 4px}
+.q-tc p{margin-bottom:7px}
+.q-sig-section{background:#f9f8f5}
+.q-fomo{background:linear-gradient(135deg,#fff9e6,#fffde0);border:2px solid #f5c518;border-radius:10px;padding:16px 20px;margin-bottom:18px}
+.q-fomo-title{font-size:12.5px;font-weight:800;color:#92400e;margin-bottom:10px}
+.q-fomo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.q-fomo-c{background:#fff;border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(245,197,24,.3)}
+.q-fomo-n{font-size:22px;font-weight:900;color:#dc2626;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-fomo-l{font-size:9.5px;color:#888;margin-top:2px}
+.q-fomo-note{font-size:11.5px;color:#7a5200;line-height:1.7}
+.q-sig-inputs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.q-sig-label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#666;margin-bottom:5px}
+.q-sig-input{width:100%;padding:10px 13px;border:1.5px solid #ddd;border-radius:7px;font-size:14px;font-family:inherit;background:#fff;transition:border .15s}
+.q-sig-input:focus{outline:none;border-color:#1a1a1a}
+/* Signature canvas — touch-isolated */
+.q-sig-wrap{border:2px dashed #ddd;border-radius:10px;background:#fff;overflow:hidden;margin-bottom:14px}
+#qSigCanvas{display:block;width:100%;height:130px;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+.q-sig-ctrl{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-top:1px solid #eee;background:#f5f5f3}
+.q-sig-ctrl span{font-size:11px;color:#888}
+.q-sig-clear{padding:5px 13px;border:1px solid #ddd;border-radius:6px;font-size:11.5px;cursor:pointer;background:#fff;font-family:inherit}
+.q-actions{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
+.q-btn-accept{background:#f5c518;color:#1a1a1a;border:none;border-radius:10px;padding:15px 18px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Segoe UI Black','Arial Black',sans-serif;transition:all .2s;width:100%;text-align:center;line-height:1.3}
+.q-btn-accept:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 28px rgba(245,197,24,.4)}
+.q-btn-accept:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.q-btn-notready{background:#f5f5f5;color:#555;border:1.5px solid #ddd;border-radius:10px;padding:13px 16px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;text-align:left;width:100%}
+.q-btn-notready:hover:not(:disabled){border-color:#bbb;background:#ececec}
+.q-nr-main{font-size:13px;font-weight:800;color:#374151;display:block;margin-bottom:3px}
+.q-nr-cost{color:#dc2626;font-weight:700}
+.q-nr-sub{font-size:11px;color:#9ca3af;display:block;margin-top:3px}
+.q-status{min-height:22px;font-size:12px;text-align:center;margin-bottom:10px;font-weight:600}
+.q-status.ok{color:#16a34a}.q-status.err{color:#dc2626}.q-status.inf{color:#1d4ed8}
+.q-spin{display:inline-block;width:12px;height:12px;border:2px solid #ccc;border-top-color:#1a1a1a;border-radius:50%;animation:qsp .65s linear infinite;vertical-align:middle}
+@keyframes qsp{to{transform:rotate(360deg)}}
+.q-legal{font-size:10.5px;color:#aaa;text-align:center;line-height:1.7}
+.q-state{display:none;text-align:center;padding:48px 36px}
+.q-state-icon{width:70px;height:70px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:30px}
+.q-state-title{font-size:26px;font-weight:800;margin-bottom:8px;font-family:'Segoe UI Black','Arial Black',sans-serif}
+.q-state-sub{font-size:14px;color:#666;line-height:1.7;margin-bottom:16px}
+.q-ref-badge{background:#f9f8f5;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:700;display:inline-block;margin-bottom:20px}
+.q-doc-footer{background:#1a1a1a;padding:15px 44px;display:flex;align-items:center;justify-content:space-between}
+.q-doc-footer span{font-size:10px;color:rgba(255,255,255,.3)}
+.q-doc-footer .q-fref{color:#f5c518;font-weight:600;font-size:10.5px}
+@media(max-width:600px){
+  .q-cover-band,.q-cover-hero,.q-spec-grid,.q-compare,.q-sig-inputs,.q-actions,.q-fomo-grid{grid-template-columns:1fr 1fr}
+  .q-section{padding:22px 18px}
+  .q-cover-top{padding:22px 18px 0}
+  .q-cover-band{padding:14px 18px}
+  .q-cover-hero{padding:18px}
+}
+</style>
+
+<!-- Fixed close button -->
+<button id="qCloseBtn2" onclick="closeQuoteOverlay()">×</button>
+
+<div id="qOverlay">
+<div id="qDoc">
+
+  <!-- COVER -->
+  <div class="q-cover">
+    <div class="q-cover-noise"></div><div class="q-cover-stripe"></div>
+    <div class="q-cover-top">
+      <img class="q-cover-logo" src="https://hea-group.com.au/_next/static/media/Logo_transparent.02d8e37d.png" alt="HEA" onerror="this.style.display='none'">
+      <div class="q-cover-badge"><span>Solar System Proposal — Ready to Sign</span></div>
+      <div class="q-cover-hl">YOUR PATH TO<br><span class="qa" id="qCvSav">$2,840</span><br>A YEAR IN SAVINGS</div>
+      <div class="q-cover-sub">Custom solar + battery analysis for <span id="qCvName">your home</span></div>
+    </div>
+    <div class="q-cover-band">
+      <div class="q-ccb"><div class="q-ccb-lbl">Prepared for</div><div class="q-ccb-val" id="qCvClient">—</div></div>
+      <div class="q-ccb"><div class="q-ccb-lbl">Date</div><div class="q-ccb-val" id="qCvDate">—</div></div>
+      <div class="q-ccb"><div class="q-ccb-lbl">Quote No.</div><div class="q-ccb-val gold" id="qCvQno">—</div></div>
+      <div class="q-ccb"><div class="q-ccb-lbl">Valid Until</div><div class="q-ccb-val" id="qCvValid">30 Apr 2026</div></div>
+    </div>
+    <div class="q-cover-hero">
+      <div class="q-hkpi"><div class="q-hkpi-val" id="qCvKw">—</div><div class="q-hkpi-lbl">System Size</div></div>
+      <div class="q-hkpi"><div class="q-hkpi-val" id="qCvPb">—</div><div class="q-hkpi-lbl">Payback Period</div></div>
+      <div class="q-hkpi"><div class="q-hkpi-val" id="qCv25">—</div><div class="q-hkpi-lbl">25-Year Value</div></div>
+    </div>
+  </div>
+
+  <!-- MAIN BODY -->
+  <div id="qBody">
+
+  <!-- S1 SYSTEM -->
+  <div class="q-section">
+    <div class="q-sec-hdr"><div class="q-sec-num">1</div><div class="q-sec-title">System Specification</div></div>
+    <div class="q-spec-grid">
+      <div class="q-sc"><div class="q-sc-lbl">System Capacity</div><div class="q-sc-val" id="qSkw">—</div><div class="q-sc-sub" id="qSpanels">—</div></div>
+      <div class="q-sc"><div class="q-sc-lbl">Battery Storage</div><div class="q-sc-val" id="qSbat">—</div><div class="q-sc-sub" id="qSbatMod">—</div></div>
+      <div class="q-sc dark"><div class="q-sc-lbl">Annual Generation</div><div class="q-sc-val" id="qSgen">—</div><div class="q-sc-sub">Est. year 1 output</div></div>
+      <div class="q-sc"><div class="q-sc-lbl">Feed-in Tariff</div><div class="q-sc-val" id="qSfit">—</div><div class="q-sc-sub">Export credit rate</div></div>
+      <div class="q-sc"><div class="q-sc-lbl">Solar Zone</div><div class="q-sc-val" id="qSzone" style="font-size:18px">—</div><div class="q-sc-sub" id="qSpc">—</div></div>
+      <div class="q-sc"><div class="q-sc-lbl">Daily Consumption</div><div class="q-sc-val" id="qSdaily">—</div><div class="q-sc-sub">From NEM12 data</div></div>
+    </div>
+    <table class="q-equip">
+      <thead><tr><th>Component</th><th>Description</th><th style="text-align:right">Qty</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Solar Panels</strong></td><td id="qEqPanel">—</td><td id="qEqPQty" style="text-align:right">—</td></tr>
+        <tr><td><strong>Inverter</strong></td><td id="qEqInv">—</td><td style="text-align:right">1</td></tr>
+        <tr><td><strong>Battery</strong></td><td id="qEqBat">—</td><td id="qEqBQty" style="text-align:right">—</td></tr>
+        <tr><td><strong>Mounting</strong></td><td>Clenergy IronRidge — tilt-optimised racking</td><td id="qEqMQty" style="text-align:right">—</td></tr>
+        <tr><td><strong>Monitoring</strong></td><td>iSolarCloud — real-time generation + consumption</td><td style="text-align:right">1</td></tr>
+        <tr><td><strong>Metering</strong></td><td>Smart meter upgrade — export &amp; consumption</td><td style="text-align:right">1</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- S2 FINANCIAL -->
+  <div class="q-section">
+    <div class="q-sec-hdr"><div class="q-sec-num">2</div><div class="q-sec-title">Financial Analysis</div></div>
+    <div class="q-sav-banner">
+      <div><div class="q-sav-lbl">Estimated Year 1 Savings</div><div class="q-sav-val" id="qFinSav">—</div><div class="q-sav-sub">Tariff avoidance + feed-in credits</div></div>
+      <div style="text-align:right"><div class="q-sav-lbl">Approx Simple Payback</div><div class="q-sav-val" id="qFinPb">—</div><div class="q-sav-sub">Upfront deposit ÷ Year 1 net savings (shortcut estimate)</div></div>
+    </div>
+    <div class="q-compare">
+      <div class="q-col before">
+        <div class="q-col-hd">☐ Without Solar — Today</div>
+        <div class="q-row"><span class="q-rl">Annual bill</span><span class="q-rv big red" id="qBB">—</span></div>
+        <div class="q-row"><span class="q-rl">Daily avg</span><span class="q-rv" id="qDB">—</span></div>
+        <div class="q-row"><span class="q-rl">Grid dependence</span><span class="q-rv">100%</span></div>
+        <div class="q-row"><span class="q-rl">5-year spend</span><span class="q-rv red" id="q5B">—</span></div>
+      </div>
+      <div class="q-col after">
+        <div class="q-col-hd">☀ With Solar + Battery</div>
+        <div class="q-row"><span class="q-rl">Annual bill</span><span class="q-rv big grn" id="qBA">—</span></div>
+        <div class="q-row"><span class="q-rl">Daily avg</span><span class="q-rv" id="qDA">—</span></div>
+        <div class="q-row"><span class="q-rl">Self-sufficiency</span><span class="q-rv grn">~80%</span></div>
+        <div class="q-row"><span class="q-rl">5-year spend</span><span class="q-rv grn" id="q5A">—</span></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:6px" id="qPbLbl">Investment Recovery Timeline</div>
+    <div class="q-pb-bar"><div class="q-pb-fill" id="qPbFill" style="width:0%"></div></div>
+    <div class="q-pb-ticks"><span>Install</span><span>Yr 5</span><span>Yr 10</span><span>Yr 15</span><span>Yr 20</span><span>Yr 25</span></div>
+    <table class="q-proj">
+      <thead><tr><th style="text-align:left">Milestone</th><th>Year</th><th>Ann. Savings</th><th>Cumulative</th><th>Net Position</th></tr></thead>
+      <tbody id="qProjRows"></tbody>
+    </table>
+  </div>
+
+  <!-- S3 INVESTMENT -->
+  <div class="q-section">
+    <div class="q-sec-hdr"><div class="q-sec-num">3</div><div class="q-sec-title">Investment Breakdown</div></div>
+    <div class="q-cliff" id="qCliffBox" style="display:none">
+      <div class="q-cliff-title">⚡ Battery Rebate Cliff — Act Before 1 May 2026</div>
+      <div class="q-cliff-body" id="qCliffBody">Sign before 30 April 2026 to lock in the full CHBP rebate.</div>
+    </div>
+    <div class="q-valid-note">Quote valid until <strong>30 April 2026</strong> — rebates applied at point of sale, no paperwork required.</div>
+    <table class="q-inv-tbl"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Amount</th></tr></thead><tbody id="qLineItems"></tbody></table>
+  </div>
+
+  <!-- S4 T&C -->
+  <div class="q-section">
+    <div class="q-sec-hdr"><div class="q-sec-num">4</div><div class="q-sec-title">Terms &amp; Conditions</div></div>
+    <div class="q-tc">
+      <h4>1. Scope of Works</h4><p>HEA will supply and install the system as specified in Section 1. All works performed by CEC-accredited installers under AS/NZS 5033, AS/NZS 4777, and the Victorian Electricity Safety Act 1998.</p>
+      <h4>2. Pricing &amp; Payment</h4><p>Net price is inclusive of GST, labour, equipment, and grid connection. 10% deposit on signing; balance on practical completion. All government rebates deducted at point of sale — no separate application required.</p>
+      <h4>3. Rebates &amp; Incentives</h4><p>STC rebate at legislated deeming rate at time of installation. CHBP battery rebate at rate current at contract signing. HEA acts as STC agent. Values are estimates and may vary slightly.</p>
+      <h4>4. Performance Estimates</h4><p>Savings modelled from NEM12 interval data against current tariffs with 3% annual escalation. Actual results vary with weather, usage changes, and tariff changes. Not a financial guarantee.</p>
+      <h4>5. Warranties</h4><p>Panels: 25yr linear performance. Inverter: 10yr manufacturer. Battery: 10yr capacity (min 70%). Workmanship: 5yr by HEA.</p>
+      <h4>6. Cancellation</h4><p>Within 10 business days: no fee. After 10 days pre-scheduling: $500 admin fee. After equipment ordered: restocking fees up to 15%.</p>
+      <h4>7. Governing Law</h4><p>Laws of Victoria, Australia. REC Licence 37307.</p>
+    </div>
+  </div>
+
+  <!-- S5 SIGNATURE -->
+  <div class="q-section q-sig-section">
+    <div class="q-sec-hdr"><div class="q-sec-num">5</div><div class="q-sec-title">Acceptance &amp; Signature</div></div>
+    <p style="font-size:13px;color:#555;margin-bottom:18px;line-height:1.7">By signing below you confirm acceptance of this proposal and the Terms &amp; Conditions, and authorise HEA to proceed. Legally binding under the <em>Electronic Transactions Act 1999 (Cth)</em>.</p>
+    <div class="q-fomo">
+      <div class="q-fomo-title">⏰ The Real Cost of Waiting</div>
+      <div class="q-fomo-grid">
+        <div class="q-fomo-c"><div class="q-fomo-n" id="qFDay">—</div><div class="q-fomo-l">per day to grid</div></div>
+        <div class="q-fomo-c"><div class="q-fomo-n" id="qFWeek">—</div><div class="q-fomo-l">per week missed</div></div>
+        <div class="q-fomo-c"><div class="q-fomo-n" id="qFMth">—</div><div class="q-fomo-l">per month extra bills</div></div>
+      </div>
+      <div class="q-fomo-note" id="qFNote">Every day without solar you continue paying the grid what could be building toward your investment.</div>
+    </div>
+    <div class="q-sig-inputs">
+      <div><label class="q-sig-label">Your Full Name *</label><input id="qSigName" class="q-sig-input" type="text" placeholder="e.g. Sarah Henderson" oninput="qChk()"></div>
+      <div><label class="q-sig-label">Email Address *</label><input id="qSigEmail" class="q-sig-input" type="email" placeholder="e.g. sarah@email.com.au" oninput="qChk()"></div>
+    </div>
+    <label class="q-sig-label">Draw Your Signature *</label>
+    <div class="q-sig-wrap"><canvas id="qSigCanvas"></canvas>
+      <div class="q-sig-ctrl"><span id="qSigStat">✏ Sign here using mouse or finger</span><button class="q-sig-clear" onclick="qClr()">Clear</button></div>
+    </div>
+    <div class="q-status" id="qStat"></div>
+    <div class="q-actions">
+      <button class="q-btn-accept" id="qBtnAcc" onclick="qAccept()" disabled>
+        ✅ Accept &amp; Sign Quote
+        <div style="font-size:11px;font-weight:400;margin-top:3px;opacity:.7">I'm ready to go solar</div>
+      </button>
+      <button class="q-btn-notready" id="qBtnNR" onclick="qNR()">
+        <span class="q-nr-main">⏸ I'm Not Ready Yet</span>
+        <span>Continuing to pay <span class="q-nr-cost" id="qNRC">$X/day</span> to the grid</span>
+        <span class="q-nr-sub">Email my analysis — I'll sign when ready →</span>
+      </button>
+    </div>
+    <p class="q-legal">By signing you confirm acceptance of T&amp;Cs. Digital signatures valid under <em>Electronic Transactions Act 1999 (Cth)</em>. A signed PDF will be emailed immediately.</p>
+  </div>
+  </div><!-- /qBody -->
+
+  <!-- SUCCESS — full screen congratulations, no scroll -->
+  <!-- NOT READY -->
+  <div class="q-state" id="qNRState">
+    <div class="q-state-icon" style="background:#fef3c7">📬</div>
+    <div class="q-state-title">Analysis Saved</div>
+    <div class="q-state-sub" id="qNRBody">Your solar analysis has been emailed with a resume link — all data pre-loaded next time.</div>
+    <div class="q-ref-badge" id="qNRRef">—</div>
+    <div style="background:#fef2f2;border-radius:8px;padding:13px 16px;margin:0 auto 20px;max-width:400px;font-size:12.5px;color:#7f1d1d;text-align:left">
+      <strong>Remember:</strong> every day without solar costs you <strong id="qNRDay">—</strong> in savings.<span id="qNRCliff" style="display:none"> Battery rebate cliff: <strong>1 May 2026.</strong></span>
+    </div>
+    <button onclick="closeQuoteOverlay()" style="background:#f5c518;color:#1a1a1a;border:none;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:700;cursor:pointer">Close</button>
+  </div>
+
+  <div class="q-doc-footer">
+    <span>Heffernan Electrical Automation · hea-group.com.au · hea.trades@gmail.com · 0481 267 812</span>
+    <span class="q-fref" id="qFRef">—</span>
+  </div>
+
+</div><!-- /qDoc -->
+</div><!-- /qOverlay -->
+
+  <div id="qSuccess" style="display:none;position:fixed;inset:0;z-index:9200;background:#0f0f0f;overflow-y:auto;-webkit-overflow-scrolling:touch">
+    <!-- Noise texture -->
+    <div style="position:absolute;inset:0;background-image:url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E');opacity:.4;pointer-events:none"></div>
+    <!-- Gold side stripe -->
+    <div style="position:absolute;top:0;right:0;width:6px;height:100%;background:#f5c518"></div>
+    <!-- Centered content -->
+    <div style="position:relative;min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:48px 32px 48px;text-align:center">
+      <img src="https://hea-group.com.au/_next/static/media/Logo_transparent.02d8e37d.png" alt="HEA" style="height:48px;margin-bottom:28px" onerror="this.style.display='none'">
+      <div style="font-size:54px;margin-bottom:16px;line-height:1">🎉</div>
+      <div style="display:inline-flex;align-items:center;background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.3);border-radius:20px;padding:5px 18px;margin-bottom:20px">
+        <span style="color:#f5c518;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Solar System Confirmed</span>
+      </div>
+      <div style="font-size:52px;font-weight:900;color:#fff;line-height:1;letter-spacing:-1px;margin-bottom:10px;font-family:'Segoe UI Black','Arial Black',sans-serif">
+        Congratulations,<br><span style="color:#f5c518" id="qSucName">—</span>!
+      </div>
+      <div style="font-size:20px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:12px;font-family:'Segoe UI Black','Arial Black',sans-serif;letter-spacing:.3px">
+        Welcome to the HEA Family ☀
+      </div>
+      <div style="font-size:14px;color:rgba(255,255,255,.5);max-width:480px;line-height:1.8;margin-bottom:28px">
+        Thank you for trusting us — and for supporting a local Bendigo family business.<br>
+        Your signed quote has been emailed to <strong style="color:rgba(255,255,255,.75)" id="qSucEmail">you</strong>.<br>
+        HEA will be in touch within <strong style="color:#f5c518">24 hours</strong> to lock in your installation date.
+      </div>
+      <!-- Steps -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:560px;width:100%;margin-bottom:28px">
+        <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.1)">
+          <div style="font-size:22px;margin-bottom:6px">📞</div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">Step 1</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.45)">HEA calls to confirm installation date</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.1)">
+          <div style="font-size:22px;margin-bottom:6px">💳</div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">Step 2</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.45)">10% deposit to secure your spot</div>
+        </div>
+        <div style="background:rgba(255,255,255,.06);border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,.1)">
+          <div style="font-size:22px;margin-bottom:6px">⚡</div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px">Step 3</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.45)">Installation day — usually 1–2 days</div>
+        </div>
+      </div>
+      <div style="background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);border-radius:8px;padding:10px 20px;margin-bottom:20px">
+        <span style="font-size:12px;color:#f5c518;font-weight:600">Reference: </span>
+        <span style="font-size:12px;color:#fff;font-weight:700" id="qSucRef">—</span>
+      </div>
+      <!-- Green Impact Slider — slides in after 1.2s -->
+      <div id="greenImpact" style="max-width:580px;width:100%;margin-bottom:20px;opacity:0;transform:translateY(30px);transition:opacity .7s ease, transform .7s ease">
+        <div style="background:linear-gradient(135deg,rgba(5,46,22,.9),rgba(6,78,59,.7));border:1px solid rgba(34,197,94,.35);border-radius:14px;padding:20px 24px;text-align:left">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+            <span style="font-size:20px">🌿</span>
+            <span style="font-size:13px;font-weight:800;color:#4ade80;text-transform:uppercase;letter-spacing:1px">Your Environmental Impact</span>
+          </div>
+          <div id="greenImpactBody" style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.9"></div>
+          <div style="margin-top:12px;font-size:9px;color:rgba(255,255,255,.3);border-top:1px solid rgba(255,255,255,.08);padding-top:8px">
+            Figures based on: AEMO grid emissions 0.82 kg CO2-e/kWh (VIC coal-heavy grid) · Panel embodied carbon ~180 kg CO2/panel (peer-reviewed LCA, mono-Si, Chinese manufacture) · Battery embodied ~100 kg CO2/kWh (NREL) · Disposal ~15 kg CO2/panel · Carbon payback calculated net of all embodied energy.
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+        <button onclick="window.print()" style="background:#f5c518;color:#1a1a1a;border:none;border-radius:8px;padding:12px 26px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit">🖨 Save a Copy</button>
+        <button onclick="closeQuoteOverlay()" style="background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:12px 26px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Close</button>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:20px">
+        Heffernan Electrical Automation · hea-group.com.au · hea.trades@gmail.com · 0481 267 812 · REC 37307
+      </div>
+    </div>
+  </div>
+
+
+<script>
+var qCvs, qCtx2, qDrw=false, qSig=false, qPay={};
+
+function openQuoteOverlay(){
+  if(!result){alert('Please run the analysis first.');return;}
+  qPay=qBld();
+  qPop(qPay);
+  qInitSig();
+  document.getElementById('qBody').style.display='';
+  document.getElementById('qSuccess').style.display='none';
+  document.getElementById('qNRState').style.display='none';
+  document.getElementById('qSigName').value=(document.getElementById('clientName')||{}).value||'';
+  document.getElementById('qSigEmail').value='';
+  document.getElementById('qStat').textContent='';
+  document.getElementById('qCloseBtn2').style.display='flex';
+  document.getElementById('qOverlay').classList.add('q-show');
+  document.getElementById('qOverlay').scrollTop=0;
+  document.body.style.overflow='hidden';
+  qClr(); qChk();
+}
+function closeQuoteOverlay(){
+  document.getElementById('qOverlay').classList.remove('q-show');
+  document.getElementById('qCloseBtn2').style.display='none';
+  document.body.style.overflow='';
+}
+document.getElementById('qOverlay').addEventListener('click',function(e){if(e.target===this)closeQuoteOverlay();});
+
+function qBld(){
+  var cn=(document.getElementById('clientName')||{}).value||'';
+  var pc=(document.getElementById('postcode')||{}).value||'';
+  var addr=(document.getElementById('clientAddress')||{}).value||'';
+  var phone=(document.getElementById('clientPhone')||{}).value||'';
+  var tier=(document.getElementById('priceTier')||{}).value||'standard';
+  var pnls=parseInt((document.getElementById('slPanels')||{}).value)||0;
+  var bat=parseInt((document.getElementById('slBat')||{}).value)||0;
+  var pw=typeof getPanelW==='function'?getPanelW():440;
+  var skw=pnls>0?(pnls*pw/1000).toFixed(2):'0';
+  var sn=typeof fv==='function'?(fv('sysNet')||0):0;
+  var fc=typeof fv==='function'?(fv('fitC')||3.3):3.3;
+  var ef=typeof fv==='function'?((fv('efficiency')||85)/100):0.85;
+  var fin=typeof clientFinancials==='function'?clientFinancials(pnls*pw/1000,ef,bat):{};
+  if(result&&result.fin)fin.annualKwh=result.fin.annualKwh;
+  var t=new Date();
+  var qno='HEA-'+t.getFullYear()+('0'+(t.getMonth()+1)).slice(-2)+('0'+t.getDate()).slice(-2)+'-'+(Math.floor(Math.random()*900)+100);
+  // Include engine data so signed/unsigned PDF uses same metrics as Finance card
+  var engSummary = (typeof _lastEngineResult !== 'undefined' && _lastEngineResult) ? _lastEngineResult.summary : null;
+  var annRowsSrc = (typeof _lastEngineResult !== 'undefined' && _lastEngineResult) ? (_lastEngineResult.annual_rows || []) : [];
+  var mYrs = [1,2,3,5,7,10,15,20,25];
+  var engMiles = mYrs.map(function(yr){
+    var row = annRowsSrc.find(function(r){ return r.t === yr; });
+    return row ? { yr: yr, annNcf: row.Annual_NCF_t, cumNcf: row.CumCF_exact, netPosition: row.CumCF_exact } : null;
+  }).filter(Boolean);
+  var lastRow = annRowsSrc[annRowsSrc.length - 1];
+  var connFeeAnnual = (function(){
+    var el = document.getElementById('connFeeCard') || document.getElementById('connFee');
+    return el ? parseFloat(el.value) * 365 : 380;
+  })();
+  return{clientName:cn,postcode:pc,result:result,systemKw:skw,batteryKwh:bat,sysNet:sn,fitC:fc,
+    sliderFin:fin,quoteNo:qno,panelW:pw,panels:pnls,eff:ef*100,
+    engineSummary: engSummary,
+    engineProjection: engMiles.length ? {
+      milestones: engMiles,
+      total25:  lastRow ? Math.round(lastRow.CumCF_exact) : null,
+      profit25: lastRow ? Math.round(lastRow.CumCF_exact) : null
+    } : null,
+    connFeeAnnual: connFeeAnnual,
+    address:       addr,
+    phone:         phone,
+    qualityTier:   tier
+  };
+}
+
+function qPop(p){
+  var fin=p.sliderFin||{};
+  var sav=parseInt(fin.savings||0);
+  var sn=parseFloat(p.sysNet)||0;
+  var bat=parseFloat(p.batteryKwh)||0;
+  var pnls=parseInt(p.panels)||Math.ceil(parseFloat(p.systemKw)*1000/(p.panelW||440));
+  var pw=p.panelW||440;
+  var pb=sav>0&&sn>0?sn/sav:0;
+  // Use engine total25 when available, fall back to geometric
+  var t25 = (p.engineProjection && p.engineProjection.total25 != null)
+    ? Math.abs(p.engineProjection.total25)  // engine value is net position (already offset by ICF0)
+    : Math.round([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24].reduce(function(a,i){return a+sav*Math.pow(1.03,i);},0));
+  var stcs=Math.floor(parseFloat(p.systemKw)*1.382*5);
+  var sr=Math.round(stcs*37);
+  var br=bat>0?Math.round(bat*330):0;
+  var gross=sn+sr+br;
+  var bb=sav>0?Math.round(sav/0.81):0;
+  var ba=Math.max(0,bb-sav);
+  var dr=sav>0?(sav/365).toFixed(2):'0.00';
+  var wr=Math.round(sav/52);
+  var mr=Math.round(sav/12);
+  var gen=Math.round(parseFloat(p.systemKw)*1380*(parseFloat(p.eff||85)/100));
+  var today=new Date();
+  var ds=today.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'});
+  function fm(n){return'$'+Math.round(n).toLocaleString();}
+  function qs(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+  var pc=parseInt(p.postcode)||0;
+  var zone='Melbourne Metro';
+  if(pc>=3550&&pc<=3556)zone='Northern VIC';
+  else if(pc>=3630&&pc<=3749)zone='Northern VIC';
+  else if(pc>=3500&&pc<=3599)zone='Sunraysia / Mildura';
+  else if(pc>=3350&&pc<=3399)zone='Ballarat Region';
+  else if(pc>=3400&&pc<=3499)zone='Wimmera / West VIC';
+  else if(pc>=3800&&pc<=3975)zone='Gippsland';
+  qs('qCvSav',fm(sav));qs('qCvName',p.clientName||'your home');
+  qs('qCvClient',p.clientName||'—');qs('qCvDate',ds);qs('qCvQno',p.quoteNo||'—');qs('qCvValid','30 April 2026');
+  qs('qCvKw',p.systemKw+' kWp');qs('qCvPb',pb>0?pb.toFixed(1)+' yrs':'—');qs('qCv25',fm(t25));
+  qs('qSkw',p.systemKw+' kWp');qs('qSpanels',pnls+' × '+pw+'W panels');
+  qs('qSbat',bat>0?bat+' kWh':'None');qs('qSbatMod',bat>0?'BYD HVM / equiv.':'—');
+  qs('qSgen',gen.toLocaleString()+' kWh');qs('qSfit',p.fitC+' c/kWh');
+  qs('qSzone',zone);qs('qSpc','Postcode '+p.postcode);
+  qs('qSdaily',(result&&result.fin?(result.fin.annualKwh/365).toFixed(1):'—')+' kWh');
+  // Equipment — QTY = number only, no text
+  qs('qEqPanel','Trina Vertex S+ '+pw+'W monocrystalline PERC');
+  qs('qEqPQty',pnls);
+  qs('qEqInv','Sungrow SG10RT — '+p.systemKw+' kW string inverter');
+  qs('qEqBat',bat>0?'BYD HVM '+bat+' kWh — LiFePO₄, 10yr warranty':'Not included');
+  qs('qEqBQty',bat>0?'1':'—');
+  qs('qEqMQty',pnls);  // ← just the number
+  qs('qFinSav',fm(sav));qs('qFinPb',pb>0?pb.toFixed(1)+' years':'—');
+  qs('qBB','~'+fm(bb));qs('qBA','~'+fm(ba));
+  qs('qDB','$'+(bb/365).toFixed(2)+'/day');qs('qDA','$'+(ba/365).toFixed(2)+'/day');
+  qs('q5B',fm(bb*5*1.03));qs('q5A',fm(ba*5));
+  document.getElementById('qPbFill').style.width=Math.min(96,pb>0?(pb/25)*100:0)+'%';
+  qs('qPbLbl','Breakeven at '+pb.toFixed(1)+' years · Profit from year '+(Math.ceil(pb)+1)+'+');
+  var ms=[1,3,5,7,10,15,20,25],tr='';
+  ms.forEach(function(yr){
+    var cum=0;for(var i=0;i<yr;i++)cum+=sav*Math.pow(1.03,i);cum=Math.round(cum);
+    var ann=Math.round(sav*Math.pow(1.03,yr-1));
+    var np=Math.round(cum-sn);
+    var cl=np>=0?'pos':'neg';
+    var fl=yr===Math.ceil(pb)?' ← BREAKEVEN':yr===25?' ← 25yr total':'';
+    tr+='<tr><td>Year '+yr+fl+'</td><td>'+yr+'</td><td>'+fm(ann)+'</td><td>'+fm(cum)+'</td><td class="'+cl+'">'+(np>=0?'+':'')+fm(np)+'</td></tr>';
+  });
+  document.getElementById('qProjRows').innerHTML=tr;
+  var pc2=Math.round(parseFloat(p.systemKw)*1000*0.42);
+  var ic=parseFloat(p.systemKw)<=5?1900:parseFloat(p.systemKw)<=8?2400:3200;
+  var mc=pnls*65,bc=bat>0?Math.round(bat*820):0;
+  var lc=Math.round(parseFloat(p.systemKw)*400+(bat>0?800:0));
+  var misc=Math.max(490,gross-pc2-ic-mc-bc-lc);
+  var li='<tr><td>Solar Panels — Trina Vertex S+ '+pw+'W</td><td style="text-align:right">'+pnls+'</td><td style="text-align:right">'+fm(pc2/pnls)+'</td><td style="text-align:right">'+fm(pc2)+'</td></tr>';
+  li+='<tr><td>Inverter — Sungrow SG10RT</td><td style="text-align:right">1</td><td style="text-align:right">'+fm(ic)+'</td><td style="text-align:right">'+fm(ic)+'</td></tr>';
+  li+='<tr><td>Roof Mounting — Clenergy IronRidge</td><td style="text-align:right">'+pnls+'</td><td style="text-align:right">'+fm(mc/pnls)+'</td><td style="text-align:right">'+fm(mc)+'</td></tr>';
+  if(bat>0)li+='<tr><td>Battery — BYD HVM '+bat+' kWh</td><td style="text-align:right">1</td><td style="text-align:right">'+fm(bc)+'</td><td style="text-align:right">'+fm(bc)+'</td></tr>';
+  li+='<tr><td>Installation, Commissioning &amp; Grid Connection</td><td style="text-align:right">1</td><td style="text-align:right">'+fm(lc)+'</td><td style="text-align:right">'+fm(lc)+'</td></tr>';
+  li+='<tr><td>Monitoring, Smart Meter &amp; iSolarCloud</td><td style="text-align:right">1</td><td style="text-align:right">'+fm(misc)+'</td><td style="text-align:right">'+fm(misc)+'</td></tr>';
+  li+='<tr class="q-sub-row"><td colspan="3"><strong>Gross System Cost (inc. GST)</strong></td><td style="text-align:right;font-size:15px">'+fm(gross)+'</td></tr>';
+  li+='<tr class="q-reb-row"><td colspan="3">Less: STC Solar Rebate ('+stcs+' STCs × $37)</td><td style="text-align:right">− '+fm(sr)+'</td></tr>';
+  if(bat>0)li+='<tr class="q-reb-row"><td colspan="3">Less: CHBP Battery Rebate ($330/kWh × '+bat+' kWh)</td><td style="text-align:right">− '+fm(br)+'</td></tr>';
+  li+='<tr class="q-tot-row"><td colspan="3"><strong>NET INVESTMENT (after all rebates, inc. GST)</strong></td><td style="text-align:right">'+fm(sn)+'</td></tr>';
+  document.getElementById('qLineItems').innerHTML=li;
+  if(bat>0){document.getElementById('qCliffBox').style.display='';qs('qCliffBody','Your '+bat+' kWh battery qualifies for the full CHBP rebate (−'+fm(br)+'). Sign before 30 April 2026 to lock it in — the rebate reduces significantly after that date.');document.getElementById('qNRCliff').style.display='';}
+  qs('qFDay','$'+dr);qs('qFWeek','$'+wr);qs('qFMth','$'+mr);qs('qNRC','$'+dr+'/day');qs('qNRDay','$'+dr+'/day');
+  document.getElementById('qFNote').textContent='While you\'re thinking, you\'re paying approximately $'+dr+'/day to the grid — that\'s $'+wr+' this week and $'+mr+' this month in potential savings.';
+  qs('qFRef',p.quoteNo||'—');
+}
+
+// ── SIGNATURE ── lock scroll while drawing on touch devices
+function qInitSig(){
+  qCvs=document.getElementById('qSigCanvas');
+  qCtx2=qCvs.getContext('2d');
+  var w=qCvs.parentElement.clientWidth||600,h=130,dpr=window.devicePixelRatio||1;
+  qCvs.width=w*dpr;qCvs.height=h*dpr;
+  qCvs.style.width=w+'px';qCvs.style.height=h+'px';
+  qCtx2.scale(dpr,dpr);
+  qCtx2.strokeStyle='#1a1a1a';qCtx2.lineWidth=2.2;qCtx2.lineCap='round';qCtx2.lineJoin='round';
+  qDrw=false;qSig=false;
+  // Clone to remove stale listeners
+  var f=qCvs.cloneNode(true);qCvs.parentNode.replaceChild(f,qCvs);qCvs=f;
+  qCtx2=qCvs.getContext('2d');qCtx2.scale(dpr,dpr);
+  qCtx2.strokeStyle='#1a1a1a';qCtx2.lineWidth=2.2;qCtx2.lineCap='round';qCtx2.lineJoin='round';
+  function gp(e){var r=qCvs.getBoundingClientRect();return e.touches?{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top}:{x:e.clientX-r.left,y:e.clientY-r.top};}
+  qCvs.addEventListener('mousedown',function(e){qDrw=true;var p=gp(e);qCtx2.beginPath();qCtx2.moveTo(p.x,p.y);});
+  qCvs.addEventListener('mousemove',function(e){if(!qDrw)return;var p=gp(e);qCtx2.lineTo(p.x,p.y);qCtx2.stroke();qSig=true;qChk();});
+  qCvs.addEventListener('mouseup',function(){qDrw=false;});
+  qCvs.addEventListener('mouseleave',function(){qDrw=false;});
+  qCvs.addEventListener('touchstart',function(e){e.preventDefault();e.stopPropagation();qDrw=true;document.getElementById('qOverlay').style.overflowY='hidden';var p=gp(e);qCtx2.beginPath();qCtx2.moveTo(p.x,p.y);},{passive:false});
+  qCvs.addEventListener('touchmove',function(e){e.preventDefault();e.stopPropagation();if(!qDrw)return;var p=gp(e);qCtx2.lineTo(p.x,p.y);qCtx2.stroke();qSig=true;qChk();},{passive:false});
+  qCvs.addEventListener('touchend',function(e){e.stopPropagation();qDrw=false;document.getElementById('qOverlay').style.overflowY='auto';if(qSig)document.getElementById('qSigStat').textContent='✅ Signature captured';},{passive:false});
+}
+function qClr(){if(qCtx2)qCtx2.clearRect(0,0,qCvs.width,qCvs.height);qSig=false;qChk();document.getElementById('qSigStat').textContent='✏ Sign here using mouse or finger';}
+function qChk(){var n=(document.getElementById('qSigName').value||'').trim().length>2;var em=(document.getElementById('qSigEmail').value||'').includes('@');document.getElementById('qBtnAcc').disabled=!(qSig&&n&&em);}
+
+function qAccept(){
+  var name=document.getElementById('qSigName').value.trim();
+  var email=document.getElementById('qSigEmail').value.trim();
+  if(!name||!email||!qSig)return;
+  document.getElementById('qBtnAcc').disabled=true;
+  document.getElementById('qBtnNR').disabled=true;
+  qSt('<span class="q-spin"></span> Confirming your signature...','inf');
+  var sd=qCvs.toDataURL('image/png');
+  var now=new Date();
+  var sa=now.toLocaleString('en-AU',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  var payload=Object.assign({},qPay,{clientEmail:email,signatureDataUrl:sd,signedAt:sa});
+
+  // ── STEP 1: Fast call — saves payload and returns immediately (~1s) ──────
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r && r.ok){
+        // Show the success screen straight away — don't wait for PDFs
+        document.getElementById('qOverlay').classList.remove('q-show');
+        document.getElementById('qCloseBtn2').style.display='none';
+        document.body.style.overflow='';
+        document.getElementById('qSuccess').style.display='';
+        document.getElementById('qSucName').textContent=name;
+        document.getElementById('qSucRef').textContent=qPay.quoteNo;
+        document.getElementById('qSucEmail').textContent=email;
+        setTimeout(function(){ showGreenImpact(qPay); }, 1200);
+
+        // ── STEP 2: Fire-and-forget — builds PDFs and sends emails in background ──
+        // Customer never waits for this. No success/failure handler shown to user.
+        google.script.run
+          .withSuccessHandler(function(){})
+          .withFailureHandler(function(e){ console.warn('Background PDF error:', e.message||e); })
+          .processSignedPDFs(r.pendingId);
+
+      } else {
+        qSt('⚠ '+(r&&r.error?r.error:'Unknown error'),'err');
+        document.getElementById('qBtnAcc').disabled=false;
+        document.getElementById('qBtnNR').disabled=false;
+      }
+    })
+    .withFailureHandler(function(e){
+      qSt('⚠ '+(e.message||e),'err');
+      document.getElementById('qBtnAcc').disabled=false;
+      document.getElementById('qBtnNR').disabled=false;
+    })
+    .sendSignedQuote(payload);
+}
+function qNR(){
+  var email=document.getElementById('qSigEmail').value.trim();
+  if(!email||!email.includes('@')){var e=prompt('What email should we send your analysis to?');if(!e||!e.includes('@')){qSt('Please enter a valid email.','err');return;}document.getElementById('qSigEmail').value=e;email=e;}
+  document.getElementById('qBtnAcc').disabled=true;document.getElementById('qBtnNR').disabled=true;
+  qSt('<span class="q-spin"></span> Saving your analysis...','inf');
+  var payload=Object.assign({},qPay,{clientEmail:email});
+  google.script.run
+    .withSuccessHandler(function(r){
+      if(r&&r.ok){document.getElementById('qBody').style.display='none';document.getElementById('qNRState').style.display='';document.getElementById('qNRBody').textContent='Your analysis has been emailed to '+email+' with a resume link. All data will be pre-loaded next time.';document.getElementById('qNRRef').textContent='Ref: '+qPay.quoteNo+' · Emailed to '+email;document.getElementById('qOverlay').scrollTop=0;}
+      else{qSt('⚠ '+(r&&r.error?r.error:'Unknown error'),'err');document.getElementById('qBtnAcc').disabled=false;document.getElementById('qBtnNR').disabled=false;}
+    })
+    .withFailureHandler(function(e){qSt('⚠ '+(e.message||e),'err');document.getElementById('qBtnAcc').disabled=false;document.getElementById('qBtnNR').disabled=false;})
+    .sendUnsignedFollowup(payload);
+}
+function qSt(h,c){var e=document.getElementById('qStat');e.innerHTML=h;e.className='q-status '+(c||'');}
+
+function toggleGreenDetail() {
+  var btn    = document.getElementById('greenToggle');
+  var detail = btn ? btn.nextElementSibling : null;
+  if (!detail) return;
+  // detail starts as display:none (hidden). Toggle between '' (visible) and 'none'
+  var isHidden = detail.style.display === 'none';
+  detail.style.display = isHidden ? '' : 'none';
+  btn.innerHTML = isHidden ? '&#9660; Hide detail' : '&#9658; See how we calculated this';
+}
+
+function showGreenImpact(pay) {
+  var el   = document.getElementById('greenImpact');
+  var body = document.getElementById('greenImpactBody');
+  if (!el || !body) return;
+
+  var panels   = parseInt(pay.panels)        || 15;
+  var batKwh   = parseFloat(pay.batteryKwh)  || 0;
+  var systemKw = parseFloat(pay.systemKw)    || 6.6;
+  var fin      = pay.sliderFin               || {};
+  var selfKwh  = parseInt(fin.selfKwh)       || Math.round(systemKw * 1380 * 0.35);
+  var genKwh   = parseInt(fin.genKwh)        || Math.round(systemKw * 1380);
+
+  // CO2 constants — sourced, defensible
+  var GRID   = 0.82;   // kg CO2-e/kWh  AEMO VIC grid
+  var PANEL  = 180;    // kg CO2/panel   mono-Si LCA
+  var INV    = 85;     // kg CO2         inverter + BOS
+  var DISP_P = 15;     // kg CO2/panel   disposal/recycling
+  var BAT_MF = 100;    // kg CO2/kWh     battery manufacture NREL
+  var BAT_D  = 20;     // kg CO2/kWh     battery disposal
+
+  var embodied  = panels * PANEL + INV + batKwh * BAT_MF;
+  var disposal  = panels * DISP_P + 20 + batKwh * BAT_D;
+  var totalCost = embodied + disposal;
+  var annSaved  = selfKwh * GRID;
+  var cbYrs     = totalCost / annSaved;
+
+  var lifetime = 0;
+  for (var yr = 1; yr <= 25; yr++) lifetime += selfKwh * Math.pow(0.995, yr-1) * GRID;
+  var netTonnes = Math.round((lifetime - totalCost) / 100) / 10;
+  var annTonnes = Math.round(annSaved / 10) / 100;
+  var trees     = Math.round(annSaved / 21);
+  var flights   = Math.round((lifetime - totalCost) / 150);
+  var cbLabel   = cbYrs < 1 ? 'under 1 year' : cbYrs.toFixed(1) + ' years';
+
+  // ── EXECUTIVE SUMMARY ──
+  var html =
+    // Thank you line
+    '<div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:4px">'
+    + '💚 Thank you for going solar — and for supporting a local Bendigo family business.'
+    + '</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.55);margin-bottom:16px">'
+    + 'Every system we install is personal to us. — Jesse &amp; the HEA team 🙏'
+    + '</div>'
+
+    // BIG headline stat
+    + '<div style="background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3);border-radius:10px;padding:16px;text-align:center;margin-bottom:12px">'
+    +   '<div style="font-size:11px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Your system will offset</div>'
+    +   '<div style="font-size:42px;font-weight:900;color:#4ade80;line-height:1">' + netTonnes + ' <span style="font-size:22px">tonnes</span></div>'
+    +   '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px">of CO₂ over 25 years ☁️➡️🌿</div>'
+    +   '<div style="font-size:10px;color:rgba(255,255,255,.35);margin-top:6px">This is the <strong style="color:rgba(255,255,255,.5)">net</strong> figure — manufacturing, shipping &amp; disposal already deducted</div>'
+    + '</div>'
+
+    // 3 glanceable stats
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
+    + '<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:10px;text-align:center">'
+    +   '<div style="font-size:22px">🌳</div>'
+    +   '<div style="font-size:14px;font-weight:900;color:#fff;margin:3px 0">' + trees + '</div>'
+    +   '<div style="font-size:9px;color:rgba(255,255,255,.4)">trees per year equivalent</div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:10px;text-align:center">'
+    +   '<div style="font-size:22px">✈️</div>'
+    +   '<div style="font-size:14px;font-weight:900;color:#fff;margin:3px 0">' + flights + '</div>'
+    +   '<div style="font-size:9px;color:rgba(255,255,255,.4)">SYD↔MEL flights avoided lifetime</div>'
+    + '</div>'
+    + '<div style="background:rgba(255,255,255,.05);border-radius:8px;padding:10px;text-align:center">'
+    +   '<div style="font-size:22px">⚡</div>'
+    +   '<div style="font-size:14px;font-weight:900;color:#fff;margin:3px 0">' + cbLabel + '</div>'
+    +   '<div style="font-size:9px;color:rgba(255,255,255,.4)">carbon payback period</div>'
+    + '</div>'
+    + '</div>'
+
+    // See more details toggle
+    + '<button id="greenToggle" onclick="toggleGreenDetail()" '
+    +   'style="background:none;border:none;color:rgba(255,255,255,.4);font-size:11px;cursor:pointer;padding:0;text-decoration:underline;margin-bottom:8px">&#9658; See how we calculated this</button>'
+
+    + '<div style="display:none;background:rgba(0,0,0,.3);border-radius:8px;padding:14px;font-size:11px;color:rgba(255,255,255,.55);line-height:1.9">'
+    +   '<strong style="color:rgba(255,255,255,.75)">📐 How it works</strong><br><br>'
+    +   '🔴 <strong style="color:rgba(255,255,255,.7)">What it costs the planet to build your system:</strong><br>'
+    +   '&nbsp;&nbsp;' + panels + ' panels × 180 kg CO₂ each = ' + (panels*180).toLocaleString() + ' kg<br>'
+    +   '&nbsp;&nbsp;Inverter + wiring + racking = ' + INV + ' kg<br>'
+    +   (batKwh > 0 ? '&nbsp;&nbsp;' + batKwh + ' kWh battery × 100 kg/kWh = ' + (batKwh*100) + ' kg<br>' : '')
+    +   '&nbsp;&nbsp;End-of-life disposal = ' + Math.round(disposal) + ' kg<br>'
+    +   '&nbsp;&nbsp;<strong>Total embodied + disposal = ' + Math.round(totalCost) + ' kg CO₂</strong><br><br>'
+    +   '🟢 <strong style="color:rgba(255,255,255,.7)">What your system saves every year:</strong><br>'
+    +   '&nbsp;&nbsp;' + selfKwh.toLocaleString() + ' kWh self-consumed × 0.82 kg CO₂/kWh (VIC grid)<br>'
+    +   '&nbsp;&nbsp;<strong>= ' + Math.round(annSaved).toLocaleString() + ' kg CO₂ saved per year (' + annTonnes + ' tonnes)</strong><br><br>'
+    +   '📊 <strong style="color:rgba(255,255,255,.7)">Carbon payback:</strong><br>'
+    +   '&nbsp;&nbsp;' + Math.round(totalCost) + ' kg ÷ ' + Math.round(annSaved) + ' kg/yr = <strong>' + cbLabel + '</strong><br><br>'
+    +   '📈 <strong style="color:rgba(255,255,255,.7)">25-year net offset:</strong><br>'
+    +   '&nbsp;&nbsp;' + Math.round(lifetime).toLocaleString() + ' kg generated (with 0.5%/yr panel degradation)<br>'
+    +   '&nbsp;&nbsp;minus ' + Math.round(totalCost) + ' kg embodied + disposal<br>'
+    +   '&nbsp;&nbsp;= <strong style="color:#4ade80">' + netTonnes + ' tonnes net CO₂ offset</strong><br><br>'
+    +   '<span style="color:rgba(255,255,255,.3);font-size:9px">Sources: AEMO grid factor 0.82 kg CO₂-e/kWh (VIC) · Mono-Si panel LCA ~180 kg/panel · NREL battery LCA ~100 kg/kWh · Disposal estimates industry average</span>'
+    + '</div>';
+
+  body.innerHTML = html;
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+}
+</script>

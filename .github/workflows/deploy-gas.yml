@@ -6,6 +6,7 @@ on:
     paths:
       - 'HEA INTAKE/**'
       - 'GAS/**'
+      - 'HEA SA/**'
 
 jobs:
   # ── Deploy HEA Solar Intake Form ──────────────────────────────────────────
@@ -104,3 +105,37 @@ jobs:
             set -xe
             clasp push --force
           fi
+
+  # ── Deploy HEA Solar Analyser ─────────────────────────────────────────────
+  deploy-solar-analyser:
+    name: Push HEA Solar Analyser
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp (latest)
+        run: npm install -g @google/clasp
+
+      - name: Write credentials to all possible locations
+        run: |
+          set -e
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
+          echo "$TOKEN" > ~/.clasprc.json
+          mkdir -p ~/.config/@google/clasp
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+          mkdir -p ~/.config/clasp
+          echo "$TOKEN" > ~/.config/clasp/credentials.json
+
+      - name: Push to Google Apps Script
+        working-directory: 'HEA SA'
+        run: |
+          set -xe
+          echo "=== .clasp.json ==="
+          cat .clasp.json
+          echo "=== Pushing HEA Solar Analyser... ==="
+          clasp push --force
+          echo "=== Push complete ==="

@@ -111,5 +111,5 @@ one-click step in Apps Script.
 |----------------------|-------------------------------|----------------|
 | `HEA INTAKE/`        | HEA Solar Intake Form         | ✅ Ready        |
 | `GAS/`               | HEA Jobs API                  | ⏳ Add script ID |
-| `HEA SA/`            | HEA Solar Analyser            | Not set up yet  |
+| `HEA SA/`            | HEA Solar Analyser            | ✅ Ready        |
 | `hea-doc-stack/`     | HEA Document Stack            | Not set up yet  |

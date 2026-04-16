@@ -237,6 +237,56 @@
     }
     .tips-box strong { display: block; margin-bottom: 4px; font-size: 12px; }
 
+    /* ── Requirements dropdown ── */
+    .req-toggle {
+      border: 1px solid #e5e9f0;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+      background: white;
+    }
+    .req-btn {
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 13px 16px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #1a1a1a;
+      gap: 8px;
+    }
+    .req-btn:hover { background: #f9fafb; }
+    .req-arrow { font-size: 10px; color: #888; transition: transform .2s; flex-shrink: 0; }
+    .req-arrow.open { transform: rotate(180deg); }
+    .req-body { display: none; padding: 0 16px 16px; border-top: 1px solid #f0f2f6; }
+    .req-body.open { display: block; }
+    .req-sub { margin: 12px 0 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; }
+    .req-list { list-style: none; padding: 0; margin: 0; }
+    .req-list li { font-size: 12px; color: #374151; line-height: 1.55; padding: 3px 0 3px 20px; position: relative; }
+    .req-list.fail li::before { content: '\2715'; position: absolute; left: 2px; color: #dc2626; font-weight: 700; }
+    .req-list.pass li::before { content: '\2714'; position: absolute; left: 2px; color: #16a34a; font-weight: 700; }
+    .req-callout {
+      background: #fffbea;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 11px 14px;
+      font-size: 12px;
+      color: #92400e;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
+    .req-rooms {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.6;
+    }
+
     /* ── Submit section ── */
     .gen-section {
       background: white;
@@ -383,6 +433,66 @@ function renderIntro() {
   if (el) el.innerHTML = items.join('');
 }
 
+// ── Battery requirements dropdown ────────────────────────────────────────────
+function buildRequirementsPanel() {
+  var uid = 'req-' + Date.now();
+  var wrap = document.createElement('div');
+  wrap.className = 'req-toggle';
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'req-btn';
+  btn.innerHTML =
+    '<span>📋 What makes a good battery location? Tap to see the rules</span>' +
+    '<span class="req-arrow" id="' + uid + '-arrow">\u25bc</span>';
+  btn.setAttribute('aria-expanded', 'false');
+
+  var body = document.createElement('div');
+  body.className = 'req-body';
+  body.id = uid + '-body';
+  body.innerHTML =
+    '<p class="req-sub">Must NOT be installed</p>' +
+    '<ul class="req-list fail">' +
+      '<li>Inside living areas — bedrooms, lounge, kitchen, dining room, study</li>' +
+      '<li>Within 600 mm of windows, doors or vents that open into a habitable room</li>' +
+      '<li>Within 600 mm of exits or escape paths</li>' +
+      '<li>Within 600 mm of ignition sources — gas meters, air conditioners, open flames</li>' +
+      '<li>Directly below windows or openings to habitable rooms</li>' +
+      '<li>Where it blocks a walkway, exit, or access area</li>' +
+      '<li>Where it could be hit by a vehicle (e.g. front of garage) without a physical barrier</li>' +
+    '</ul>' +
+    '<p class="req-sub">Good locations</p>' +
+    '<ul class="req-list pass">' +
+      '<li>Garages, laundries, storage rooms, sheds, utility rooms</li>' +
+      '<li>Near windows or doors that lead to non-habitable areas (garage, laundry)</li>' +
+      '<li>On non-combustible surfaces — brick, concrete, cement sheet</li>' +
+      '<li>With clear airflow and enough room to service it</li>' +
+      '<li>Protected from weather (or the unit is rated for outdoor use)</li>' +
+    '</ul>' +
+    '<div class="req-callout">' +
+      '<strong>Tight on space?</strong> If the 600 mm clearance can\u2019t be met, the battery can still be installed ' +
+      'by offsetting it at least 300 mm, or by fitting a non-combustible barrier or shield between the battery and the ' +
+      'opening. Our team will assess this from your photos.' +
+    '</div>' +
+    '<div class="req-rooms">' +
+      '<strong>Habitable rooms</strong> (need 600 mm clearance): ' +
+      'Bedrooms \u00b7 Living rooms \u00b7 Dining rooms \u00b7 Kitchens \u00b7 Family rooms \u00b7 Studies \u00b7 Playrooms \u00b7 Sunrooms<br>' +
+      '<strong>Non-habitable</strong> (fine to be nearby): ' +
+      'Garages \u00b7 Laundries \u00b7 Bathrooms \u00b7 Hallways \u00b7 Storage rooms \u00b7 Sheds' +
+    '</div>';
+
+  btn.onclick = function() {
+    var isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    document.getElementById(uid + '-arrow').classList.toggle('open', !isOpen);
+    btn.setAttribute('aria-expanded', String(!isOpen));
+  };
+
+  wrap.appendChild(btn);
+  wrap.appendChild(body);
+  return wrap;
+}
+
 // ── Render all cards ─────────────────────────────────────────────────────────
 function renderCards() {
   var container = document.getElementById('cards');
@@ -434,6 +544,10 @@ function renderCards() {
       note.style.cssText = 'font-size:13px;color:#555;margin:-4px 0 14px;line-height:1.5;';
       note.textContent = SECTION_NOTES[section];
       container.appendChild(note);
+    }
+
+    if (section === 'battery') {
+      container.appendChild(buildRequirementsPanel());
     }
 
     if (SECTION_TIPS[section]) {

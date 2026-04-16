@@ -4,10 +4,12 @@ import { Resend } from "resend"
 import { generateConsentPdf, generateJobCardPdf, type IntakeData } from "@/lib/intake-pdf"
 import { prisma } from "@/lib/db"
 
-const resend          = new Resend(process.env.RESEND_API_KEY)
-const FROM            = process.env.EMAIL_FROM      ?? "noreply@hea-group.com.au"
-const TO_HEA          = process.env.EMAIL_ALERT_TO  ?? "hea.trades@gmail.com"
+const resend           = new Resend(process.env.RESEND_API_KEY)
+const FROM_ADDR        = process.env.EMAIL_FROM      ?? "noreply@hea-group.com.au"
+const FROM             = `Heffernan Electrical Automation <${FROM_ADDR}>`
+const TO_HEA           = process.env.EMAIL_ALERT_TO  ?? "hea.trades@gmail.com"
 const PHOTO_PORTAL_URL = process.env.PHOTO_PORTAL_URL ?? ""
+const LOGO_URL         = "https://hea-group.com.au/Logo_transparent.png"
 
 const Schema = z.object({
   name:          z.string().min(2).max(120),
@@ -116,9 +118,8 @@ export async function POST(req: NextRequest) {
       : Promise.resolve(),
   ])
 
-  // Photo portal link — only for battery jobs once we have a job number
-  const isBatteryService = d.service.toLowerCase().includes("battery")
-  const photoPortalLink  = isBatteryService && PHOTO_PORTAL_URL && gasJobNumber
+  // Photo portal link — all service types, as long as we have a job number and the portal is configured
+  const photoPortalLink = PHOTO_PORTAL_URL && gasJobNumber
     ? `${PHOTO_PORTAL_URL}?jobNumber=${gasJobNumber}`
     : null
 
@@ -137,8 +138,8 @@ export async function POST(req: NextRequest) {
       attachments: clientAttachments,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;color:#1a1a1a;">
-          <div style="background:#1a1a1a;padding:24px 28px;border-radius:8px 8px 0 0;text-align:center;">
-            <p style="color:#fbbf24;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:0 0 8px;">Heffernan Electrical Automation</p>
+          <div style="background:#1a1a1a;padding:28px 28px 24px;border-radius:8px 8px 0 0;text-align:center;">
+            <img src="${LOGO_URL}" alt="HEA Group" style="height:52px;width:auto;margin-bottom:18px;display:block;margin-left:auto;margin-right:auto;" />
             <h1 style="color:white;font-size:22px;margin:0;font-weight:700;">You're in the system, ${firstName} ⚡</h1>
           </div>
           <div style="background:white;padding:28px 32px;border:1px solid #e8e8e6;border-top:none;border-radius:0 0 8px 8px;">

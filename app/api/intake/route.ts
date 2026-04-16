@@ -4,9 +4,10 @@ import { Resend } from "resend"
 import { generateConsentPdf, generateJobCardPdf, type IntakeData } from "@/lib/intake-pdf"
 import { prisma } from "@/lib/db"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM   = process.env.EMAIL_FROM     ?? "noreply@hea-group.com.au"
-const TO_HEA = process.env.EMAIL_ALERT_TO ?? "hea.trades@gmail.com"
+const resend          = new Resend(process.env.RESEND_API_KEY)
+const FROM            = process.env.EMAIL_FROM      ?? "noreply@hea-group.com.au"
+const TO_HEA          = process.env.EMAIL_ALERT_TO  ?? "hea.trades@gmail.com"
+const PHOTO_PORTAL_URL = process.env.PHOTO_PORTAL_URL ?? ""
 
 const Schema = z.object({
   name:          z.string().min(2).max(120),
@@ -77,18 +78,49 @@ export async function POST(req: NextRequest) {
     batterySize:   d.batterySize,
   }
 
-  // Generate PDFs
-  let consentPdf: Uint8Array | null = null
-  let jobCardPdf: Uint8Array | null = null
-  try {
-    ;[consentPdf, jobCardPdf] = await Promise.all([
-      generateConsentPdf(intakeData),
-      generateJobCardPdf(intakeData),
-    ])
-  } catch (err) {
-    console.error("PDF generation failed:", err)
-    // Continue without PDFs — still send email
-  }
+  // ── Run PDF generation and GAS createJob in parallel ───────────────────────
+  let consentPdf:   Uint8Array | null = null
+  let jobCardPdf:   Uint8Array | null = null
+  let gasJobNumber: string | undefined
+  let gasDriveUrl:  string | undefined
+
+  await Promise.all([
+    // PDFs
+    Promise.all([generateConsentPdf(intakeData), generateJobCardPdf(intakeData)])
+      .then(([c, j]) => { consentPdf = c; jobCardPdf = j })
+      .catch(err => console.error("PDF generation failed:", err)),
+
+    // GAS createJob
+    process.env.JOBS_GAS_URL
+      ? fetch(process.env.JOBS_GAS_URL, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({
+            action:        "createJob",
+            clientName:    d.name,
+            phone:         d.phone,
+            email:         d.email,
+            address:       d.address,
+            postcode:      d.postcode      ?? "",
+            notes:         `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
+            occupants:     d.occupants     ?? "",
+            homeDaytime:   d.homeDaytime   ?? "",
+            hotWater:      d.hotWater      ?? "",
+            gasAppliances: d.gasAppliances ?? "",
+            ev:            d.ev            ?? "",
+          }),
+        })
+          .then(r => r.ok ? r.json() : Promise.reject(r.status))
+          .then(data => { gasJobNumber = data.jobNumber; gasDriveUrl = data.driveUrl })
+          .catch(e => console.error("GAS createJob failed:", e))
+      : Promise.resolve(),
+  ])
+
+  // Photo portal link — only for battery jobs once we have a job number
+  const isBatteryService = d.service.toLowerCase().includes("battery")
+  const photoPortalLink  = isBatteryService && PHOTO_PORTAL_URL && gasJobNumber
+    ? `${PHOTO_PORTAL_URL}?jobNumber=${gasJobNumber}`
+    : null
 
   const firstName = d.name.split(" ")[0]
 
@@ -127,6 +159,21 @@ export async function POST(req: NextRequest) {
                 to access your usage data via Powercore — it's how we give you accurate numbers rather than guesswork.
                 Keep it for your records.
               </p>
+            </div>` : ""}
+            ${photoPortalLink ? `
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:18px 20px;margin:20px 0;">
+              <p style="margin:0 0 10px;font-size:14px;font-weight:700;color:#166534;">📸 Next step — upload your site photos</p>
+              <p style="margin:0 0 14px;font-size:13px;color:#166534;line-height:1.5;">
+                To spec your battery installation, we need a few quick photos:
+                your <strong>switchboard</strong> and <strong>3 spots you're considering</strong> for the battery and inverter.
+                Each location will be automatically checked against the Australian installation standard (AS/NZS 5139).
+              </p>
+              <a href="${photoPortalLink}"
+                 style="display:inline-block;background:#16a34a;color:white;font-weight:700;font-size:14px;
+                        padding:12px 24px;border-radius:8px;text-decoration:none;">
+                Upload Site Photos →
+              </a>
+              <p style="margin:10px 0 0;font-size:11px;color:#888;">Takes about 5 minutes. Use your phone camera.</p>
             </div>` : ""}
             <p style="color:#888;font-size:12px;margin-top:24px;">
               Heffernan Electrical Automation &nbsp;·&nbsp; ${TO_HEA} &nbsp;·&nbsp; 0481 267 812<br>
@@ -194,50 +241,24 @@ export async function POST(req: NextRequest) {
 
           ${billSection}
 
+          ${photoPortalLink ? `
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 16px;margin:16px 0;">
+            <p style="margin:0;font-size:13px;color:#166534;">
+              <strong>📸 Battery photo portal:</strong>
+              <a href="${photoPortalLink}" style="color:#16a34a;">${photoPortalLink}</a>
+            </p>
+          </div>` : ""}
+
           <p style="font-size:13px;color:#888;margin-top:24px;border-top:1px solid #eee;padding-top:12px;">
             NMI consent: ${d.nmiConsent ? "✅ YES — " + d.nmiConsentAt : "❌ Not given"}<br>
-            PDFs: ${consentPdf ? "✅ Consent" : "❌ Consent failed"} &nbsp;|&nbsp; ${jobCardPdf ? "✅ Job card" : "❌ Job card failed"}
+            PDFs: ${consentPdf ? "✅ Consent" : "❌ Consent failed"} &nbsp;|&nbsp; ${jobCardPdf ? "✅ Job card" : "❌ Job card failed"}<br>
+            GAS job: ${gasJobNumber ? "✅ " + gasJobNumber : "❌ Not created"}
           </p>
         </div>
       `,
     })
   } catch (err) {
     console.error("HEA email failed:", err)
-  }
-
-  // ── Notify Jobs API (GAS) ────────────────────────────────────────────────────
-  let gasJobNumber: string | undefined
-  let gasDriveUrl:  string | undefined
-  if (process.env.JOBS_GAS_URL) {
-    try {
-      const gasRes = await fetch(process.env.JOBS_GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action:        "createJob",
-          clientName:    d.name,
-          phone:         d.phone,
-          email:         d.email,
-          address:       d.address,
-          postcode:      d.postcode     ?? '',
-          notes:         `📋 ${d.service} enquiry\n${d.goals ? "Goals: " + d.goals : ""}`,
-          occupants:     d.occupants    ?? '',
-          homeDaytime:   d.homeDaytime  ?? '',
-          hotWater:      d.hotWater     ?? '',
-          gasAppliances: d.gasAppliances ?? '',
-          ev:            d.ev           ?? '',
-        }),
-      })
-      if (gasRes.ok) {
-        const gasData = await gasRes.json()
-        gasJobNumber = gasData.jobNumber
-        gasDriveUrl  = gasData.driveUrl
-      } else {
-        console.error("GAS createJob non-OK:", gasRes.status, await gasRes.text())
-      }
-    } catch (e) {
-      console.error("GAS createJob failed:", e)
-    }
   }
 
   // ── Save lead to Prisma ──────────────────────────────────────────────────────

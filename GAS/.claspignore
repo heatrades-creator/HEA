@@ -1,0 +1,5 @@
+# Exclude the PhotoPortal — it's a separate GAS project with its own .clasp.json
+PhotoPortal/**
+
+# Exclude C2 sub-project if it has its own deployment
+# C2/**

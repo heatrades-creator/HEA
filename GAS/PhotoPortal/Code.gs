@@ -20,53 +20,153 @@ const JOBS_SHEET_ID   = PropertiesService.getScriptProperties().getProperty('JOB
 const JOBS_SHEET_NAME = 'HEA Jobs';
 const CLIENTS_FOLDER  = '12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-';
 
-const PHOTO_CATEGORIES = [
-  {
-    id:              'switchboard',
-    label:           'Main Switchboard',
-    instruction:     'Open the switchboard door and take a clear photo showing all circuit breakers and labels. Then take a second photo of the closed door.',
-    required:        true,
-    checkCompliance: false,
-  },
-  {
-    id:              'battery_location_1',
-    label:           'Proposed Location 1',
-    instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above in the shot.',
-    required:        true,
-    checkCompliance: true,
-  },
-  {
-    id:              'battery_location_2',
-    label:           'Proposed Location 2',
-    instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above in the shot.',
-    required:        true,
-    checkCompliance: true,
-  },
-  {
-    id:              'battery_location_3',
-    label:           'Proposed Location 3',
-    instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above in the shot.',
-    required:        false,
-    checkCompliance: true,
-  },
-];
-
 // ── Entry point ──────────────────────────────────────────────────────────────
 
 function doGet(e) {
   const jobNumber = (e && e.parameter && e.parameter.jobNumber)
     ? e.parameter.jobNumber.trim()
     : '';
+  const service = (e && e.parameter && e.parameter.service)
+    ? e.parameter.service.trim()
+    : '';
 
   const template = HtmlService.createTemplateFromFile('Index');
   template.jobNumber  = jobNumber;
+  template.service    = service;
   template.jobInfo    = jobNumber ? getJobInfo_(jobNumber) : null;
-  template.categories = JSON.stringify(PHOTO_CATEGORIES);
+  template.categories = JSON.stringify(getCategoriesForService_(service));
 
   return template.evaluate()
-    .setTitle('HEA — Battery Install Photos')
+    .setTitle('HEA — Site Photos')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+// ── Service-specific photo categories ────────────────────────────────────────
+
+function getCategoriesForService_(service) {
+  var s = (service || '').toLowerCase();
+  var isBattery = s.includes('battery');
+  var isSolar   = s.includes('solar');
+  var isEV      = s.includes('ev');
+
+  var cats = [];
+
+  // Switchboard — always required for all service types
+  cats.push({
+    id:              'switchboard',
+    label:           'Main Switchboard',
+    instruction:     'Open the switchboard door and photograph all circuit breakers and labels clearly. Then take a second photo of the closed door.',
+    required:        true,
+    checkCompliance: false,
+    section:         'switchboard',
+  });
+
+  // Solar roof photos
+  if (isSolar) {
+    cats.push({
+      id:              'roof_overview',
+      label:           'Roof Overview',
+      instruction:     'Stand back and photograph the full roof. One photo per face — north, south, east, west.',
+      required:        true,
+      checkCompliance: false,
+      section:         'roof',
+    });
+    cats.push({
+      id:              'roof_detail',
+      label:           'Roof Material',
+      instruction:     'Close-up of the roof material — tiles, metal sheeting, tray deck, etc.',
+      required:        true,
+      checkCompliance: false,
+      section:         'roof',
+    });
+    cats.push({
+      id:              'proposed_panel_area',
+      label:           'Proposed Panel Area',
+      instruction:     'Photo of the roof section where panels would go. Show any obstructions — pipes, vents, skylights.',
+      required:        true,
+      checkCompliance: false,
+      section:         'roof',
+    });
+    cats.push({
+      id:              'cable_run',
+      label:           'Cable Run Path',
+      instruction:     'Show the path from the roof edge down to the switchboard — external wall route or inside ceiling if accessible.',
+      required:        false,
+      checkCompliance: false,
+      section:         'roof',
+    });
+    cats.push({
+      id:              'existing_inverter',
+      label:           'Existing Inverter (if present)',
+      instruction:     'If there is an existing solar inverter, photograph the full unit including the model/label plate.',
+      required:        false,
+      checkCompliance: false,
+      section:         'roof',
+    });
+  }
+
+  // Battery location photos (with AS/NZS 5139 compliance check)
+  if (isBattery) {
+    cats.push({
+      id:              'battery_location_1',
+      label:           'Proposed Location 1',
+      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
+      required:        true,
+      checkCompliance: true,
+      section:         'battery',
+    });
+    cats.push({
+      id:              'battery_location_2',
+      label:           'Proposed Location 2',
+      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
+      required:        false,
+      checkCompliance: true,
+      section:         'battery',
+    });
+    cats.push({
+      id:              'battery_location_3',
+      label:           'Proposed Location 3',
+      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
+      required:        false,
+      checkCompliance: true,
+      section:         'battery',
+    });
+  }
+
+  // EV charger photos
+  if (isEV) {
+    cats.push({
+      id:              'ev_charger_location',
+      label:           'Proposed EV Charger Location',
+      instruction:     'Photo of where you want the charger installed — garage wall, outside wall, etc. Step back to show the full area around it.',
+      required:        true,
+      checkCompliance: false,
+      section:         'ev',
+    });
+    cats.push({
+      id:              'ev_cable_path',
+      label:           'Cable Path to Switchboard',
+      instruction:     'Show the route from the proposed charger location back to the switchboard.',
+      required:        false,
+      checkCompliance: false,
+      section:         'ev',
+    });
+  }
+
+  // Fallback if service not recognised
+  if (!isSolar && !isBattery && !isEV) {
+    cats.push({
+      id:              'proposed_location',
+      label:           'Proposed Installation Area',
+      instruction:     'Photo of where the equipment will be installed. Step back to show the full area.',
+      required:        true,
+      checkCompliance: false,
+      section:         'general',
+    });
+  }
+
+  return cats;
 }
 
 // ── Client-callable functions ────────────────────────────────────────────────
@@ -107,9 +207,8 @@ function uploadPhotoWithCheck(jobNumber, categoryId, base64Data, mimeType, origi
       filename: filename,
     };
 
-    // Run compliance check for battery location photos
-    const cat = PHOTO_CATEGORIES.find(function(c) { return c.id === categoryId; });
-    if (cat && cat.checkCompliance) {
+    // Run compliance check for battery location photos (identified by ID prefix)
+    if (categoryId.startsWith('battery_location')) {
       const compliance = checkBatteryCompliance_(cleanBase64, mimeType || 'image/jpeg');
       result.compliance = compliance;
       saveComplianceResult_(photosFolder, categoryId, compliance);
@@ -135,13 +234,13 @@ function generateAsBuilts(jobNumber) {
     const photosFolder = getOrCreatePhotosFolder_(jobNumber);
     const jobFolder    = getJobFolder_(jobNumber);
 
-    const docName = 'Battery Install — Site Photos — ' + jobNumber +
+    const docName = 'Site Photos — ' + jobNumber +
                     (jobInfo ? ' — ' + jobInfo.clientName : '');
     const doc  = DocumentApp.create(docName);
     const body = doc.getBody();
 
     // ── Header ───────────────────────────────────────────────────────────────
-    const h1 = body.appendParagraph('HEA Group — Battery Install Site Photos');
+    const h1 = body.appendParagraph('HEA Group — Site Photos');
     h1.setHeading(DocumentApp.ParagraphHeading.HEADING1);
 
     body.appendParagraph('Job: ' + jobNumber).setAttributes({
@@ -176,79 +275,99 @@ function generateAsBuilts(jobNumber) {
     }
     body.appendHorizontalRule();
 
-    // ── Battery locations ────────────────────────────────────────────────────
-    body.appendParagraph('Proposed Battery / Inverter Locations')
-        .setHeading(DocumentApp.ParagraphHeading.HEADING2);
+    // ── All non-switchboard categories (dynamic based on what was uploaded) ──
+    // Build an ordered list of section headings + category IDs from what's in Drive
+    var SECTION_LABELS = {
+      roof:     'Roof',
+      battery:  'Proposed Battery / Inverter Locations',
+      ev:       'EV Charger',
+      general:  'Installation Area',
+    };
+    var CAT_LABELS = {
+      roof_overview:       'Roof Overview',
+      roof_detail:         'Roof Material',
+      proposed_panel_area: 'Proposed Panel Area',
+      cable_run:           'Cable Run Path',
+      existing_inverter:   'Existing Inverter',
+      battery_location_1:  'Proposed Battery Location 1',
+      battery_location_2:  'Proposed Battery Location 2',
+      battery_location_3:  'Proposed Battery Location 3',
+      ev_charger_location: 'Proposed EV Charger Location',
+      ev_cable_path:       'EV Cable Path',
+      proposed_location:   'Proposed Installation Area',
+    };
 
-    body.appendParagraph('AS/NZS 5139:2019+A1:2025 compliance assessment:').setAttributes({
-      [DocumentApp.Attribute.ITALIC]:           true,
-      [DocumentApp.Attribute.FOREGROUND_COLOR]: '#555555',
+    // Determine which non-switchboard categories have content
+    var allCatIds = Object.keys(filesByCategory).concat(Object.keys(complianceByCategory));
+    var seen = {};
+    var orderedCats = [];
+    allCatIds.forEach(function(id) {
+      if (id !== 'switchboard' && !seen[id]) {
+        seen[id] = true;
+        orderedCats.push(id);
+      }
     });
+    orderedCats.sort();
 
-    ['battery_location_1', 'battery_location_2', 'battery_location_3'].forEach(function(catId, idx) {
-      const label = 'Proposed Location ' + (idx + 1) + (idx === 2 ? ' (optional)' : '');
-      body.appendParagraph(label).setHeading(DocumentApp.ParagraphHeading.HEADING3);
+    if (orderedCats.length > 0) {
+      orderedCats.forEach(function(catId) {
+        var catLabel = CAT_LABELS[catId] || catId;
+        body.appendParagraph(catLabel).setHeading(DocumentApp.ParagraphHeading.HEADING2);
 
-      // Compliance result
-      const cr = complianceByCategory[catId];
-      if (cr && !cr.error) {
-        const overall = cr.overall_result || 'needs_manual_review';
-        const icon    = overall === 'pass' ? '✅' : overall === 'fail' ? '❌' : '⚠️';
-        const verdict = overall === 'pass' ? 'COMPLIANT' : overall === 'fail' ? 'NON-COMPLIANT' : 'NEEDS REVIEW';
-        const colour  = overall === 'pass' ? '#16a34a' : overall === 'fail' ? '#dc2626' : '#d97706';
+        // Compliance result (battery locations only)
+        if (catId.startsWith('battery_location')) {
+          var cr = complianceByCategory[catId];
+          if (cr && !cr.error) {
+            var overall = cr.overall_result || 'needs_manual_review';
+            var icon    = overall === 'pass' ? '✅' : overall === 'fail' ? '❌' : '⚠️';
+            var verdict = overall === 'pass' ? 'COMPLIANT' : overall === 'fail' ? 'NON-COMPLIANT' : 'NEEDS REVIEW';
+            var colour  = overall === 'pass' ? '#16a34a' : overall === 'fail' ? '#dc2626' : '#d97706';
 
-        body.appendParagraph(icon + '  AS/NZS 5139 Result: ' + verdict).setAttributes({
-          [DocumentApp.Attribute.BOLD]:            true,
-          [DocumentApp.Attribute.FOREGROUND_COLOR]: colour,
-        });
-
-        if (cr.location_description) {
-          body.appendParagraph(cr.location_description).setAttributes({
-            [DocumentApp.Attribute.ITALIC]:           true,
-            [DocumentApp.Attribute.FOREGROUND_COLOR]: '#555555',
-          });
-        }
-
-        const s = cr.summary || {};
-        body.appendParagraph(
-          'Fails: ' + (s.hard_fail_count || 0) +
-          '   Needs review: ' + (s.manual_review_count || 0) +
-          '   Pass: ' + (s.pass_count || 0)
-        ).setAttributes({ [DocumentApp.Attribute.FONT_SIZE]: 10 });
-
-        // List failing and review checks
-        (cr.checks || []).forEach(function(check) {
-          if (check.result === 'fail' || check.result === 'needs_manual_review') {
-            const prefix  = check.result === 'fail' ? '❌  ' : '⚠️  ';
-            const clr     = check.result === 'fail' ? '#dc2626' : '#d97706';
-            body.appendParagraph(prefix + check.rule_id + ': ' + check.reason).setAttributes({
-              [DocumentApp.Attribute.FONT_SIZE]:        10,
-              [DocumentApp.Attribute.FOREGROUND_COLOR]: clr,
+            body.appendParagraph(icon + '  AS/NZS 5139 Result: ' + verdict).setAttributes({
+              [DocumentApp.Attribute.BOLD]:             true,
+              [DocumentApp.Attribute.FOREGROUND_COLOR]: colour,
+            });
+            if (cr.location_description) {
+              body.appendParagraph(cr.location_description).setAttributes({
+                [DocumentApp.Attribute.ITALIC]:           true,
+                [DocumentApp.Attribute.FOREGROUND_COLOR]: '#555555',
+              });
+            }
+            var s = cr.summary || {};
+            body.appendParagraph(
+              'Fails: ' + (s.hard_fail_count || 0) +
+              '   Needs review: ' + (s.manual_review_count || 0) +
+              '   Pass: ' + (s.pass_count || 0)
+            ).setAttributes({ [DocumentApp.Attribute.FONT_SIZE]: 10 });
+            (cr.checks || []).forEach(function(check) {
+              if (check.result === 'fail' || check.result === 'needs_manual_review') {
+                var prefix = check.result === 'fail' ? '❌  ' : '⚠️  ';
+                var clr    = check.result === 'fail' ? '#dc2626' : '#d97706';
+                body.appendParagraph(prefix + check.rule_id + ': ' + check.reason).setAttributes({
+                  [DocumentApp.Attribute.FONT_SIZE]:        10,
+                  [DocumentApp.Attribute.FOREGROUND_COLOR]: clr,
+                });
+              }
+            });
+          } else if (cr && cr.error) {
+            body.appendParagraph('⚠️  Compliance check unavailable: ' + cr.error).setAttributes({
+              [DocumentApp.Attribute.FOREGROUND_COLOR]: '#d97706',
             });
           }
-        });
-      } else if (cr && cr.error) {
-        body.appendParagraph('⚠️  Compliance check unavailable: ' + cr.error).setAttributes({
-          [DocumentApp.Attribute.FOREGROUND_COLOR]: '#d97706',
-        });
-      } else {
-        body.appendParagraph('— No compliance data —').setAttributes({
-          [DocumentApp.Attribute.FOREGROUND_COLOR]: '#999999',
-        });
-      }
+        }
 
-      // Photos
-      const locFiles = filesByCategory[catId] || [];
-      if (locFiles.length === 0) {
-        body.appendParagraph('— No photo uploaded —').setAttributes({
-          [DocumentApp.Attribute.FOREGROUND_COLOR]: '#999999',
-        });
-      } else {
-        embedPhotos_(body, locFiles);
-      }
-
-      body.appendHorizontalRule();
-    });
+        // Photos for this category
+        var locFiles = filesByCategory[catId] || [];
+        if (locFiles.length === 0) {
+          body.appendParagraph('— No photo uploaded —').setAttributes({
+            [DocumentApp.Attribute.FOREGROUND_COLOR]: '#999999',
+          });
+        } else {
+          embedPhotos_(body, locFiles);
+        }
+        body.appendHorizontalRule();
+      });
+    }
 
     // ── Installer notes ──────────────────────────────────────────────────────
     body.appendParagraph('Installer Notes').setHeading(DocumentApp.ParagraphHeading.HEADING2);
@@ -528,20 +647,22 @@ function loadComplianceResults_(photosFolder) {
 }
 
 function loadPhotosByCategory_(photosFolder) {
-  const map = {};
+  var map = {};
   try {
-    const files = photosFolder.getFiles();
+    var files = photosFolder.getFiles();
     while (files.hasNext()) {
-      const f    = files.next();
-      const name = f.getName();
+      var f    = files.next();
+      var name = f.getName();
       if (name.endsWith('.json')) continue;
-      PHOTO_CATEGORIES.forEach(function(cat) {
-        const prefix = cat.id.replace(/_/g, '-') + '_';
-        if (name.startsWith(prefix)) {
-          if (!map[cat.id]) map[cat.id] = [];
-          map[cat.id].push(f);
-        }
-      });
+      // Filename format: {catId-with-dashes}_{timestamp}_{original}
+      // e.g. battery-location-1_2024-01-15T12-30-00_photo.jpg
+      var firstUnderscore = name.indexOf('_');
+      if (firstUnderscore > 0) {
+        var catIdDashed = name.substring(0, firstUnderscore);
+        var catId = catIdDashed.replace(/-/g, '_');
+        if (!map[catId]) map[catId] = [];
+        map[catId].push(f);
+      }
     }
   } catch (err) {
     console.error('loadPhotosByCategory_ error:', err);

@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
 
   // Photo portal link — all service types, as long as we have a job number and the portal is configured
   const photoPortalLink = PHOTO_PORTAL_URL && gasJobNumber
-    ? `${PHOTO_PORTAL_URL}?jobNumber=${gasJobNumber}`
+    ? `${PHOTO_PORTAL_URL}?jobNumber=${gasJobNumber}&service=${encodeURIComponent(d.service)}`
     : null
 
   const firstName = d.name.split(" ")[0]

@@ -130,19 +130,18 @@ jobs:
           mkdir -p ~/.config/clasp
           echo "$TOKEN" > ~/.config/clasp/credentials.json
 
-      - name: Inject script ID from secret and push
+      - name: Push and deploy to Google Apps Script
         working-directory: GAS/PhotoPortal
         run: |
-          SCRIPT_ID="${{ secrets.PHOTO_PORTAL_SCRIPT_ID }}"
-          if [ -z "$SCRIPT_ID" ]; then
-            echo "::warning::PHOTO_PORTAL_SCRIPT_ID secret not set — skipping PhotoPortal deploy"
-            echo "Add it at: Settings → Secrets → Actions → New repository secret"
-            exit 0
-          fi
-          echo "{\"scriptId\": \"${SCRIPT_ID}\", \"rootDir\": \".\"}" > .clasp.json
           set -xe
+          echo "=== .clasp.json ==="
+          cat .clasp.json
+          echo "=== Pushing code… ==="
           clasp push --force
-          echo "=== PhotoPortal push complete ==="
+          echo "=== Creating new version and updating deployment… ==="
+          clasp deploy -i "AKfycbwERmJbdTrnpM_-ABgXGtRolMCzSG2nDWJNyJjhfDx-baSI1BJWiehTdCM9qW0VSWU" \
+            --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "=== PhotoPortal deploy complete — live immediately ==="
 
   # ── Deploy HEA Solar Analyser ─────────────────────────────────────────────
   deploy-solar-analyser:

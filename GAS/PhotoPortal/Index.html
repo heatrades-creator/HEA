@@ -265,26 +265,27 @@
     .req-arrow.open { transform: rotate(180deg); }
     .req-body { display: none; padding: 0 16px 16px; border-top: 1px solid #f0f2f6; }
     .req-body.open { display: block; }
-    .req-sub { margin: 12px 0 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #888; }
-    .req-list { list-style: none; padding: 0; margin: 0; }
-    .req-list li { font-size: 12px; color: #374151; line-height: 1.55; padding: 3px 0 3px 20px; position: relative; }
-    .req-list.fail li::before { content: '\2715'; position: absolute; left: 2px; color: #dc2626; font-weight: 700; }
-    .req-list.pass li::before { content: '\2714'; position: absolute; left: 2px; color: #16a34a; font-weight: 700; }
+    .req-brief {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.55;
+      margin: 12px 0 4px;
+      font-style: italic;
+    }
+    .req-sub { margin: 14px 0 6px; font-size: 13px; font-weight: 700; color: #1a1a1a; }
+    .req-list { list-style: disc; padding-left: 20px; margin: 0 0 4px; }
+    .req-list li { font-size: 13px; color: #374151; line-height: 1.6; padding: 1px 0; }
+    .req-sub-list { list-style: disc; padding-left: 18px; margin: 4px 0 0; }
+    .req-sub-list li { font-size: 12px; color: #555; }
     .req-callout {
       background: #fffbea;
       border: 1px solid #fcd34d;
       border-radius: 8px;
       padding: 11px 14px;
-      font-size: 12px;
+      font-size: 13px;
       color: #92400e;
-      margin-top: 12px;
-      line-height: 1.5;
-    }
-    .req-rooms {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #555;
-      line-height: 1.6;
+      margin-top: 14px;
+      line-height: 1.55;
     }
 
     /* ── Submit section ── */
@@ -451,34 +452,57 @@ function buildRequirementsPanel() {
   body.className = 'req-body';
   body.id = uid + '-body';
   body.innerHTML =
-    '<p class="req-sub">Must NOT be installed</p>' +
-    '<ul class="req-list fail">' +
-      '<li>Inside living areas — bedrooms, lounge, kitchen, dining room, study</li>' +
-      '<li>Within 600 mm of windows, doors or vents that open into a habitable room</li>' +
-      '<li>Within 600 mm of exits or escape paths</li>' +
-      '<li>Within 600 mm of ignition sources — gas meters, air conditioners, open flames</li>' +
-      '<li>Directly below windows or openings to habitable rooms</li>' +
-      '<li>Where it blocks a walkway, exit, or access area</li>' +
-      '<li>Where it could be hit by a vehicle (e.g. front of garage) without a physical barrier</li>' +
+    '<div class="req-brief">Batteries must be kept 600 mm away from openings to habitable rooms, but can be closer to non-habitable areas. If clearances can\u2019t be met, a 300 mm offset or barrier can be used.</div>' +
+
+    '<p class="req-sub">\u2705 Simple Battery Location Rules</p>' +
+    '<ul class="req-list">' +
+      '<li>Must NOT be installed inside living areas (bedrooms, lounge rooms, kitchens)</li>' +
+      '<li>Must be at least 600 mm away from windows, doors, or vents that lead to habitable rooms</li>' +
+      '<li>Can be within 600 mm of windows/doors if they lead to non-habitable areas (e.g. garage, laundry)</li>' +
+      '<li>Must be at least 600 mm away from exits or escape paths</li>' +
+      '<li>Must be at least 600 mm away from ignition sources (e.g. gas meters, air conditioners, switchboards)</li>' +
+      '<li>Must NOT be installed directly under windows or openings to habitable rooms</li>' +
+      '<li>Must be installed on a non-combustible surface (e.g. brick, concrete, cement sheet)</li>' +
+      '<li>Must have clear space around it for airflow and servicing</li>' +
+      '<li>Must be protected from weather unless rated for outdoor use</li>' +
+      '<li>Must NOT block walkways, exits, or access areas</li>' +
+      '<li>Must be installed where it is protected from damage (e.g. vehicles)</li>' +
+      '<li>If installed on or near a house wall, that wall may need to be fire-resistant or protected</li>' +
+      '<li>If the 600 mm clearance cannot be achieved, the battery can still be installed by:' +
+        '<ul class="req-sub-list">' +
+          '<li>Offsetting it at least 300 mm, or</li>' +
+          '<li>Installing a non-combustible barrier or shield</li>' +
+        '</ul>' +
+      '</li>' +
     '</ul>' +
-    '<p class="req-sub">Good locations</p>' +
-    '<ul class="req-list pass">' +
-      '<li>Garages, laundries, storage rooms, sheds, utility rooms</li>' +
-      '<li>Near windows or doors that lead to non-habitable areas (garage, laundry)</li>' +
-      '<li>On non-combustible surfaces — brick, concrete, cement sheet</li>' +
-      '<li>With clear airflow and enough room to service it</li>' +
-      '<li>Protected from weather (or the unit is rated for outdoor use)</li>' +
+
+    '<p class="req-sub">\ud83c\udfe0 What is a Habitable Room?</p>' +
+    '<ul class="req-list">' +
+      '<li>Bedrooms</li>' +
+      '<li>Living rooms / lounge rooms</li>' +
+      '<li>Dining rooms</li>' +
+      '<li>Kitchens</li>' +
+      '<li>Family rooms</li>' +
+      '<li>Rumpus rooms</li>' +
+      '<li>Studies / home offices</li>' +
+      '<li>Playrooms</li>' +
+      '<li>Sunrooms / home theatres</li>' +
     '</ul>' +
+
+    '<p class="req-sub">\ud83e\uddf0 What is a Non-Habitable Room?</p>' +
+    '<ul class="req-list">' +
+      '<li>Garages</li>' +
+      '<li>Laundries</li>' +
+      '<li>Bathrooms / toilets</li>' +
+      '<li>Hallways / corridors</li>' +
+      '<li>Storage rooms / cupboards</li>' +
+      '<li>Sheds / outbuildings</li>' +
+      '<li>Utility rooms</li>' +
+    '</ul>' +
+
     '<div class="req-callout">' +
-      '<strong>Tight on space?</strong> If the 600 mm clearance can\u2019t be met, the battery can still be installed ' +
-      'by offsetting it at least 300 mm, or by fitting a non-combustible barrier or shield between the battery and the ' +
-      'opening. Our team will assess this from your photos.' +
-    '</div>' +
-    '<div class="req-rooms">' +
-      '<strong>Habitable rooms</strong> (need 600 mm clearance): ' +
-      'Bedrooms \u00b7 Living rooms \u00b7 Dining rooms \u00b7 Kitchens \u00b7 Family rooms \u00b7 Studies \u00b7 Playrooms \u00b7 Sunrooms<br>' +
-      '<strong>Non-habitable</strong> (fine to be nearby): ' +
-      'Garages \u00b7 Laundries \u00b7 Bathrooms \u00b7 Hallways \u00b7 Storage rooms \u00b7 Sheds' +
+      '\ud83d\udc4d <strong>Plain-English takeaway:</strong> Keep batteries away from areas where people live and sleep. ' +
+      'Being near a garage or laundry is fine, and if space is tight, a 300 mm offset or barrier usually solves it.' +
     '</div>';
 
   btn.onclick = function() {

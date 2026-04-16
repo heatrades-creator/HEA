@@ -106,6 +106,46 @@ jobs:
             clasp push --force
           fi
 
+  # ── Deploy HEA Battery Photo Portal ──────────────────────────────────────
+  deploy-photo-portal:
+    name: Push HEA Battery Photo Portal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp (latest)
+        run: npm install -g @google/clasp
+
+      - name: Write credentials to all possible locations
+        run: |
+          set -e
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
+          echo "$TOKEN" > ~/.clasprc.json
+          mkdir -p ~/.config/@google/clasp
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+          mkdir -p ~/.config/clasp
+          echo "$TOKEN" > ~/.config/clasp/credentials.json
+
+      - name: Skip if script ID not configured yet
+        working-directory: GAS/PhotoPortal
+        run: |
+          if grep -q "REPLACE_WITH_NEW_SCRIPT_ID" .clasp.json; then
+            echo "PhotoPortal script ID not configured — skipping"
+            exit 0
+          fi
+
+      - name: Push to Google Apps Script
+        working-directory: GAS/PhotoPortal
+        run: |
+          if ! grep -q "REPLACE_WITH_NEW_SCRIPT_ID" .clasp.json; then
+            set -xe
+            clasp push --force
+          fi
+
   # ── Deploy HEA Solar Analyser ─────────────────────────────────────────────
   deploy-solar-analyser:
     name: Push HEA Solar Analyser

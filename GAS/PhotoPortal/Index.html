@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HEA — Site Photos</title>
+  <title>HEA — Battery Install Photos</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,24 +31,17 @@
       border-radius: 6px;
       letter-spacing: 1px;
     }
-    .hdr-title {
-      color: white;
-      font-size: 15px;
-      font-weight: 600;
-    }
-    .hdr-sub {
-      color: #888;
-      font-size: 12px;
-    }
+    .hdr-title { color: white;  font-size: 15px; font-weight: 600; }
+    .hdr-sub   { color: #888;   font-size: 12px; }
 
-    /* ── Content ── */
+    /* ── Layout ── */
     .wrap {
       max-width: 680px;
       margin: 0 auto;
       padding: 20px 16px 60px;
     }
 
-    /* ── Job info banner ── */
+    /* ── Job banner ── */
     .job-banner {
       background: white;
       border: 1px solid #e5e9f0;
@@ -58,9 +51,9 @@
       margin-bottom: 20px;
     }
     .job-banner h2 { font-size: 16px; margin-bottom: 4px; }
-    .job-banner p  { font-size: 13px; color: #555; }
+    .job-banner p  { font-size: 13px; color: #555; margin-top: 2px; }
 
-    /* ── Section intro ── */
+    /* ── Intro ── */
     .intro {
       background: white;
       border: 1px solid #e5e9f0;
@@ -68,15 +61,31 @@
       padding: 18px 20px;
       margin-bottom: 24px;
     }
-    .intro h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .intro h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
     .intro p  { font-size: 13px; color: #555; line-height: 1.6; }
+    .intro ul {
+      margin: 10px 0 0 18px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.8;
+    }
+
+    /* ── Section heading ── */
+    .section-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #888;
+      margin: 28px 0 12px;
+    }
 
     /* ── Photo card ── */
     .photo-card {
       background: white;
       border: 1px solid #e5e9f0;
       border-radius: 12px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       overflow: hidden;
     }
     .photo-card-head {
@@ -113,9 +122,7 @@
       margin-top: 5px;
       line-height: 1.5;
     }
-    .photo-card-body {
-      padding: 14px 18px;
-    }
+    .photo-card-body { padding: 14px 18px; }
 
     /* ── Upload area ── */
     .upload-area {
@@ -127,55 +134,110 @@
       transition: border-color .2s, background .2s;
       position: relative;
     }
-    .upload-area:hover { border-color: #ffd100; background: #fffbea; }
-    .upload-area.has-file { border-color: #22c55e; border-style: solid; background: #f0fdf4; }
-    .upload-area.uploading { border-color: #ffd100; background: #fffbea; }
+    .upload-area:hover          { border-color: #ffd100; background: #fffbea; }
+    .upload-area.has-file       { border-color: #22c55e; border-style: solid; background: #f0fdf4; }
+    .upload-area.uploading      { border-color: #ffd100; background: #fffbea; }
     .upload-area input[type=file] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
+      position: absolute; inset: 0; opacity: 0; cursor: pointer;
+      width: 100%; height: 100%;
     }
-    .upload-icon { font-size: 28px; margin-bottom: 6px; }
+    .upload-icon  { font-size: 28px; margin-bottom: 6px; }
     .upload-label { font-size: 13px; color: #374151; font-weight: 500; }
     .upload-hint  { font-size: 11px; color: #9ca3af; margin-top: 3px; }
 
     /* ── Preview ── */
     .preview-img {
       width: 100%;
-      max-height: 200px;
+      max-height: 220px;
       object-fit: cover;
       border-radius: 8px;
       margin-top: 10px;
       display: none;
     }
-    .status-msg {
-      font-size: 12px;
-      margin-top: 8px;
-      font-weight: 500;
-    }
-    .status-ok   { color: #16a34a; }
-    .status-err  { color: #dc2626; }
-    .status-prog { color: #d97706; }
+    .status-msg       { font-size: 12px; margin-top: 8px; font-weight: 500; }
+    .status-ok        { color: #16a34a; }
+    .status-err       { color: #dc2626; }
+    .status-prog      { color: #d97706; }
 
-    /* ── Progress bar ── */
-    .progress-wrap { margin-top: 8px; }
-    .progress-bar {
-      height: 4px;
-      background: #e5e9f0;
-      border-radius: 2px;
+    /* ── Compliance card ── */
+    .compliance-wrap { margin-top: 12px; display: none; }
+
+    .compliance-card {
+      border: 1px solid #e5e9f0;
+      border-radius: 10px;
       overflow: hidden;
     }
-    .progress-fill {
-      height: 100%;
-      background: #ffd100;
-      width: 0%;
-      transition: width .3s;
+    .compliance-card.pass   { border-color: #86efac; background: #f0fdf4; }
+    .compliance-card.fail   { border-color: #fca5a5; background: #fff5f5; }
+    .compliance-card.review { border-color: #fcd34d; background: #fffbea; }
+    .compliance-card.loading {
+      background: #fffbea;
+      border-color: #ffd100;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .6; } }
+
+    .compliance-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 14px 10px;
+    }
+    .compliance-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .compliance-title {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .compliance-desc {
+      font-size: 12px;
+      color: #555;
+      margin-top: 3px;
+      line-height: 1.4;
     }
 
-    /* ── Generate ASBUILTS button ── */
+    .compliance-counts {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 0 14px 10px;
+    }
+    .count-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+    .count-pill.fail   { background: #fee2e2; color: #dc2626; }
+    .count-pill.review { background: #fef3c7; color: #d97706; }
+    .count-pill.pass   { background: #dcfce7; color: #16a34a; }
+
+    .compliance-issues {
+      border-top: 1px solid rgba(0,0,0,.06);
+      padding: 8px 14px 10px;
+    }
+    .check-row {
+      font-size: 11px;
+      line-height: 1.5;
+      padding: 2px 0;
+    }
+    .check-row.fail-row   { color: #dc2626; }
+    .check-row.review-row { color: #b45309; }
+
+    /* ── Tips box ── */
+    .tips-box {
+      background: #f8faff;
+      border: 1px solid #dbeafe;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #1e40af;
+      line-height: 1.6;
+    }
+    .tips-box strong { display: block; margin-bottom: 4px; font-size: 12px; }
+
+    /* ── Submit section ── */
     .gen-section {
       background: white;
       border: 1px solid #e5e9f0;
@@ -200,7 +262,6 @@
     }
     .btn-gen:hover:not(:disabled) { background: #e6bc00; }
     .btn-gen:disabled { opacity: .5; cursor: not-allowed; }
-
     .result-link {
       display: inline-block;
       margin-top: 16px;
@@ -213,7 +274,7 @@
       font-size: 14px;
     }
 
-    /* ── No job banner ── */
+    /* ── No-job banner ── */
     .no-job {
       background: #fff3cd;
       border: 1px solid #ffd100;
@@ -224,223 +285,393 @@
     .no-job p { font-size: 13px; color: #856404; }
 
     /* ── Footer ── */
-    .foot {
-      text-align: center;
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 40px;
-    }
+    .foot { text-align: center; font-size: 11px; color: #9ca3af; margin-top: 40px; }
   </style>
 </head>
 <body>
 
-<!-- ── Header ── -->
+<!-- Header -->
 <div class="hdr">
   <div class="hdr-logo">HEA</div>
   <div>
-    <div class="hdr-title">Site Photo Upload</div>
+    <div class="hdr-title">Battery Install — Site Photos</div>
     <div class="hdr-sub">Heffernan Electrical Automation</div>
   </div>
 </div>
 
 <div class="wrap">
 
-  <!-- ── Job info (server-rendered) ── -->
+  <!-- Job banner (server-rendered) -->
   <? if (jobInfo) { ?>
     <div class="job-banner">
       <h2>Job <?= jobInfo.jobNumber ?> — <?= jobInfo.clientName ?></h2>
       <p><?= jobInfo.address ?></p>
-      <?if (jobInfo.phone) {?><p>📞 <?= jobInfo.phone ?></p><?}?>
+      <?if (jobInfo.phone) {?><p><?= jobInfo.phone ?></p><?}?>
     </div>
   <? } else if (jobNumber) { ?>
     <div class="job-banner" style="border-left-color:#dc2626;">
       <h2 style="color:#dc2626;">Job <?= jobNumber ?> not found</h2>
-      <p>Please check the link you were given and try again, or call Jesse on 0481 267 812.</p>
+      <p>Please check the link or call Jesse on 0481 267 812.</p>
     </div>
   <? } else { ?>
     <div class="no-job">
-      <p><strong>No job number in link.</strong> Please use the link Jesse sent you — it should end in <code>?jobNumber=TSxxx</code></p>
+      <p><strong>No job number in link.</strong> Please use the link Jesse sent — it should end in <code>?jobNumber=TSxxx</code></p>
     </div>
   <? } ?>
 
-  <!-- ── Intro ── -->
+  <!-- Intro -->
   <div class="intro">
-    <h3>📸 Before we start — what we need</h3>
-    <p>
-      Upload photos of the areas listed below. This helps our install team plan everything before they arrive
-      — no surprises on the day, faster installation, and accurate quote for any extras.
-    </p>
-    <p style="margin-top:8px;"><strong>Tips:</strong> Good lighting, close enough to read labels, use your phone's camera in landscape for wider shots.</p>
+    <h3>What we need from you</h3>
+    <p>Before we visit, we need a few photos so our team can plan the installation properly — no surprises on the day.</p>
+    <ul>
+      <li><strong>Switchboard</strong> — open and closed, showing all circuit breakers</li>
+      <li><strong>3 spots you'd consider</strong> for the battery and inverter — we'll check each one for compliance with the Australian installation standard (AS/NZS 5139) on the spot</li>
+    </ul>
+    <p style="margin-top:10px; font-size:12px; color:#888;">Good shots: landscape orientation, good lighting, step back so the whole area is in frame.</p>
   </div>
 
-  <!-- ── Photo cards (JS rendered) ── -->
+  <!-- Cards rendered by JS -->
   <div id="cards"></div>
 
-  <!-- ── Generate ASBUILTS ── -->
-  <div class="gen-section" id="genSection">
-    <h3>🏗️ Generate Installer Document</h3>
-    <p>Once you've uploaded your photos, click below to create the ASBUILTS document for our installation team.</p>
+  <!-- Submit -->
+  <div class="gen-section">
+    <h3>All done?</h3>
+    <p>Once your photos are uploaded, click below to send everything to the HEA install team.</p>
     <button class="btn-gen" id="genBtn" onclick="generateAsBuilts()">
-      Generate ASBUILTS Document
+      Submit &amp; Generate Installer Document
     </button>
     <div id="genResult"></div>
   </div>
 
-  <div class="foot">
-    HEA Group · Bendigo's Solar Specialists · hea-group.com.au · 0481 267 812
-  </div>
+  <div class="foot">HEA Group · Bendigo's Solar &amp; Battery Specialists · hea-group.com.au · 0481 267 812</div>
 </div>
 
 <script>
-  // ── Data from server ──────────────────────────────────────────────────────
-  var JOB_NUMBER  = <?= JSON.stringify(jobNumber) ?>;
-  var CATEGORIES  = <?= categories ?>;
+// ── Server data ──────────────────────────────────────────────────────────────
+var JOB_NUMBER = <?= JSON.stringify(jobNumber) ?>;
+var CATEGORIES = <?= categories ?>;
 
-  // Upload state
-  var uploadState = {};  // { [categoryId]: 'pending' | 'uploading' | 'done' | 'error' }
-  CATEGORIES.forEach(function(c) { uploadState[c.id] = 'pending'; });
+// ── State ────────────────────────────────────────────────────────────────────
+// 'pending' | 'uploading' | 'done' | 'error'
+var uploadState = {};
+CATEGORIES.forEach(function(c) { uploadState[c.id] = 'pending'; });
 
-  // ── Render cards ──────────────────────────────────────────────────────────
-  function renderCards() {
-    var container = document.getElementById('cards');
-    container.innerHTML = '';
+var msgTimers = {};  // cycling message intervals per card
 
-    CATEGORIES.forEach(function(cat) {
-      var state = uploadState[cat.id];
-      var card  = document.createElement('div');
-      card.className = 'photo-card';
-      card.id = 'card-' + cat.id;
+// ── Render all cards ─────────────────────────────────────────────────────────
+function renderCards() {
+  var container = document.getElementById('cards');
+  container.innerHTML = '';
 
-      card.innerHTML = [
-        '<div class="photo-card-head">',
-          '<div class="label">',
-            cat.label,
-            cat.required
-              ? '<span class="badge-req">Required</span>'
-              : '<span class="badge-opt">Optional</span>',
-          '</div>',
-          '<p class="instruction">' + cat.instruction + '</p>',
-        '</div>',
-        '<div class="photo-card-body">',
-          '<div class="upload-area ' + (state === 'done' ? 'has-file' : state === 'uploading' ? 'uploading' : '') + '" id="area-' + cat.id + '">',
-            '<input type="file" accept="image/*" capture="environment" id="file-' + cat.id + '" onchange="handleFileChange(\'' + cat.id + '\', this)" />',
-            '<div class="upload-icon">' + (state === 'done' ? '✅' : '📷') + '</div>',
-            '<div class="upload-label">' + (state === 'done' ? 'Photo uploaded' : 'Tap to take / choose photo') + '</div>',
-            '<div class="upload-hint">JPG or PNG · max 15 MB</div>',
-            state === 'uploading' ? '<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div></div>' : '',
-          '</div>',
-          '<img class="preview-img" id="preview-' + cat.id + '" />',
-          '<p class="status-msg" id="status-' + cat.id + '"></p>',
-        '</div>',
-      ].join('');
+  // Switchboard section
+  var swDiv = document.createElement('div');
+  swDiv.innerHTML = '<p class="section-heading">Your Switchboard</p>';
+  container.appendChild(swDiv);
 
-      container.appendChild(card);
-    });
-  }
-
-  renderCards();
-
-  // ── File selected ─────────────────────────────────────────────────────────
-  function handleFileChange(categoryId, input) {
-    if (!input.files || !input.files[0]) return;
-    var file = input.files[0];
-
-    // Show preview immediately
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      var preview = document.getElementById('preview-' + categoryId);
-      if (preview) {
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-      }
-      // Start upload with full base64 data
-      startUpload(categoryId, e.target.result, file.type, file.name);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  // ── Upload to GAS ─────────────────────────────────────────────────────────
-  function startUpload(categoryId, base64Data, mimeType, fileName) {
-    if (!JOB_NUMBER) {
-      setStatus(categoryId, 'error', 'No job number — cannot upload');
-      return;
+  CATEGORIES.forEach(function(cat) {
+    if (cat.id === 'switchboard') {
+      container.appendChild(buildCard(cat));
     }
+  });
 
-    uploadState[categoryId] = 'uploading';
-    setArea(categoryId, 'uploading');
+  // Battery locations section
+  var batDiv = document.createElement('div');
+  batDiv.innerHTML = '<p class="section-heading">Proposed Battery / Inverter Locations</p>';
+  container.appendChild(batDiv);
+
+  var tips = document.createElement('div');
+  tips.className = 'tips-box';
+  tips.innerHTML = '<strong>Tips for a useful photo</strong>' +
+    'Step back so the whole wall is visible · Show what\'s nearby: windows, doors, hot water unit, ceiling · ' +
+    'Landscape (horizontal) works best · Good lighting — turn on the room lights';
+  container.appendChild(tips);
+
+  CATEGORIES.forEach(function(cat) {
+    if (cat.id !== 'switchboard') {
+      container.appendChild(buildCard(cat));
+    }
+  });
+}
+
+function buildCard(cat) {
+  var card = document.createElement('div');
+  card.className = 'photo-card';
+  card.id = 'card-' + cat.id;
+
+  var badgeHtml = cat.required
+    ? '<span class="badge-req">Required</span>'
+    : '<span class="badge-opt">Optional</span>';
+
+  var complianceHtml = cat.checkCompliance
+    ? '<div class="compliance-wrap" id="compliance-wrap-' + cat.id + '">' +
+        '<div class="compliance-card loading" id="compliance-' + cat.id + '">' +
+          '<div class="compliance-header">' +
+            '<div class="compliance-icon">⏳</div>' +
+            '<div><div class="compliance-title">Analysing location…</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    : '';
+
+  card.innerHTML =
+    '<div class="photo-card-head">' +
+      '<div class="label">' + cat.label + badgeHtml + '</div>' +
+      '<p class="instruction">' + cat.instruction + '</p>' +
+    '</div>' +
+    '<div class="photo-card-body">' +
+      '<div class="upload-area" id="area-' + cat.id + '">' +
+        '<input type="file" accept="image/*" capture="environment" ' +
+               'id="file-' + cat.id + '" onchange="handleFileChange(\'' + cat.id + '\', this)" />' +
+        '<div class="upload-icon">📷</div>' +
+        '<div class="upload-label">Tap to take or choose a photo</div>' +
+        '<div class="upload-hint">JPG or PNG · max 20 MB</div>' +
+      '</div>' +
+      '<img class="preview-img" id="preview-' + cat.id + '" />' +
+      '<p class="status-msg" id="status-' + cat.id + '"></p>' +
+      complianceHtml +
+    '</div>';
+
+  return card;
+}
+
+renderCards();
+
+// ── File selected ─────────────────────────────────────────────────────────────
+function handleFileChange(categoryId, input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+
+  // Show preview immediately, then resize and upload
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var preview = document.getElementById('preview-' + categoryId);
+    if (preview) {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    }
+    resizeForUpload(e.target.result, file.type, function(resizedDataUrl) {
+      startUpload(categoryId, resizedDataUrl, 'image/jpeg', file.name.replace(/\.[^.]+$/, '') + '.jpg');
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── Resize to max 1920px JPEG 85% before upload ───────────────────────────────
+function resizeForUpload(dataUrl, origType, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var MAX = 1920;
+    var w = img.width, h = img.height;
+    if (w > MAX || h > MAX) {
+      if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+      else        { w = Math.round(w * MAX / h); h = MAX; }
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width  = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', 0.85));
+  };
+  img.onerror = function() { callback(dataUrl); };  // fallback: use original
+  img.src = dataUrl;
+}
+
+// ── Upload ────────────────────────────────────────────────────────────────────
+function startUpload(categoryId, base64Data, mimeType, fileName) {
+  if (!JOB_NUMBER) {
+    setStatus(categoryId, 'error', '✗ No job number — cannot upload');
+    return;
+  }
+
+  uploadState[categoryId] = 'uploading';
+  setArea(categoryId, 'uploading');
+
+  // Determine if this slot runs compliance check
+  var cat = CATEGORIES.find(function(c) { return c.id === categoryId; });
+  if (cat && cat.checkCompliance) {
+    startMsgCycle(categoryId);
+  } else {
     setStatus(categoryId, 'progress', 'Uploading…');
+  }
 
-    google.script.run
-      .withSuccessHandler(function(result) {
-        if (result && result.success) {
-          uploadState[categoryId] = 'done';
-          setArea(categoryId, 'done');
-          setStatus(categoryId, 'ok', '✓ Uploaded: ' + result.filename);
-        } else {
-          uploadState[categoryId] = 'error';
-          setArea(categoryId, '');
-          setStatus(categoryId, 'error', '✗ Upload failed: ' + (result ? result.error : 'Unknown error'));
+  google.script.run
+    .withSuccessHandler(function(result) {
+      stopMsgCycle(categoryId);
+      if (result && result.success) {
+        uploadState[categoryId] = 'done';
+        setArea(categoryId, 'done');
+        setStatus(categoryId, 'ok', '✓ Uploaded');
+        if (result.compliance) {
+          showCompliance(categoryId, result.compliance);
         }
-      })
-      .withFailureHandler(function(err) {
+      } else {
         uploadState[categoryId] = 'error';
         setArea(categoryId, '');
-        setStatus(categoryId, 'error', '✗ Error: ' + err.message);
-      })
-      .uploadPhoto(JOB_NUMBER, categoryId, base64Data, mimeType, fileName);
+        setStatus(categoryId, 'error', '✗ Upload failed: ' + (result ? result.error : 'Unknown error'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      stopMsgCycle(categoryId);
+      uploadState[categoryId] = 'error';
+      setArea(categoryId, '');
+      setStatus(categoryId, 'error', '✗ Error: ' + err.message);
+    })
+    .uploadPhotoWithCheck(JOB_NUMBER, categoryId, base64Data, mimeType, fileName);
+}
+
+// ── Cycling status messages during upload+analysis ───────────────────────────
+var MSG_CYCLE = [
+  'Uploading photo…',
+  'Analysing location…',
+  'Checking AS/NZS 5139 compliance…',
+  'Almost done…',
+];
+
+function startMsgCycle(categoryId) {
+  var idx = 0;
+  setStatus(categoryId, 'progress', MSG_CYCLE[0]);
+  msgTimers[categoryId] = setInterval(function() {
+    idx = (idx + 1) % MSG_CYCLE.length;
+    setStatus(categoryId, 'progress', MSG_CYCLE[idx]);
+  }, 5000);
+}
+
+function stopMsgCycle(categoryId) {
+  if (msgTimers[categoryId]) {
+    clearInterval(msgTimers[categoryId]);
+    delete msgTimers[categoryId];
+  }
+}
+
+// ── Compliance result display ─────────────────────────────────────────────────
+function showCompliance(categoryId, compliance) {
+  var wrap = document.getElementById('compliance-wrap-' + categoryId);
+  var card = document.getElementById('compliance-' + categoryId);
+  if (!wrap || !card) return;
+
+  wrap.style.display = 'block';
+
+  var overall = (compliance && compliance.overall_result) || 'needs_manual_review';
+  var cls     = overall === 'pass' ? 'pass' : overall === 'fail' ? 'fail' : 'review';
+  var icon    = overall === 'pass' ? '✅' : overall === 'fail' ? '❌' : '⚠️';
+  var title   = overall === 'pass'
+    ? 'Location looks compliant'
+    : overall === 'fail'
+    ? 'Issues found — this location may not comply'
+    : 'Manual review needed';
+
+  var desc = (compliance && compliance.location_description) || '';
+  var s    = (compliance && compliance.summary) || {};
+
+  // Count pills
+  var pillsHtml = '';
+  if ((s.hard_fail_count || 0) > 0) {
+    pillsHtml += '<span class="count-pill fail">' + s.hard_fail_count + ' fail' + (s.hard_fail_count > 1 ? 's' : '') + '</span>';
+  }
+  if ((s.manual_review_count || 0) > 0) {
+    pillsHtml += '<span class="count-pill review">' + s.manual_review_count + ' need' + (s.manual_review_count > 1 ? '' : 's') + ' review</span>';
+  }
+  if ((s.pass_count || 0) > 0) {
+    pillsHtml += '<span class="count-pill pass">' + s.pass_count + ' pass</span>';
   }
 
-  function setArea(categoryId, stateClass) {
-    var area = document.getElementById('area-' + categoryId);
-    if (!area) return;
-    area.className = 'upload-area' + (stateClass ? ' ' + stateClass : '');
-    var icon  = area.querySelector('.upload-icon');
-    var label = area.querySelector('.upload-label');
-    if (icon)  icon.textContent  = stateClass === 'done' ? '✅' : stateClass === 'uploading' ? '⏳' : '📷';
-    if (label) label.textContent = stateClass === 'done' ? 'Photo uploaded — tap to replace' : stateClass === 'uploading' ? 'Uploading…' : 'Tap to take / choose photo';
-  }
-
-  function setStatus(categoryId, type, msg) {
-    var el = document.getElementById('status-' + categoryId);
-    if (!el) return;
-    el.className = 'status-msg status-' + (type === 'ok' ? 'ok' : type === 'error' ? 'err' : 'prog');
-    el.textContent = msg;
-  }
-
-  // ── Generate ASBUILTS ─────────────────────────────────────────────────────
-  function generateAsBuilts() {
-    if (!JOB_NUMBER) {
-      alert('No job number — cannot generate document.');
-      return;
+  // Failing / review checks
+  var issuesHtml = '';
+  var checks = (compliance && compliance.checks) || [];
+  checks.forEach(function(chk) {
+    if (chk.result === 'fail') {
+      issuesHtml += '<div class="check-row fail-row">❌ <strong>' + chk.rule_id + '</strong>: ' + escHtml(chk.reason) + '</div>';
+    } else if (chk.result === 'needs_manual_review') {
+      issuesHtml += '<div class="check-row review-row">⚠️ <strong>' + chk.rule_id + '</strong>: ' + escHtml(chk.reason) + '</div>';
     }
+  });
 
-    var btn = document.getElementById('genBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ Generating… (this takes ~30 seconds)';
+  var html =
+    '<div class="compliance-header">' +
+      '<div class="compliance-icon">' + icon + '</div>' +
+      '<div>' +
+        '<div class="compliance-title">' + title + '</div>' +
+        (desc ? '<div class="compliance-desc">' + escHtml(desc) + '</div>' : '') +
+      '</div>' +
+    '</div>';
 
-    var result = document.getElementById('genResult');
-    result.innerHTML = '<p style="color:#d97706;font-size:13px;margin-top:12px;">Building your ASBUILTS document with all uploaded photos…</p>';
-
-    google.script.run
-      .withSuccessHandler(function(res) {
-        btn.disabled = false;
-        btn.textContent = '✅ ASBUILTS Generated — Generate Again';
-        if (res && res.success) {
-          result.innerHTML = [
-            '<p style="color:#16a34a;font-size:13px;margin-top:12px;margin-bottom:12px;">✓ Document ready for your installation team.</p>',
-            '<a class="result-link" href="' + res.docUrl + '" target="_blank">Open ASBUILTS Document ↗</a>',
-          ].join('');
-        } else {
-          result.innerHTML = '<p style="color:#dc2626;font-size:13px;margin-top:12px;">✗ Failed: ' + (res ? res.error : 'Unknown error') + '</p>';
-        }
-      })
-      .withFailureHandler(function(err) {
-        btn.disabled = false;
-        btn.textContent = 'Generate ASBUILTS Document';
-        result.innerHTML = '<p style="color:#dc2626;font-size:13px;margin-top:12px;">✗ Error: ' + err.message + '</p>';
-      })
-      .generateAsBuilts(JOB_NUMBER);
+  if (pillsHtml) {
+    html += '<div class="compliance-counts">' + pillsHtml + '</div>';
   }
+
+  if (issuesHtml) {
+    html += '<div class="compliance-issues">' + issuesHtml + '</div>';
+  } else if (overall === 'pass') {
+    html += '<div class="compliance-issues" style="font-size:12px;color:#16a34a;">No issues detected from this photo. Our team will confirm on-site.</div>';
+  }
+
+  card.className = 'compliance-card ' + cls;
+  card.innerHTML = html;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ── Upload area helpers ───────────────────────────────────────────────────────
+function setArea(categoryId, stateClass) {
+  var area = document.getElementById('area-' + categoryId);
+  if (!area) return;
+  area.className = 'upload-area' + (stateClass ? ' ' + stateClass : '');
+  var icon  = area.querySelector('.upload-icon');
+  var label = area.querySelector('.upload-label');
+  if (icon)  icon.textContent  = stateClass === 'done' ? '✅' : stateClass === 'uploading' ? '⏳' : '📷';
+  if (label) label.textContent = stateClass === 'done'
+    ? 'Photo uploaded — tap to replace'
+    : stateClass === 'uploading'
+    ? 'Processing…'
+    : 'Tap to take or choose a photo';
+}
+
+function setStatus(categoryId, type, msg) {
+  var el = document.getElementById('status-' + categoryId);
+  if (!el) return;
+  el.className   = 'status-msg status-' + (type === 'ok' ? 'ok' : type === 'error' ? 'err' : 'prog');
+  el.textContent = msg;
+}
+
+// ── Generate ASBUILTS doc ─────────────────────────────────────────────────────
+function generateAsBuilts() {
+  if (!JOB_NUMBER) {
+    alert('No job number — cannot generate document.');
+    return;
+  }
+
+  var btn = document.getElementById('genBtn');
+  btn.disabled    = true;
+  btn.textContent = '⏳ Generating installer document… (~30 sec)';
+
+  var resultEl = document.getElementById('genResult');
+  resultEl.innerHTML = '<p style="color:#d97706;font-size:13px;margin-top:12px;">Building document with all photos and compliance results…</p>';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled    = false;
+      btn.textContent = 'Submit & Generate Installer Document';
+      if (res && res.success) {
+        resultEl.innerHTML =
+          '<p style="color:#16a34a;font-size:13px;margin-top:12px;margin-bottom:12px;">✓ Done! The install team has everything they need.</p>' +
+          '<a class="result-link" href="' + res.docUrl + '" target="_blank">Open Installer Document ↗</a>';
+      } else {
+        resultEl.innerHTML = '<p style="color:#dc2626;font-size:13px;margin-top:12px;">✗ Failed: ' + (res ? res.error : 'Unknown error') + '</p>';
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled    = false;
+      btn.textContent = 'Submit & Generate Installer Document';
+      resultEl.innerHTML = '<p style="color:#dc2626;font-size:13px;margin-top:12px;">✗ Error: ' + err.message + '</p>';
+    })
+    .generateAsBuilts(JOB_NUMBER);
+}
 </script>
 
 </body>

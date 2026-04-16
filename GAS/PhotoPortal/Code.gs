@@ -14,7 +14,9 @@
  */
 
 // ── Config ──────────────────────────────────────────────────────────────────
-const JOBS_SHEET_ID   = SpreadsheetApp.getActiveSpreadsheet().getId();
+// Standalone web app — cannot use getActiveSpreadsheet(). Set JOBS_SHEET_ID
+// in Project Settings → Script properties (value = the HEA Jobs spreadsheet ID).
+const JOBS_SHEET_ID   = PropertiesService.getScriptProperties().getProperty('JOBS_SHEET_ID') || '';
 const JOBS_SHEET_NAME = 'HEA Jobs';
 const CLIENTS_FOLDER  = '12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-';
 

@@ -359,20 +359,26 @@ var msgTimers = {};  // cycling message intervals per card
 // ── Populate intro list ───────────────────────────────────────────────────────
 function renderIntro() {
   var s = (SERVICE || '').toLowerCase();
-  var items = ['<li><strong>Switchboard</strong> — open door, all circuit breakers visible</li>'];
-  if (s.indexOf('battery') >= 0) {
-    items.push('<li><strong>3 proposed spots</strong> for the battery and inverter — each automatically checked against AS/NZS 5139</li>');
+  var isBattery = s.indexOf('battery') >= 0;
+  var isSolar   = s.indexOf('solar')   >= 0;
+  var isEV      = s.indexOf('ev') >= 0 || s.indexOf('charger') >= 0;
+
+  var items = ['<li><strong>Your switchboard</strong> — open door so we can see all the circuit breakers</li>'];
+  if (isBattery) {
+    items.push('<li><strong>1 to 3 spots</strong> you\'re considering for the battery — we check each one for compliance with Australian standards on the spot</li>');
+    items.push('<li><strong>Your electricity meter</strong> and outside wall (optional but helpful)</li>');
   }
-  if (s.indexOf('solar') >= 0) {
-    items.push('<li><strong>Roof photos</strong> — full view and close-up of the roofing material</li>');
-    items.push('<li><strong>Proposed panel area</strong> — the section of roof you\'re thinking of</li>');
+  if (isSolar) {
+    items.push('<li><strong>Your roof</strong> — full view, the surface material, and where you want the panels</li>');
+    items.push('<li><strong>Existing solar</strong> if you already have it</li>');
   }
-  if (s.indexOf('ev') >= 0) {
-    items.push('<li><strong>Proposed EV charger location</strong> — where you want the charger installed</li>');
+  if (isEV) {
+    items.push('<li><strong>Where you want the charger</strong> — the wall or area you have in mind</li>');
   }
-  if (s.indexOf('battery') < 0 && s.indexOf('solar') < 0 && s.indexOf('ev') < 0) {
-    items.push('<li><strong>Proposed installation area</strong> — where the equipment will go</li>');
+  if (!isBattery && !isSolar && !isEV) {
+    items.push('<li><strong>Where the equipment will go</strong> — step back so the full area is visible</li>');
   }
+
   var el = document.getElementById('intro-items');
   if (el) el.innerHTML = items.join('');
 }
@@ -384,16 +390,24 @@ function renderCards() {
 
   var SECTION_LABELS = {
     switchboard: 'Your Switchboard',
-    roof:        'Roof Photos',
-    battery:     'Proposed Battery / Inverter Locations',
-    ev:          'EV Charger Location',
+    roof:        'Your Roof',
+    battery:     'Where Would the Battery Go?',
+    site:        'A Few More Shots',
+    ev:          'Where Do You Want the Charger?',
     general:     'Installation Area',
   };
+  var SECTION_NOTES = {
+    battery: 'Add up to 3 spots you\u2019re considering \u2014 we\u2019ll automatically check each one against Australian installation standards (AS/NZS 5139). At least 1 location is required.',
+    roof:    'We need these to confirm the right mounting method and panel layout.',
+    site:    'Optional but helpful \u2014 these help us plan the job before we visit.',
+  };
   var SECTION_TIPS = {
-    roof:    "Landscape orientation · Stand back to show the full roof face · Good lighting · Include any obstructions",
-    battery: "Step back so the whole wall is visible · Show what\u2019s nearby: windows, doors, hot water unit, ceiling · Landscape works best · Turn on the room lights",
-    ev:      "Step back to show the full area · Include the path back to the switchboard if possible · Good lighting",
-    general: "Landscape orientation · Good lighting · Step back to show the full area",
+    switchboard: 'Open the door fully so all breakers are visible \u00b7 Good lighting \u00b7 Then a second shot of the closed door',
+    roof:    'Landscape (horizontal) works best \u00b7 Stand back to show the full roof face \u00b7 Good lighting',
+    battery: 'Step back so the whole wall is visible \u00b7 Include anything nearby \u2014 windows, doors, hot water system, ceiling \u00b7 Turn on the room lights',
+    site:    'Step back to show the full area \u00b7 Good lighting',
+    ev:      'Step back to show the full space \u00b7 Good lighting \u00b7 Show what\u2019s around the spot',
+    general: 'Landscape orientation \u00b7 Good lighting \u00b7 Step back to show the full area',
   };
 
   // Collect unique sections in order of first appearance
@@ -415,10 +429,17 @@ function renderCards() {
     heading.textContent = SECTION_LABELS[section] || section;
     container.appendChild(heading);
 
+    if (SECTION_NOTES[section]) {
+      var note = document.createElement('p');
+      note.style.cssText = 'font-size:13px;color:#555;margin:-4px 0 14px;line-height:1.5;';
+      note.textContent = SECTION_NOTES[section];
+      container.appendChild(note);
+    }
+
     if (SECTION_TIPS[section]) {
       var tips = document.createElement('div');
       tips.className = 'tips-box';
-      tips.innerHTML = '<strong>Photography tips</strong> \u2014 ' + SECTION_TIPS[section];
+      tips.innerHTML = '<strong>Photo tips</strong> \u2014 ' + SECTION_TIPS[section];
       container.appendChild(tips);
     }
 

@@ -48,51 +48,143 @@ function getCategoriesForService_(service) {
   var s = (service || '').toLowerCase();
   var isBattery = s.includes('battery');
   var isSolar   = s.includes('solar');
-  var isEV      = s.includes('ev');
+  var isEV      = s.includes('ev') || s.includes('charger');
 
   var cats = [];
 
-  // Switchboard — always required for all service types
+  // Switchboard — always first, always required
   cats.push({
     id:              'switchboard',
     label:           'Main Switchboard',
-    instruction:     'Open the switchboard door and photograph all circuit breakers and labels clearly. Then take a second photo of the closed door.',
+    instruction:     'Open the switchboard door and photograph all circuit breakers and labels. Then take a photo of the closed door.',
     required:        true,
     checkCompliance: false,
     section:         'switchboard',
   });
 
-  // Solar roof photos
+  // Solar roof photos — only if solar was requested
   if (isSolar) {
     cats.push({
       id:              'roof_overview',
-      label:           'Roof Overview',
-      instruction:     'Stand back and photograph the full roof. One photo per face — north, south, east, west.',
+      label:           'Full Roof View',
+      instruction:     'Step back and photograph the full face of the roof where panels would go. If there are multiple roof faces, take one photo of each.',
       required:        true,
       checkCompliance: false,
       section:         'roof',
     });
     cats.push({
       id:              'roof_detail',
-      label:           'Roof Material',
-      instruction:     'Close-up of the roof material — tiles, metal sheeting, tray deck, etc.',
+      label:           'Roof Material Close-Up',
+      instruction:     'A close-up of your roof surface — tiles, Colorbond, metal sheeting, etc. We need this to confirm the right mounting method.',
       required:        true,
       checkCompliance: false,
       section:         'roof',
     });
     cats.push({
       id:              'proposed_panel_area',
-      label:           'Proposed Panel Area',
-      instruction:     'Photo of the roof section where panels would go. Show any obstructions — pipes, vents, skylights.',
+      label:           'Where You Want the Panels',
+      instruction:     'Show the section of roof you are thinking of for the panels. Step back enough to show any vents, pipes, or skylights nearby.',
       required:        true,
       checkCompliance: false,
       section:         'roof',
     });
     cats.push({
-      id:              'cable_run',
-      label:           'Cable Run Path',
-      instruction:     'Show the path from the roof edge down to the switchboard — external wall route or inside ceiling if accessible.',
+      id:              'existing_inverter',
+      label:           'Existing Solar (If You Have It)',
+      instruction:     'If you already have solar panels, photograph the inverter box on the wall and the panels on the roof. Skip this one if you don\'t have any yet.',
       required:        false,
+      checkCompliance: false,
+      section:         'roof',
+    });
+  }
+
+  // Battery location photos (with AS/NZS 5139 compliance check)
+  if (isBattery) {
+    cats.push({
+      id:              'battery_location_1',
+      label:           'Proposed Location 1',
+      instruction:     'Step back so the full wall is in frame. Include anything nearby — windows, doors, hot water system, and the ceiling above.',
+      required:        true,
+      checkCompliance: true,
+      section:         'battery',
+    });
+    cats.push({
+      id:              'battery_location_2',
+      label:           'Proposed Location 2',
+      instruction:     'Step back so the full wall is in frame. Include anything nearby — windows, doors, hot water system, and the ceiling above.',
+      required:        false,
+      checkCompliance: true,
+      section:         'battery',
+    });
+    cats.push({
+      id:              'battery_location_3',
+      label:           'Proposed Location 3',
+      instruction:     'Step back so the full wall is in frame. Include anything nearby — windows, doors, hot water system, and the ceiling above.',
+      required:        false,
+      checkCompliance: true,
+      section:         'battery',
+    });
+    // Additional site photos for battery installs
+    cats.push({
+      id:              'meter_box',
+      label:           'Your Electricity Meter',
+      instruction:     'Photo of the electricity meter box — usually on an outside wall. Include the meter number label if you can see it.',
+      required:        false,
+      checkCompliance: false,
+      section:         'site',
+    });
+    cats.push({
+      id:              'outside_wall',
+      label:           'Outside Wall Near Battery Location',
+      instruction:     'Step outside and photograph the exterior wall closest to where the battery would sit.',
+      required:        false,
+      checkCompliance: false,
+      section:         'site',
+    });
+  }
+
+  // EV charger photos — only if EV was requested
+  if (isEV) {
+    cats.push({
+      id:              'ev_charger_location',
+      label:           'Where You Want the Charger',
+      instruction:     'Photo of the wall or area where you\'d like the EV charger installed — garage wall, carport, outside wall, etc. Step back to show the full space.',
+      required:        true,
+      checkCompliance: false,
+      section:         'ev',
+    });
+    cats.push({
+      id:              'ev_second_angle',
+      label:           'Second View (Optional)',
+      instruction:     'Another angle of the same area — useful if the space is tight or you want to show what\'s nearby.',
+      required:        false,
+      checkCompliance: false,
+      section:         'ev',
+    });
+  }
+
+  // Fallback if service not recognised
+  if (!isSolar && !isBattery && !isEV) {
+    cats.push({
+      id:              'proposed_location_1',
+      label:           'Proposed Installation Area',
+      instruction:     'Photo of where the equipment will be installed. Step back to show the full area and what\'s nearby.',
+      required:        true,
+      checkCompliance: false,
+      section:         'general',
+    });
+    cats.push({
+      id:              'proposed_location_2',
+      label:           'Second Angle',
+      instruction:     'Another view of the same area from a different direction.',
+      required:        false,
+      checkCompliance: false,
+      section:         'general',
+    });
+  }
+
+  return cats;
+}
       checkCompliance: false,
       section:         'roof',
     });
@@ -280,21 +372,24 @@ function generateAsBuilts(jobNumber) {
     var SECTION_LABELS = {
       roof:     'Roof',
       battery:  'Proposed Battery / Inverter Locations',
-      ev:       'EV Charger',
+      site:     'Site Overview',
+      ev:       'EV Charger Location',
       general:  'Installation Area',
     };
     var CAT_LABELS = {
-      roof_overview:       'Roof Overview',
-      roof_detail:         'Roof Material',
-      proposed_panel_area: 'Proposed Panel Area',
-      cable_run:           'Cable Run Path',
-      existing_inverter:   'Existing Inverter',
-      battery_location_1:  'Proposed Battery Location 1',
-      battery_location_2:  'Proposed Battery Location 2',
-      battery_location_3:  'Proposed Battery Location 3',
-      ev_charger_location: 'Proposed EV Charger Location',
-      ev_cable_path:       'EV Cable Path',
-      proposed_location:   'Proposed Installation Area',
+      roof_overview:        'Full Roof View',
+      roof_detail:          'Roof Material Close-Up',
+      proposed_panel_area:  'Where You Want the Panels',
+      existing_inverter:    'Existing Solar',
+      battery_location_1:   'Proposed Location 1',
+      battery_location_2:   'Proposed Location 2',
+      battery_location_3:   'Proposed Location 3',
+      meter_box:            'Electricity Meter',
+      outside_wall:         'Outside Wall Near Battery',
+      ev_charger_location:  'Where You Want the Charger',
+      ev_second_angle:      'Second View',
+      proposed_location_1:  'Proposed Installation Area',
+      proposed_location_2:  'Second Angle',
     };
 
     // Determine which non-switchboard categories have content

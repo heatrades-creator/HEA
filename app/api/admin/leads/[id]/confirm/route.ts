@@ -16,6 +16,7 @@ import { prisma } from "@/lib/db"
 import { createProject } from "@/lib/opensolar"
 import { isSafeToFire, getCost } from "@/lib/cost"
 import { sendJobConfirmedAlert } from "@/lib/email"
+import { updateDealStage } from "@/lib/hubspot"
 
 export async function POST(
   _req: NextRequest,
@@ -98,8 +99,11 @@ export async function POST(
     },
   })
 
-  // 7. Notify staff (fire-and-forget)
+  // 7. Notify staff + update HubSpot deal stage (both fire-and-forget)
   sendJobConfirmedAlert(lead, result.shareLink).catch(console.error)
+  if (lead.hubSpotDealId) {
+    updateDealStage(lead.hubSpotDealId, "design").catch(console.error)
+  }
 
   return NextResponse.json({
     success:           true,

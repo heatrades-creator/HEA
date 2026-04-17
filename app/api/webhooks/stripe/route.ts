@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { prisma } from '@/lib/db'
 import { sendMilestoneAlert } from '@/lib/email'
+import { updateDealStage } from '@/lib/hubspot'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-03-25.dahlia' })
 
@@ -57,6 +58,7 @@ export async function POST(req: NextRequest) {
             detail: JSON.stringify({ sessionId: session.id, amount: session.amount_total }) },
         })
         await sendMilestoneAlert(lead, 'deposit_paid')
+        if (lead.hubSpotDealId) updateDealStage(lead.hubSpotDealId, 'deposit_paid').catch(console.error)
       } else if (milestone === 'completion') {
         await prisma.lead.update({ where: { id: lead.id }, data: { completionPaidAt: new Date() } })
         await prisma.auditEntry.create({
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
             detail: JSON.stringify({ sessionId: session.id, amount: session.amount_total }) },
         })
         await sendMilestoneAlert(lead, 'job_installed')
+        if (lead.hubSpotDealId) updateDealStage(lead.hubSpotDealId, 'installed').catch(console.error)
       } else if (milestone === 'esv') {
         await prisma.lead.update({ where: { id: lead.id }, data: { esvPaidAt: new Date() } })
         await prisma.auditEntry.create({

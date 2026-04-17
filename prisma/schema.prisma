@@ -81,6 +81,10 @@ model Lead {
   // Customer proposal access token (for /proposal/[token] page)
   proposalToken String @unique @default(cuid())
 
+  // HubSpot CRM (set after contact/deal created in HubSpot)
+  hubSpotContactId String?
+  hubSpotDealId    String?
+
   // Relations
   auditLog AuditEntry[]
 }

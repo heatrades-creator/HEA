@@ -1,401 +1,402 @@
-# HEA CRM Setup Guide — One-Time Steps
+# HEA CRM Setup Guide
 
-**Stack being set up:** HubSpot Free CRM (pipeline + contacts + mobile app) + Fathom Free (AI call transcription → auto-posts to HubSpot after every call)
+**What this does:** Every lead from your website automatically appears in HubSpot as a contact and deal. As jobs progress (proposal sent, deposit paid, installed), the deal moves through the pipeline on its own. When staff call a customer on Google Meet, Fathom records and transcribes the call and posts the notes directly into HubSpot — no manual note-taking ever.
 
-**Time required:** ~45 minutes total  
 **Cost:** $0 forever  
-**Who does this:** Jesse or whoever manages the HEA systems
+**Time:** About 45 minutes  
+**Technical skill needed:** None — just clicking
 
 ---
 
-## Overview
+## Before you start
 
-When done, this is what happens automatically without any further setup:
+You'll need to be logged into:
+- Your HEA Google account (`hea.trades@gmail.com` or Jesse's personal Google)
+- [vercel.com](https://vercel.com) — where the HEA website is hosted
 
-1. Customer submits intake form or quote → **HubSpot contact + deal auto-created**
-2. Admin confirms lead in `/admin` → **deal advances to "Design Requested"**
-3. OpenSolar sends proposal → **deal advances to "Proposal Sent"**
-4. Customer pays deposit via Stripe → **deal advances to "Deposit Paid"**
-5. Job installed → **deal advances to "Installed"**
-6. Staff calls customer via Google Meet or Zoom → **Fathom auto-records and transcribes → full call notes appear in HubSpot contact timeline automatically — zero manual note-taking**
+Keep a notepad open (or Notes app on your phone). You'll copy a few things into it during setup.
 
 ---
 
-## Part 1 — HubSpot Account Setup
+## Part A — Create your HubSpot account
 
-### Step 1.1 — Create your free HubSpot account
+**1.** Open a new browser tab and go to **hubspot.com**
 
-1. Go to **[hubspot.com](https://hubspot.com)**
-2. Click **Get started free** (top right)
-3. Enter your work email — use `hea.trades@gmail.com` or Jesse's email
-4. Fill in: First name, Last name, Company name → `Heffernan Electrical Automation`
-5. Company size → `1-5`
-6. Click **Next** through the onboarding screens — you can skip everything
-7. When you reach the dashboard, you're in ✅
+**2.** Click the orange button in the top-right corner that says **"Get started free"**
 
-> **Important:** Write down the email and password you used. All staff will need a seat later — invite them via Settings → Users.
+**3.** On the sign-up page, type in your email address. Use the main HEA email (`hea.trades@gmail.com`) so the account belongs to the business, not a personal email.
 
----
+**4.** Click **"Next"** and fill in the details:
+   - First name: `Jesse`
+   - Last name: `Heffernan` (or whatever's correct)
+   - Company name: `Heffernan Electrical Automation`
+   - How many people work here: select **"1-5"**
 
-### Step 1.2 — Rename the default deal pipeline stages
+**5.** Click through the next few screens. HubSpot will ask what you want to do — just click **"Skip for now"** or **"Next"** on everything until you reach the main dashboard. You'll see a grey/orange page with a sidebar on the left.
 
-HubSpot comes with a default pipeline. Instead of creating a new one (which would require configuring IDs), you'll **rename the existing default stages** to match the solar workflow. This is the zero-config path — no extra env vars needed.
+**6.** You're in. This is your HubSpot CRM. ✅
 
-1. In HubSpot, click the **Settings** icon (gear ⚙️) in the top-right corner
-2. In the left sidebar, scroll to **CRM** → click **Deals**
-3. Click the **Pipelines** tab at the top
-4. You'll see a pipeline called **"Sales Pipeline"** with existing stages — click **Edit pipeline**
-5. You'll see a column editor. Rename each stage by clicking the stage name:
-
-| Current HubSpot stage name | Rename it to |
-|---|---|
-| Appointment Scheduled | New Lead |
-| Qualified to Buy | Design Requested |
-| Presentation Scheduled | Proposal Sent |
-| Decision Maker Bought-In | In Finance |
-| Contract Sent | Contract Signed |
-| Closed Won | Deposit Paid |
-| Closed Lost | (leave as is or rename to Rejected) |
-
-6. After all renaming: click **+ Add stage** at the far right of the pipeline row
-7. Name the new stage: `Installed`
-8. Set its **probability** to `100%`
-9. Drag it to be the last stage (after Deposit Paid), before Closed Lost
-10. Click **Save** at the top right
-
-> **Why rename instead of create new?** The default stage IDs (`appointmentscheduled`, `qualifiedtobuy`, etc.) are already hardcoded in `lib/hubspot.ts` as defaults. No env vars needed. The only new stage is "Installed" — you'll set one env var for it in Part 2.
+> Write down the email and password you used. You'll need to invite other staff later.
 
 ---
 
-### Step 1.3 — Get the "Installed" stage ID
+## Part B — Set up your sales pipeline
 
-Because "Installed" is a custom stage, you need its internal ID to set the `HUBSPOT_STAGE_INSTALLED` env var.
+This tells HubSpot what stages a solar job goes through. HubSpot comes with some default stages already — you're going to rename them to match the HEA workflow.
 
-1. While still on the **Pipeline** edit screen, look at the URL in your browser
-2. The URL looks like: `https://app.hubspot.com/deal-pipeline/{portalId}/edit/{pipelineId}`
-3. Note the `pipelineId` from the URL — you'll need it in Step 2.2
+**1.** In HubSpot, look at the top-right corner of the screen. You'll see a **gear icon ⚙️**. Click it. This opens Settings.
 
-**To get the Installed stage ID:**
+**2.** On the left side of the Settings page, you'll see a list of options. Scroll down until you see the heading **"CRM"**. Under it, click **"Deals"**.
 
-1. Stay in HubSpot Settings → CRM → Deals → Pipelines
-2. Click the **three dots (⋮)** next to the Sales Pipeline → click **View stage IDs**
+**3.** Near the top of the page, click the tab that says **"Pipelines"**.
 
-   *If you don't see "View stage IDs":*
-   - Open your browser developer tools (F12 or right-click → Inspect)
-   - Go to the **Network** tab
-   - Refresh the pipeline settings page
-   - Look for a request to `/pipelines/` or `/deal-pipelines`
-   - Find the JSON response — it will contain `"stageId"` values for each stage
-   - Find the entry where `"label": "Installed"` and copy its `"stageId"` value
+**4.** You'll see one pipeline called **"Sales Pipeline"**. On the right side of that row, click the button that says **"Edit pipeline"**.
 
-> **Alternative (easier):** Use the HubSpot API directly:
-> 1. After creating your Private App in Step 1.4, come back here
-> 2. Open Terminal or [reqbin.com](https://reqbin.com) and run:
->    ```
->    GET https://api.hubapi.com/crm/v3/pipelines/deals
->    Authorization: Bearer YOUR_ACCESS_TOKEN
->    ```
-> 3. In the JSON response, find the stage with `"label": "Installed"` — copy the value of `"id"` for that stage
+**5.** You'll now see a row of stage names across the screen, like coloured boxes. These are the default stages HubSpot gives you. You need to rename them one by one.
 
----
+   **How to rename a stage:**
+   - Click directly on the stage name text (e.g., "Appointment Scheduled")
+   - The text becomes editable — delete what's there and type the new name
+   - Press **Tab** or click somewhere else to confirm
 
-### Step 1.4 — Create the Private App (API access)
+   Rename them in this order:
 
-1. In HubSpot, click **Settings** (⚙️) → scroll down the left sidebar to **Integrations** → click **Private Apps**
-2. Click **Create a private app** (top right)
-3. **Basic info tab:**
-   - Name: `HEA Website Integration`
-   - Description: `Syncs leads from the HEA intake form and webhook events to HubSpot CRM`
-   - Logo: optional (skip it)
-4. Click the **Scopes** tab
-5. In the search box, search for and **enable** each of these scopes (tick the checkbox next to each):
-
-   | Scope | Permission |
+   | The name you see now | Change it to |
    |---|---|
-   | `crm.objects.contacts.read` | Read |
-   | `crm.objects.contacts.write` | Write |
-   | `crm.objects.deals.read` | Read |
-   | `crm.objects.deals.write` | Write |
-   | `crm.objects.associations.read` | Read |
-   | `crm.objects.associations.write` | Write |
+   | Appointment Scheduled | `New Lead` |
+   | Qualified to Buy | `Design Requested` |
+   | Presentation Scheduled | `Proposal Sent` |
+   | Decision Maker Bought-In | `In Finance` |
+   | Contract Sent | `Contract Signed` |
+   | Closed Won | `Deposit Paid` |
 
-6. Click **Create app** (top right)
-7. A popup appears: **"Your app's access token"**
-8. Click **Show token** → **Copy** the token
+   > Don't touch "Closed Lost" — leave it as is.
 
-> ⚠️ **This token is only shown once.** Copy it now and paste it somewhere safe (like a private note) before clicking Continue. It starts with `pat-na1-` followed by a long string.
+**6.** Now you need to add one more stage that HubSpot doesn't have by default: **"Installed"**. Look to the right of all the existing stages. You'll see a button with a **"+"** icon or text that says **"Add stage"**. Click it.
 
-9. Click **Continue creating**
+**7.** A new empty stage box appears. Type `Installed` into it.
 
----
+**8.** Below the stage name, you'll see a field for **"Win probability"** — change it to `100`.
 
-## Part 2 — Set Environment Variables
+**9.** The "Installed" stage needs to be the second-to-last one (before Closed Lost). If it appeared in the wrong spot, drag it left or right using the **six-dot handle ⠿** on the left of the stage box until it's just before Closed Lost.
 
-You need to add these env vars in **two places**: Vercel (production) and your local `.env.local` file (for local testing).
-
-### Step 2.1 — Add to Vercel
-
-1. Go to [vercel.com](https://vercel.com) → open the **HEA project**
-2. Click **Settings** → **Environment Variables**
-3. Add each variable below by clicking **Add New**:
-
-| Variable Name | Value | Environment |
-|---|---|---|
-| `HUBSPOT_ACCESS_TOKEN` | `pat-na1-xxxxxxxxxx` (your token from Step 1.4) | Production, Preview, Development |
-| `HUBSPOT_STAGE_INSTALLED` | *(the stage ID you found in Step 1.3)* | Production, Preview, Development |
-
-4. Click **Save** after each one
-5. After saving both: go to **Deployments** → click the three dots on the latest deployment → **Redeploy** (so the new env vars take effect)
-
-### Step 2.2 — Add to local `.env.local`
-
-1. Open the file `/home/user/HEA/.env.local` in your code editor
-2. Add these two lines at the bottom:
-
-```
-HUBSPOT_ACCESS_TOKEN=pat-na1-xxxxxxxxxx
-HUBSPOT_STAGE_INSTALLED=your-installed-stage-id-here
-```
-
-> If `.env.local` doesn't exist, create it at the root of the project (same level as `package.json`).
+**10.** Click the **"Save"** button at the top right of the pipeline editor. A green confirmation will flash. ✅
 
 ---
 
-## Part 3 — Verify the Integration Is Working
+## Part C — Get the "Installed" stage ID
 
-### Step 3.1 — Test a lead submission
+HubSpot tracks each stage with an internal ID code (not just its name). The "Installed" stage you just created has a unique ID that you need to copy. The other stages already have known IDs built into the website code — only this one needs to be looked up.
 
-1. Open your browser and go to your local dev server: `http://localhost:3000/intake`
-   (Or if testing in production: `https://hea-group.com.au/intake`)
-2. Fill out the form with fake test data:
-   - Name: `Test Lead CRM`
-   - Email: `test@example.com`
-   - Phone: `0412 345 678`
+**1.** Stay on the same Pipelines page in HubSpot Settings.
+
+**2.** Click **"Edit pipeline"** again to go back into the pipeline editor.
+
+**3.** Find the **"Installed"** stage you just created.
+
+**4.** On the "Installed" stage box, look for a **"..."** icon (three dots) — it usually appears when you hover your mouse over the stage. Click those three dots.
+
+**5.** In the small menu that pops up, look for an option that says **"Copy stage ID"**, **"View ID"**, or similar. Click it. The ID is now copied to your clipboard.
+
+**6.** Open your notepad and paste it. It will look something like: `b4f55d3a-8e12-4a7d-bc91-2f3e0c7d1234`
+
+> **If you can't find a "Copy ID" option:** Use this alternative method:
+> 1. Open a new tab and go to **reqbin.com** — it's a free tool that lets you talk to APIs without any programming
+> 2. At the top of the page there's a URL bar. Make sure **GET** is selected in the dropdown on the left, then paste this URL into the bar:
+>    ```
+>    https://api.hubapi.com/crm/v3/pipelines/deals
+>    ```
+> 3. Below the URL bar, click **"Headers"**
+> 4. Click **"Add Header"**. In the left field type `Authorization`. In the right field type `Bearer ` (with a space after it), then paste your HubSpot access token from Part D below. It should look like: `Bearer pat-na1-xxxxxxx`
+> 5. Click the orange **"Send"** button
+> 6. A wall of text appears on the right side. Press **Ctrl+F** (or Cmd+F on Mac) and search for `Installed`
+> 7. A few lines above or below `"Installed"` you'll see `"id":` followed by a value in quotes — that's the stage ID. Copy it.
+
+---
+
+## Part D — Create a Private App (this gives the website permission to talk to HubSpot)
+
+Think of this like creating a key that lets your website automatically add contacts to HubSpot.
+
+**1.** Still in HubSpot, click the **gear icon ⚙️** at the top right to go back to Settings.
+
+**2.** In the left sidebar, scroll all the way down to the bottom. You'll see a section called **"Integrations"**. Click **"Private Apps"** under it.
+
+**3.** On the Private Apps page, click the orange button in the top right that says **"Create a private app"**.
+
+**4.** You'll see a form with two tabs at the top: **"Basic Info"** and **"Scopes"**.
+
+   **On the Basic Info tab:**
+   - App name: type `HEA Website Integration`
+   - Description: type `Syncs leads and job stages from the HEA website`
+   - Logo: skip this (optional)
+
+**5.** Click the **"Scopes"** tab at the top.
+
+**6.** You'll see a search bar. You need to find and tick 6 permissions. Search for each one and tick the checkbox next to it:
+
+   Search for `contacts` — tick:
+   - `crm.objects.contacts.read`
+   - `crm.objects.contacts.write`
+
+   Search for `deals` — tick:
+   - `crm.objects.deals.read`
+   - `crm.objects.deals.write`
+
+   Search for `associations` — tick:
+   - `crm.objects.associations.read`
+   - `crm.objects.associations.write`
+
+   > Each one will appear with a **Read** and **Write** checkbox. Tick both for each category above.
+
+**7.** Click the orange **"Create app"** button in the top right.
+
+**8.** A popup appears with the heading **"Your app's access token"**. This is the key your website uses to talk to HubSpot.
+
+**9.** Click **"Show token"** — a long string of text appears. It starts with `pat-na1-` followed by many characters.
+
+**10.** Click **"Copy"** to copy it.
+
+**11.** Open your notepad and paste it. Label it clearly: `HUBSPOT TOKEN — DO NOT SHARE`
+
+> ⚠️ **Important:** This token is like a password. Don't put it in emails or share it. If someone else gets it, they can add/delete things in your HubSpot account.
+
+**12.** Click **"Continue creating"** to close the popup and finish.
+
+---
+
+## Part E — Add the token to your website (Vercel)
+
+Vercel is where your website runs. You need to give it the HubSpot token so it can send lead data there automatically.
+
+**1.** Open a new tab and go to **vercel.com**. Log in if you need to.
+
+**2.** On the Vercel dashboard, you'll see a list of your projects. Click on the **HEA** project.
+
+**3.** Near the top of the project page, you'll see a row of tabs: **Deployments**, **Logs**, **Analytics**, **Settings**, etc. Click **"Settings"**.
+
+**4.** On the Settings page, look at the left sidebar. Click **"Environment Variables"**.
+
+**5.** You'll see a table of existing variables (things like `RESEND_API_KEY`, `DATABASE_URL`, etc.). You need to add two new ones. For each one:
+   - Click the **"Add New"** button (or the field at the top that says "Key")
+   - Type in the **Name** exactly as shown below
+   - Paste in the **Value**
+   - Make sure all three environment checkboxes are ticked: **Production**, **Preview**, **Development**
+   - Click **"Save"**
+
+   **Variable 1:**
+   - Name: `HUBSPOT_ACCESS_TOKEN`
+   - Value: paste the long `pat-na1-...` token you saved in Part D
+
+   **Variable 2:**
+   - Name: `HUBSPOT_STAGE_INSTALLED`
+   - Value: paste the stage ID you saved in Part C (looks like `b4f55d3a-...`)
+
+**6.** After saving both variables, you need to redeploy the website so it picks them up.
+   - Click **"Deployments"** in the top tab bar
+   - You'll see a list of deployments. The top one is the current live version.
+   - On that top row, click the **"..."** button on the right side
+   - Click **"Redeploy"**
+   - A confirmation popup appears — click **"Redeploy"** again
+   - Wait about 60 seconds for the spinner to finish. When it says **"Ready"** with a green dot, you're live. ✅
+
+---
+
+## Part F — Test that it's working
+
+Before moving on to Fathom, check that leads are actually flowing into HubSpot.
+
+**1.** Open a new tab and go to **hea-group.com.au/intake**
+
+**2.** Fill out the form with fake test details:
+   - Name: `Test CRM Person`
+   - Email: `testcrm@example.com`
+   - Phone: `0400 000 000`
    - Address: `1 Test Street, Bendigo VIC 3550`
-   - Select any service
-   - Complete remaining steps and submit
-3. Wait 10–15 seconds
-4. Open HubSpot → click **CRM** → **Contacts** in the top nav
-5. You should see a contact named **Test Lead CRM** — click it
-6. On the contact record, scroll to the **Deals** section on the right
-7. You should see a deal named **"Test Lead CRM — 1 Test Street..."** with stage **"New Lead"** ✅
+   - Select any service (e.g., Solar system)
+   - Tick the consent checkbox
+   - Click **Submit**
 
-> **If the contact doesn't appear:** Check the Vercel function logs (Vercel → project → Deployments → Functions) for any `HubSpot` errors. The most common cause is a wrong or missing `HUBSPOT_ACCESS_TOKEN`.
+**3.** Wait 15 seconds.
 
-### Step 3.2 — Test deal stage advancement
+**4.** Go back to HubSpot. In the top navigation bar, click **"CRM"** then **"Contacts"**.
 
-1. Go to `/admin/leads` and find the Test Lead CRM
-2. Click **Confirm** (this creates an OpenSolar project and advances HubSpot to "Design Requested")
-3. Go back to HubSpot → find the deal — it should now show **"Design Requested"** ✅
+**5.** You should see a contact named **"Test CRM Person"** at the top of the list. ✅
 
----
+**6.** Click on that contact. On the right side of the contact page, there's a panel called **"Deals"**. You should see a deal named something like **"Test CRM Person — 1 Test Street"** with the stage **"New Lead"**. ✅
 
-## Part 4 — Fathom AI Setup (AI Call Notes → HubSpot)
+**7.** You can delete this test contact after: tick the checkbox next to their name → click **"Actions"** → **"Delete"**.
 
-Fathom records every call, transcribes it in real time, and automatically posts a full summary to the HubSpot contact timeline after the call ends. Staff never need to take notes.
-
-### Step 4.1 — Create your Fathom account
-
-1. Go to **[fathom.video](https://fathom.video)**
-2. Click **Get Fathom Free** → sign up with Google (use the Google account that has your calendar — the one where customer call invites appear)
-3. On the onboarding, connect your **Google Calendar** — this lets Fathom auto-join calls from your calendar
-4. Complete the setup wizard
-
-### Step 4.2 — Install the Fathom browser extension
-
-Do this on **every computer** that staff use for customer calls.
-
-1. In Fathom, click **Download** or go to Settings → **Extension**
-2. Install the Chrome/Edge extension from the Chrome Web Store
-3. After installing: click the Fathom icon in your browser toolbar → **Sign in** with the same account
-
-### Step 4.3 — Connect Fathom to HubSpot
-
-1. In Fathom, click your profile icon (top right) → **Settings**
-2. Click **Integrations** in the left sidebar
-3. Find **HubSpot** → click **Connect**
-4. A HubSpot OAuth window opens — click **Allow access**
-5. Back in Fathom → HubSpot should now show a green **Connected** badge ✅
-6. Under the HubSpot integration settings, ensure **"Sync call notes to HubSpot"** is toggled **ON**
-7. Set **"Sync to"** → **Contact** (so notes go to the customer's contact record)
-
-### Step 4.4 — Configure what gets posted to HubSpot
-
-1. Still in Fathom Settings → Integrations → HubSpot
-2. Under **"What to sync"**, enable:
-   - ✅ Call summary
-   - ✅ Action items
-   - ✅ Full transcript (optional — takes more space but gives complete record)
-3. Under **"When to sync"**: select **Automatically after each call ends**
-4. Click **Save**
-
-### Step 4.5 — Set up auto-join for calendar calls
-
-1. In Fathom Settings → **Recording**
-2. Enable: **"Auto-join calls from my calendar"**
-3. This means Fathom will join every Google Meet / Zoom link in your Google Calendar automatically — no manual starting needed
+> **If no contact appeared:** The most common cause is the token wasn't saved correctly in Vercel, or the redeploy didn't finish yet. Wait another minute and try the test again. If it still doesn't work, go back to Vercel → Settings → Environment Variables and check that `HUBSPOT_ACCESS_TOKEN` is there with the full value starting with `pat-na1-`.
 
 ---
 
-## Part 5 — First Call Test
+## Part G — Set up Fathom (AI call notes)
 
-### Step 5.1 — Make a test call
+Fathom sits in your browser and listens when you're on a Google Meet or Zoom call with a customer. When the call ends, it automatically posts a full transcript and summary to that customer's HubSpot contact — no typing needed.
 
-1. Schedule a Google Meet call between two staff members (or yourself using two browser tabs)
-2. Fathom should auto-join within 30 seconds (you'll see a "Fathom is recording" notification in the Meet)
-3. Talk for 30+ seconds (Fathom needs at least some audio)
-4. End the call
+### Create your account
 
-### Step 5.2 — Verify notes appear in HubSpot
+**1.** Go to **fathom.video** in a new tab.
 
-1. Wait 1–3 minutes after the call ends
-2. Open HubSpot → CRM → Contacts → find the contact whose email matches the calendar invite
-3. On the contact timeline (middle column), you should see a new activity:
-   - **Type:** Call
-   - **Content:** Fathom summary + transcript of your test call ✅
+**2.** Click the button that says **"Get Fathom Free"** or **"Sign up free"**.
 
-> **If notes don't appear:** Go to Fathom → your recordings list → find the test call → click it → scroll to **Integrations** → manually click **Sync to HubSpot**. If that fails, re-check the OAuth connection in Step 4.3.
+**3.** Click **"Sign in with Google"** and choose the Google account you use for your work calendar — the one where customer call invites show up.
 
----
+**4.** Fathom will ask to connect to your Google Calendar. Click **"Allow"** — this is how it knows when calls are happening so it can auto-join them.
 
-## Part 6 — WhatsApp / Customer Messaging Setup
+**5.** You'll land on Fathom's dashboard. ✅
 
-This gets staff to a **one-click WhatsApp to any customer** from inside HubSpot.
+### Install the browser extension
 
-### Step 6.1 — Add WhatsApp click-to-chat to HubSpot
+You need to do this on every computer that staff use for customer calls.
 
-When a contact is in HubSpot, staff can click a link to open a WhatsApp chat with that customer. HubSpot supports custom property links for this.
+**1.** On the Fathom dashboard, look for a button or banner that says **"Add to Chrome"** or **"Install extension"**. Click it.
 
-1. In HubSpot Settings → **CRM** → **Properties**
-2. Click **Create property** (top right)
-3. Fill in:
-   - **Object type:** Contact
-   - **Group:** Contact information
-   - **Label:** `WhatsApp`
-   - **Internal name:** `whatsapp_link` (auto-fills)
-   - **Field type:** Single-line text
-4. Click **Next** → **Create**
-5. Now go to a contact record → click **Actions** → **Edit properties** and set the WhatsApp field to `https://wa.me/61412345678` (use `61` for Australia, drop the leading `0` from the mobile number — e.g., `0412 345 678` → `61412345678`)
+**2.** A Chrome Web Store page opens. Click the blue **"Add to Chrome"** button.
 
-**To make this appear as a clickable button on every contact:**
+**3.** A popup asks **"Add Fathom?"** — click **"Add extension"**.
 
-1. HubSpot → any contact → click **Customize your view** (or the pencil icon on the sidebar)
-2. Add **WhatsApp** to the left panel so it shows on every contact card
-3. The link will be clickable — staff click it, WhatsApp opens with that customer pre-loaded
+**4.** After installing, you'll see the Fathom icon appear in your browser's extension bar (top right area, looks like a small coloured icon). Click it and sign in with the same Google account if prompted.
 
-### Step 6.2 — Auto-populate WhatsApp links via the integration
+### Connect Fathom to HubSpot
 
-The `lib/hubspot.ts` code already sends the customer's phone number to HubSpot as the standard `phone` property. To also set the WhatsApp link property automatically:
+**1.** In Fathom's dashboard (fathom.video), click your **profile icon** or your name in the top-right corner.
 
-Open `/home/user/HEA/lib/hubspot.ts` and find the `upsertContact` function. In the `properties` object, add one line:
+**2.** Click **"Settings"** in the dropdown.
 
-```ts
-properties: {
-  email:      lead.email,
-  firstname:  lead.firstName,
-  lastname:   lead.lastName,
-  phone:      lead.phone,
-  address:    `${lead.address}, ${lead.suburb} ${lead.state} ${lead.postcode}`,
-  hs_lead_status: "NEW",
-  // WhatsApp click-to-chat link (auto-formatted for Australian numbers)
-  whatsapp_link: `https://wa.me/61${lead.phone.replace(/^0/, "").replace(/\s/g, "")}`,
-},
-```
+**3.** On the Settings page, look at the left sidebar. Click **"Integrations"**.
 
-After making this change: commit and push to `main` → Vercel will redeploy automatically.
+**4.** Scroll until you see **HubSpot** in the list. Click the **"Connect"** button next to it.
 
-### Step 6.3 — WhatsApp Business App (for team shared inbox)
+**5.** A HubSpot login/permission screen opens in a popup. Click **"Choose Account"** and select your HEA HubSpot account. Then click **"Connect app"** or **"Allow access"**.
 
-For $0 team WhatsApp (multiple staff can see and reply to customer threads):
+**6.** The popup closes and you're back on Fathom. HubSpot should now show a green **"Connected"** badge. ✅
 
-1. Download **WhatsApp Business** from the App Store / Google Play on one shared office phone or tablet
-2. Register it with a dedicated business number (e.g., the HEA business mobile)
-3. In WhatsApp Business → Settings → **Linked Devices** → link up to 4 staff computers via `web.whatsapp.com`
-4. All staff can now see and reply to customer WhatsApps from their computer browsers
+**7.** Below the connected badge, you'll see some options. Make sure these are set:
+   - **"Sync call notes to HubSpot"** — toggle it ON (blue/green)
+   - **"Sync to"** — make sure it says **Contact** (not Company)
+   - **"Sync timing"** — set to **"Automatically after call ends"**
 
-> This is manual (no automation) but free and works today. Customers reply to the HEA business number; any linked staff device can respond.
+**8.** Click **Save** if there's a save button.
+
+### Turn on auto-join for calendar calls
+
+**1.** Still in Fathom Settings, click **"Recording"** in the left sidebar (or look for a **"Notetaker"** or **"Bot"** section).
+
+**2.** Find the setting that says something like **"Automatically join meetings from my calendar"** and toggle it **ON**.
+
+**3.** Now whenever a Google Meet or Zoom link appears in your Google Calendar, Fathom will automatically join the call and start recording — no manual action needed.
 
 ---
 
-## Part 7 — Invite Staff to HubSpot
+## Part H — Test a call
 
-1. HubSpot → Settings (⚙️) → **Users & Teams**
-2. Click **Create user** (top right)
-3. Enter the staff member's email address → click **Next**
-4. Select **View and edit** access → click **Send invite**
-5. Repeat for each staff member
-6. Each staff member clicks the invite link in their email → signs in → they're in
+**1.** Create a Google Meet call right now between yourself and one other staff member. You can do this by going to **meet.google.com** → **"New meeting"** → **"Start an instant meeting"** and sending the link to someone.
 
-**Mobile app setup (for staff):**
-1. Download **HubSpot** from App Store or Google Play
-2. Sign in with their HubSpot credentials
-3. They now have the full CRM pipeline, contact list, and call history in their pocket
+**2.** Join the call in Chrome (where you installed the Fathom extension).
 
----
+**3.** Within about 30 seconds, a bot called **"Fathom"** should join the call. You'll see it listed as a participant, and a small banner usually appears saying **"This call is being recorded by Fathom"**.
 
-## Part 8 — Final Verification Checklist
+**4.** Talk for at least 30 seconds — say anything. Then end the call.
 
-Run through this after completing all parts:
+**5.** Wait 2–3 minutes.
 
-- [ ] HubSpot account created and logged in
-- [ ] Default pipeline stages renamed to solar-specific names
-- [ ] "Installed" stage added as custom stage
-- [ ] Private App created with all 6 scopes enabled
-- [ ] `HUBSPOT_ACCESS_TOKEN` added to Vercel env vars
-- [ ] `HUBSPOT_STAGE_INSTALLED` added to Vercel env vars (the custom stage ID)
-- [ ] Vercel redeployed after env var changes
-- [ ] Test lead submitted → contact + deal visible in HubSpot at "New Lead" stage
-- [ ] Test lead confirmed in admin → deal advances to "Design Requested"
-- [ ] Fathom account created and browser extension installed on all staff computers
-- [ ] Fathom connected to HubSpot via OAuth
-- [ ] Fathom auto-join enabled for calendar events
-- [ ] Test call made → call notes appeared in HubSpot contact timeline
-- [ ] Staff invited to HubSpot
-- [ ] HubSpot mobile app installed on staff phones
+**6.** Go back to HubSpot → CRM → Contacts. Find the contact whose email matches the person you were on the call with (this needs to be a contact that already exists in HubSpot).
+
+**7.** Click on that contact. On the middle column of the contact page (the "Activity" feed), scroll down. You should see a new entry labelled **"Call"** posted by Fathom, with a transcript of what was said. ✅
+
+> **If Fathom didn't join the call:** Make sure the meeting had a Google Meet link in your Google Calendar invite (not just a direct link you opened). Fathom reads from your calendar — if there's no calendar event, it won't auto-join. In that case, click the Fathom browser extension icon while in the call and click **"Record this meeting"** manually.
+
+> **If notes didn't appear in HubSpot:** Open Fathom's dashboard → click on the recording → scroll down to find an **Integrations** panel → click **"Sync to HubSpot"** manually. If that fails, re-do the connection in Part G Step 4.
 
 ---
 
-## Troubleshooting
+## Part I — Invite your staff to HubSpot
 
-### "Contact didn't appear in HubSpot after form submit"
-- Check Vercel function logs: Vercel → project → Functions tab → filter by `/api/intake` or `/api/leads`
-- Look for `HubSpot upsertContact failed:` in the logs
-- Most common causes:
-  - Token is wrong or expired → re-generate in HubSpot → Private Apps → click your app → Actions → Regenerate token
-  - Token not deployed yet → Vercel → Settings → Environment Variables → confirm it's there → redeploy
+Each staff member needs their own HubSpot login to see the CRM and mobile app.
 
-### "Deal stage isn't advancing when I confirm a lead"
-- Confirm the lead has a `hubSpotDealId` in the database: go to Prisma Studio or check the admin dashboard
-- If `hubSpotDealId` is null, the HubSpot contact/deal creation failed at intake time (see above)
-- Re-check the `HUBSPOT_STAGE_INSTALLED` env var — if it's set to an invalid stage ID, other stages may also fail silently
+**1.** In HubSpot, click the **gear icon ⚙️** (top right) to go to Settings.
 
-### "Fathom isn't joining my calls"
-- Check your Google Calendar is connected in Fathom Settings → Calendar
-- The call invite must have a Google Meet or Zoom link in the calendar event
-- Make sure the Fathom browser extension is installed and you're signed in
-- If auto-join doesn't work: manually click the Fathom extension icon when in a call → click **Record this meeting**
+**2.** In the left sidebar, click **"Users & Teams"** (under Account Setup).
 
-### "Fathom notes aren't appearing in HubSpot"
-- Fathom → your recording → click the recording → scroll to Integrations panel → manually trigger sync
-- Check that the customer's email in the calendar invite matches their HubSpot contact email
-- If emails don't match: Fathom will create a new contact in HubSpot — not a problem, just merge the duplicates in HubSpot
+**3.** Click the orange **"Create user"** button in the top right.
 
-### "HubSpot shows a token error in Vercel logs"
-The access token has a default expiry that can be extended. To ensure it doesn't expire:
-1. HubSpot → Settings → Integrations → Private Apps → click your app
-2. Under **Token**, check the expiration (or set to no expiry if the option exists)
-3. If it expires: click **Actions** → **Regenerate token** → update `HUBSPOT_ACCESS_TOKEN` in Vercel
+**4.** Type in the staff member's email address and click **"Next"**.
+
+**5.** On the permissions screen, select **"View and edit"** access. Click **"Next"** then **"Send invite"**.
+
+**6.** The staff member will get an email from HubSpot. They click the link in the email, set a password, and they're in.
+
+**7.** Repeat for each staff member.
+
+**For the mobile app (recommended for all staff):**
+- Open the App Store (iPhone) or Google Play (Android)
+- Search for **HubSpot**
+- Download the app (it's free, published by HubSpot Inc.)
+- Log in with their HubSpot email and password
+- They now have the full CRM in their pocket — contacts, deals, call history, and notes from Fathom
 
 ---
 
-## Summary of All Env Vars Added
+## Part J — Fathom setup on staff computers
 
-```
-# Add to Vercel (Settings → Environment Variables) + .env.local
+Repeat Part G "Install the browser extension" steps on every computer that staff use for calls. Each person:
+1. Installs the Fathom Chrome extension on their computer
+2. Signs into Fathom with their own Google account (must be the one connected to their work calendar)
+3. Does NOT need to reconnect to HubSpot separately — HubSpot is connected at the account level and all Fathom users on the same account share it
 
-HUBSPOT_ACCESS_TOKEN=pat-na1-xxxxxxxxxxxxxxxxxxxx
-HUBSPOT_STAGE_INSTALLED=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+---
 
-That's it — only 2 new env vars for the entire HubSpot + Fathom integration.
-All other HubSpot stage IDs use the default HubSpot pipeline stage IDs already hardcoded in `lib/hubspot.ts`.
+## Checklist — you're done when all of these are ticked
+
+- [ ] HubSpot account created at hubspot.com
+- [ ] Pipeline stages renamed: New Lead, Design Requested, Proposal Sent, In Finance, Contract Signed, Deposit Paid
+- [ ] "Installed" stage added at end of pipeline
+- [ ] "Installed" stage ID copied and saved to notepad
+- [ ] Private App created in HubSpot with 6 scopes ticked
+- [ ] Access token copied and saved to notepad
+- [ ] `HUBSPOT_ACCESS_TOKEN` added to Vercel environment variables
+- [ ] `HUBSPOT_STAGE_INSTALLED` added to Vercel environment variables
+- [ ] Vercel redeployed (shows green "Ready" dot)
+- [ ] Test lead submitted → contact appeared in HubSpot under CRM → Contacts
+- [ ] Fathom account created at fathom.video
+- [ ] Fathom Chrome extension installed on all staff computers
+- [ ] Fathom connected to HubSpot (green Connected badge)
+- [ ] Fathom auto-join turned on in Recording settings
+- [ ] Test call made → call notes appeared in HubSpot contact activity feed
+- [ ] All staff invited to HubSpot via Settings → Users & Teams
+- [ ] HubSpot mobile app installed on all staff phones
+
+---
+
+## What changes automatically (no action needed after setup)
+
+| What happens | What HubSpot does |
+|---|---|
+| Customer submits intake form | New contact + deal created at "New Lead" stage |
+| Customer submits quote form | Same |
+| Admin clicks Confirm in `/admin` | Deal moves to "Design Requested" |
+| OpenSolar sends proposal | Deal moves to "Proposal Sent" |
+| Customer pays deposit via Stripe | Deal moves to "Deposit Paid" |
+| Installation complete, payment received | Deal moves to "Installed" |
+| Staff finishes a Google Meet call | Fathom posts full transcript + summary to contact page |
+
+---
+
+## If something goes wrong
+
+**"I can't find the Installed stage ID"**
+→ Use the reqbin.com method described in Part C. The stage ID looks like a long hyphenated code.
+
+**"A new lead came in but didn't appear in HubSpot"**
+→ Go to vercel.com → your project → Deployments → click the most recent deployment → click "Functions" → look for errors mentioning "HubSpot". Most likely the token needs to be re-entered in Environment Variables.
+
+**"Fathom isn't recording my calls"**
+→ Check the Fathom extension icon in your browser — click it to make sure you're signed in. Also check that the call was in a Google Calendar event with a Meet link (not just opened directly).
+
+**"Fathom notes aren't going to HubSpot"**
+→ In Fathom, click on the recording → scroll to the Integrations section → click "Sync to HubSpot" manually. Then check Settings → Integrations → HubSpot is still showing Connected.
+
+**"The HubSpot token stopped working after a while"**
+→ Go to HubSpot Settings → Integrations → Private Apps → click your app → under Actions, click "Regenerate token" → copy the new token → update it in Vercel Environment Variables → redeploy.

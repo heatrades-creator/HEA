@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
           data: { leadId: lead.id, action: 'esv_paid', actor: 'stripe',
             detail: JSON.stringify({ sessionId: session.id, amount: session.amount_total }) },
         })
+        await sendMilestoneAlert(lead, 'esv_paid')
       }
     } catch (err) {
       console.error('Stripe webhook DB update failed:', err)

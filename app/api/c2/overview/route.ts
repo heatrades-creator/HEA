@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: 'Unauthorised' }, { status: 401 });
 
   const url = process.env.C2_GAS_URL;

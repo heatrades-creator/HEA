@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Generation takes ~40s — extend Vercel function timeout to 60s
@@ -8,7 +9,7 @@ type Params = { params: Promise<{ id: string }> };
 
 /** GET /api/jobs/[id]/documents — list all generated documents for this job */
 export async function GET(_req: NextRequest, { params }: Params) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobNumber } = await params;
@@ -30,14 +31,20 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 /** POST /api/jobs/[id]/documents — trigger generation of a document type */
 export async function POST(req: NextRequest, { params }: Params) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobNumber } = await params;
   const gasUrl = process.env.JOBS_GAS_URL;
   if (!gasUrl) return NextResponse.json({ error: 'GAS URL not configured' }, { status: 500 });
 
-  const { docClass } = await req.json();
+  let body: { docClass?: string }
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+  const { docClass } = body
   if (!docClass) return NextResponse.json({ error: 'docClass required' }, { status: 400 });
 
   const res = await fetch(gasUrl, {

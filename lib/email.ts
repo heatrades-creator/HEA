@@ -91,6 +91,8 @@ export async function sendMilestoneAlert(
     job_installed:   "Installation complete",
     contract_signed: "Contract signed by customer",
     deposit_paid:    "Deposit payment received",
+    completion_paid: "Completion payment received",
+    esv_paid:        "ESV certificate payment received",
     finance_approved:"Finance application approved",
     proposal_sent:   "Proposal sent to customer",
   }

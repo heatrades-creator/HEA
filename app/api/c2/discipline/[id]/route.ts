@@ -1,9 +1,10 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const gasUrl = () => process.env.C2_GAS_URL;
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: 'Unauthorised' }, { status: 401 });
   const { id } = await params;
   const url = gasUrl();

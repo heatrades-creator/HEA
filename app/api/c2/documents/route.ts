@@ -1,9 +1,10 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const gasUrl = () => process.env.C2_GAS_URL;
 
 export async function GET(req: Request) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: 'Unauthorised' }, { status: 401 });
   const url = gasUrl();
   if (!url) return Response.json({ error: 'C2_GAS_URL not configured' }, { status: 503 });
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session) return Response.json({ error: 'Unauthorised' }, { status: 401 });
   const url = gasUrl();
   if (!url) return Response.json({ error: 'C2_GAS_URL not configured' }, { status: 503 });

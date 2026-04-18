@@ -251,21 +251,26 @@ function runEngine(inp) {
       DCF_t: DCF_t, CumDCF: 0, CumCF: 0 });
   }
 
-  // Cumulative series — investment view: starts from -total_cost, accumulates Annual_Savings_t
-  // (financing-independent: BEP/DPB answer "when do savings recover the full system cost?")
-  var cumUndis = -total_cost;
-  var cumDis   = -total_cost;
+  // Cumulative series — customer cashflow view: starts from ICF0 = -cash_deposit
+  // BEP/DPB answer "when does the customer's cumulative net cash position turn positive?"
+  // Annual_NCF_t includes loan repayments, so financing structure IS reflected
+  // Guard: loan with $0 repayments is an invalid entry — BEP would be instant/meaningless
+  var loan_no_repayment_warn = (loan_amt > 0 && repayment <= 0);
+  var cumUndis = ICF0;   // = -cash_deposit
+  var cumDis   = ICF0;
   var undis_be = null, dis_be = null;
 
   for (var i = 0; i < rows.length; i++) {
-    cumUndis += rows[i].Annual_Savings_t;
-    cumDis   += rows[i].Annual_Savings_t / Math.pow(1 + cfg.discount_rate, rows[i].t);
-    rows[i].CumCF_exact  = cumUndis;           // exact value — used for fracPB interpolation
+    cumUndis += rows[i].Annual_NCF_t;
+    cumDis   += rows[i].DCF_t;            // DCF_t = Annual_NCF_t / (1+r)^t
+    rows[i].CumCF_exact  = cumUndis;      // exact value — used for fracPB interpolation
     rows[i].CumDCF_exact = cumDis;
-    rows[i].CumCF  = Math.round(cumUndis);     // rounded — display only
+    rows[i].CumCF  = Math.round(cumUndis);
     rows[i].CumDCF = Math.round(cumDis);
-    if (undis_be === null && cumUndis >= 0) undis_be = rows[i].t;
-    if (dis_be   === null && cumDis   >= 0) dis_be   = rows[i].t;
+    if (!loan_no_repayment_warn) {
+      if (undis_be === null && cumUndis >= 0) undis_be = rows[i].t;
+      if (dis_be   === null && cumDis   >= 0) dis_be   = rows[i].t;
+    }
   }
 
   // Fractional payback interpolation (per optional higher-rigor improvement in review)
@@ -276,7 +281,7 @@ function runEngine(inp) {
     if (be_yr === null) return null;
     if (be_yr === 1) {
       var cf1 = rows[0][cfKey];
-      return cf1 > 0 ? total_cost / cf1 : 1;
+      return cf1 > 0 ? Math.abs(ICF0) / cf1 : 1;  // ICF0 = -cash_deposit
     }
     var prev = rows[be_yr-2][exactKey] !== undefined ? rows[be_yr-2][exactKey] : rows[be_yr-2][cumKey];
     var dcf  = rows[be_yr-1][cfKey];
@@ -289,9 +294,9 @@ function runEngine(inp) {
   var simple_pb         = (total_cost > 0 && yr1_net_savings > 0) ? total_cost / yr1_net_savings : null;
   // Edge case A: if Year_1_Net_Savings <= 0, simple payback is undefined
   var simple_pb_label   = simple_pb != null ? null : 'Year 1 net savings ≤ 0';
-  // fracPB uses Annual_Savings_t (financing-independent) for BEP/DPB
-  var undis_frac = fracPB(rows, 'CumCF',  'Annual_Savings_t', undis_be);
-  var dis_frac   = fracPB(rows, 'CumDCF', 'Sav_DCF_t',       dis_be);
+  // fracPB uses customer cashflow values for BEP/DPB
+  var undis_frac = fracPB(rows, 'CumCF',  'CF_t',  undis_be);
+  var dis_frac   = fracPB(rows, 'CumDCF', 'DCF_t', dis_be);
   // CF_Plus_Year = first year t where Annual_NCF_t > 0 (financing-aware: includes loan repayments)
   // This answers "when does the customer's actual annual cash position turn positive?"
   var ann_cf_pos = null, cum_undis_pos = null, cum_dis_pos = null;
@@ -343,7 +348,8 @@ function runEngine(inp) {
       upfront_cost:     Math.round(total_cost),
       yr1_net_savings:  Math.round(yr1_net_savings),
       simple_pb_label:  simple_pb_label,
-      ICF0:             Math.round(-total_cost),
+      loan_no_repayment_warn: loan_no_repayment_warn,
+      ICF0:             Math.round(ICF0),  // = -cash_deposit (customer view)
       inv_repl_yr:      cfg.inv_repl_yr,
       bat_repl_yr:      cfg.bat_repl_yr,
       // Assumptions snapshot — passed to PDF for the assumptions page

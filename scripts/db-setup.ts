@@ -86,12 +86,21 @@ const statements = [
 
 // Columns added after initial schema — safe to run on existing databases
 const migrations = [
-  `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber"    TEXT`,
-  `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl"     TEXT`,
-  `ALTER TABLE "Lead" ADD COLUMN "nmiNumber"       TEXT`,
-  `ALTER TABLE "Lead" ADD COLUMN "nmiConsentAt"    DATETIME`,
-  `ALTER TABLE "Lead" ADD COLUMN "nmiSignatureB64" TEXT`,
-  `ALTER TABLE "Lead" ADD COLUMN "advisorAnswers"  TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasJobNumber"      TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasDriveUrl"       TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiNumber"         TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiConsentAt"      DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "nmiSignatureB64"   TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "advisorAnswers"    TEXT`,
+  // Household profile (intake form)
+  `ALTER TABLE "Lead" ADD COLUMN "occupants"         TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "homeDaytime"       TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "hotWater"          TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "gasAppliances"     TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "ev"                TEXT`,
+  // HubSpot CRM
+  `ALTER TABLE "Lead" ADD COLUMN "hubSpotContactId"  TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "hubSpotDealId"     TEXT`,
 ]
 
 async function main() {

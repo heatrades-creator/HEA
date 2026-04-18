@@ -231,8 +231,13 @@ function runEngine(inp) {
 
     // Annual_NCF_t = Savings_t - Maintenance_t - Replacements_t - Loan_Repayments_t
     // (leaner version per review: Fees=0, Insurance=0, Taxes=0, Incentives=0, Residual=0)
-    var Annual_NCF_t = savings - opex - R_t - F_t;
-    var DCF_t        = Annual_NCF_t / Math.pow(1 + cfg.discount_rate, t);
+    var Annual_NCF_t    = savings - opex - R_t - F_t;
+    // Annual_Savings_t = financing-independent savings (no loan repayments)
+    // Used for BEP, DPB, NPV, IRR — all based on total system cost as the investment
+    var Annual_Savings_t = savings - opex - R_t;
+    // Sav_DCF_t = Annual_Savings_t discounted to present value — used for DPB fractional interpolation
+    var Sav_DCF_t        = Annual_Savings_t / Math.pow(1 + cfg.discount_rate, t);
+    var DCF_t            = Annual_NCF_t / Math.pow(1 + cfg.discount_rate, t);
 
     rows.push({ t: t, E_pv: E_pv_t, E_pv_self: E_pv_self, E_pv_to_bat: E_pv_to_bat,
       E_bat_to_load: E_bat_to_load, E_pv_export: E_pv_export, E_grid_import: E_grid_import,
@@ -240,20 +245,21 @@ function runEngine(inp) {
       post_sys: post_sys, savings: savings, opex: opex, R_inv: R_inv, R_bat: R_bat,
       R_t: R_t, F_t: F_t,
       Annual_NCF_t: Annual_NCF_t,
+      Annual_Savings_t: Annual_Savings_t,
+      Sav_DCF_t: Sav_DCF_t,
       CF_t: Annual_NCF_t,   // alias kept for backward compat in table/chart rendering
       DCF_t: DCF_t, CumDCF: 0, CumCF: 0 });
   }
 
-  // Cumulative series — both start from ICF0 = -cash_deposit (per CUSTOMER_CASHFLOW_VIEW)
-  // Cumulative_Nominal_NCF_t = ICF0 + SUM(Annual_NCF_i) for i=1..t
-  // Cumulative_DCF_t         = ICF0 + SUM(DCF_i)        for i=1..t
-  var cumUndis = ICF0;
-  var cumDis   = ICF0;
+  // Cumulative series — investment view: starts from -total_cost, accumulates Annual_Savings_t
+  // (financing-independent: BEP/DPB answer "when do savings recover the full system cost?")
+  var cumUndis = -total_cost;
+  var cumDis   = -total_cost;
   var undis_be = null, dis_be = null;
 
   for (var i = 0; i < rows.length; i++) {
-    cumUndis += rows[i].Annual_NCF_t;
-    cumDis   += rows[i].DCF_t;
+    cumUndis += rows[i].Annual_Savings_t;
+    cumDis   += rows[i].Annual_Savings_t / Math.pow(1 + cfg.discount_rate, rows[i].t);
     rows[i].CumCF_exact  = cumUndis;           // exact value — used for fracPB interpolation
     rows[i].CumDCF_exact = cumDis;
     rows[i].CumCF  = Math.round(cumUndis);     // rounded — display only
@@ -270,25 +276,24 @@ function runEngine(inp) {
     if (be_yr === null) return null;
     if (be_yr === 1) {
       var cf1 = rows[0][cfKey];
-      return cf1 > 0 ? Math.abs(ICF0) / cf1 : 1;
+      return cf1 > 0 ? total_cost / cf1 : 1;
     }
     var prev = rows[be_yr-2][exactKey] !== undefined ? rows[be_yr-2][exactKey] : rows[be_yr-2][cumKey];
     var dcf  = rows[be_yr-1][cfKey];
     return dcf > 0 ? (be_yr - 1) + Math.abs(prev) / dcf : be_yr;
   }
 
-  // Approx_Simple_Payback = Upfront_Cost / Year_1_Net_Savings (customer cashflow view)
-  // Upfront_Cost = cash_deposit only (rebates already in net cost, no separate upfront fees)
-  // Year_1_Net_Savings = Savings_1 - Maintenance_1 (lean model; Fees/Insurance/Taxes = 0)
-  var upfront_cost      = cash_deposit;
+  // Simple_Payback = Total_System_Cost / Year_1_Net_Savings (industry-standard, financing-independent)
+  // Uses total_cost so the result is the same regardless of how the customer pays for the system
   var yr1_net_savings   = rows[0] ? (rows[0].savings - rows[0].opex) : 0;
-  var simple_pb         = (upfront_cost > 0 && yr1_net_savings > 0) ? upfront_cost / yr1_net_savings : null;
+  var simple_pb         = (total_cost > 0 && yr1_net_savings > 0) ? total_cost / yr1_net_savings : null;
   // Edge case A: if Year_1_Net_Savings <= 0, simple payback is undefined
-  var simple_pb_label   = simple_pb != null ? null : (upfront_cost <= 0 ? 'Cash purchase — no deposit' : 'Year 1 net savings ≤ 0');
-  var undis_frac = fracPB(rows, 'CumCF',  'CF_t',  undis_be);
-  var dis_frac   = fracPB(rows, 'CumDCF', 'DCF_t', dis_be);
-  // CF_Plus_Year = first year t where Annual_NCF_t > 0 (full NCF, all inflows and outflows)
-  // Edge case B: if no year has Annual_NCF_t > 0, cf_plus_yr = null
+  var simple_pb_label   = simple_pb != null ? null : 'Year 1 net savings ≤ 0';
+  // fracPB uses Annual_Savings_t (financing-independent) for BEP/DPB
+  var undis_frac = fracPB(rows, 'CumCF',  'Annual_Savings_t', undis_be);
+  var dis_frac   = fracPB(rows, 'CumDCF', 'Sav_DCF_t',       dis_be);
+  // CF_Plus_Year = first year t where Annual_NCF_t > 0 (financing-aware: includes loan repayments)
+  // This answers "when does the customer's actual annual cash position turn positive?"
   var ann_cf_pos = null, cum_undis_pos = null, cum_dis_pos = null;
   for (var j = 0; j < rows.length; j++) {
     if (ann_cf_pos    === null && rows[j].Annual_NCF_t > 0) ann_cf_pos = rows[j].t;
@@ -296,12 +301,13 @@ function runEngine(inp) {
     if (cum_dis_pos   === null && rows[j].CumDCF>= 0) cum_dis_pos   = rows[j].t;
   }
 
-  // NPV = Initial_Cash_Flow_0 + SUM(DCF_t for t=1..N)
-  // Do NOT subtract full system cost if loan repayments are already in Annual_NCF_t
-  var NPV = rows.reduce(function(s,r){ return s + r.DCF_t; }, ICF0);
+  // NPV = -total_cost + SUM(PV of Annual_Savings_t) — investment view, financing-independent
+  var NPV = rows.reduce(function(s, r) {
+    return s + r.Annual_Savings_t / Math.pow(1 + cfg.discount_rate, r.t);
+  }, -total_cost);
 
-  // Build cashflow array for IRR/MIRR: [ICF0, NCF_1, ..., NCF_N]
-  var irrCashflows = [ICF0].concat(rows.map(function(r){ return r.Annual_NCF_t; }));
+  // Build cashflow array for IRR/MIRR using investment view: [-total_cost, Savings_1, ..., Savings_N]
+  var irrCashflows = [-total_cost].concat(rows.map(function(r) { return r.Annual_Savings_t; }));
   var irrVal  = computeIRR(irrCashflows);
   var mirrVal = computeMIRR(irrCashflows, cfg.annual_rate || 0.05, cfg.discount_rate || 0.07);
 
@@ -333,10 +339,11 @@ function runEngine(inp) {
       cum_dis_pos_yr:   cum_dis_pos,
       year1_savings:    rows[0] ? Math.round(rows[0].savings)   : 0,
       year1_ncf:        rows[0] ? Math.round(rows[0].Annual_NCF_t) : 0,
-      upfront_cost:     Math.round(upfront_cost),
+      year1_savings_t:  rows[0] ? Math.round(rows[0].Annual_Savings_t) : 0,
+      upfront_cost:     Math.round(total_cost),
       yr1_net_savings:  Math.round(yr1_net_savings),
       simple_pb_label:  simple_pb_label,
-      ICF0:             Math.round(ICF0),
+      ICF0:             Math.round(-total_cost),
       inv_repl_yr:      cfg.inv_repl_yr,
       bat_repl_yr:      cfg.bat_repl_yr,
       // Assumptions snapshot — passed to PDF for the assumptions page

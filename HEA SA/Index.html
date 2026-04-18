@@ -444,7 +444,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
 
   <!-- ROI / Finance Card -->
   <div class="roi-card" id="roiCard" style="display:none">
-    <h2>(chart) Lifetime Return Calculator</h2>
+    <h2>Lifetime Return Calculator</h2>
     <p style="font-size:11px;color:#888;margin:-10px 0 6px">Enter full system cost + payment details below. Shows 4 separate payback metrics.</p>
     <div style="display:inline-block;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:3px 10px;font-size:10px;color:#60a5fa;font-weight:700;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase">Customer Cashflow View — upfront deposit as Year 0, loan repayments in annual NCF</div>
 
@@ -520,6 +520,12 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
 
     <!-- Milestone cards -->
     <div class="milestones" id="roiMilestones" style="margin-bottom:12px"></div>
+
+    <!-- Show Maths dropdown -->
+    <div id="showMathsBar" style="font-size:10px;color:#60a5fa;background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.2);border-radius:6px;padding:7px 12px;margin-bottom:8px;cursor:pointer;text-align:center;font-weight:700;letter-spacing:.5px;display:none" onclick="var d=document.getElementById('showMathsDetail');d.style.display=d.style.display==='none'?'block':'none'">
+      Show maths — how we calculated each number ▼
+    </div>
+    <div id="showMathsDetail" style="display:none;font-size:11px;color:#ccc;background:rgba(0,0,0,.25);border-radius:6px;padding:14px 16px;margin-bottom:12px;line-height:1.8"></div>
 
     <!-- Headline -->
     <div id="roiInsight" style="text-align:center;font-size:14px;font-weight:800;margin-bottom:10px;min-height:22px"></div>
@@ -1286,64 +1292,63 @@ function updateROI() {
   // -- 4 clearly separated milestone cards --
   var mils = [];
 
-  // 1. Approx Simple Payback — shortcut metric only (Upfront_Cost / Year_1_Net_Savings)
+  // 1. Simple Payback — total system cost ÷ Year 1 net savings (financing-independent)
   mils.push({
-    label: 'Approx Simple Payback',
+    label: 'Simple Payback',
     cls: 'gold', badge: '$',
-    val: simple_pb != null ? simple_pb.toFixed(2) + ' yr' : (simple_pb_label || 'N/A'),
+    val: simple_pb != null ? simple_pb.toFixed(1) + ' yr' : (simple_pb_label || 'N/A'),
     sub: simple_pb != null
-      ? 'Rough shortcut: upfront cash deposit ($' + (summary.upfront_cost||0).toLocaleString() + ') ÷ Year 1 net savings ($' + (summary.yr1_net_savings||0).toLocaleString() + '). NOT the true break-even — use BEP for that.'
-      : (simple_pb_label || 'No simple payback calculable')
+      ? 'Total system cost ($' + (summary.upfront_cost||0).toLocaleString() + ') ÷ Year 1 net savings ($' + (summary.yr1_net_savings||0).toLocaleString() + '). Financing-independent — same result regardless of how you pay for the system.'
+      : (simple_pb_label || 'Year 1 net savings ≤ 0 — check system size or tariff inputs')
   });
 
-  // 2. CF+ Year — first year Annual_NCF_t > 0 (full net cashflow: savings minus ALL costs)
-  // Always show CF+ regardless of financing — relevant for cash purchases too
+  // 2. CF+ Year — first year Annual_NCF_t > 0 (financing-aware: savings minus ALL costs incl. loan)
   mils.push({
     label: 'CF+ Year',
     cls: ann_cf_pos ? 'profit' : 'neg', badge: 'CF+',
     val: ann_cf_pos ? 'Year ' + ann_cf_pos : 'Never CF+ in period',
     sub: ann_cf_pos
-      ? 'Year ' + ann_cf_pos + ': first year your total annual net cashflow is positive — savings exceed ALL costs (maintenance, replacements, loan repayments)'
+      ? 'Year ' + ann_cf_pos + ': first year your annual savings exceed ALL outgoings — maintenance, replacements' + (loan_amt > 0 ? ', and loan repayments' : '') + '. This is the financing-aware metric.'
       : 'No year in the analysis period has a positive annual net cashflow — check system size, costs, or extend the analysis period'
   });
 
-  // 3. BEP — first year Cumulative_Nominal_NCF_t >= 0 (all inflows + outflows, undiscounted)
+  // 3. BEP — cumulative savings (undiscounted) recover full system cost
   mils.push({
     label: 'Break-Even Point (BEP)',
     cls: undis_be ? 'breakeven' : 'neg', badge: 'BEP',
     val: undis_frac != null ? 'Year ' + undis_frac : 'No BEP in ' + anlYrs + 'yr',
     sub: undis_be
-      ? 'Year ' + undis_frac + ': cumulative nominal net cashflow turns positive — every dollar of upfront deposit recovered through net savings (undiscounted)'
-      : 'Cumulative net cashflow does not reach zero within ' + anlYrs + ' years — consider a larger system or review cost inputs'
+      ? 'Year ' + undis_frac + ': cumulative solar savings recover the full $' + total_cost.toLocaleString() + ' system cost (undiscounted). Same result regardless of financing.'
+      : 'Cumulative savings do not cover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years — consider a larger system or review cost inputs'
   });
 
-  // 4. DPB — first year Cumulative_DCF_t >= 0 (discounted to present value)
+  // 4. DPB — cumulative discounted savings recover full system cost
   mils.push({
     label: 'Discounted Payback (DPB)',
     cls: dis_be ? 'breakeven' : 'neg', badge: 'DPB',
     val: dis_frac != null ? 'Year ' + dis_frac : 'No DPB in ' + anlYrs + 'yr',
     sub: dis_be
-      ? 'Year ' + dis_frac + ': cumulative discounted net cashflow (DCF) turns positive at ' + (discRate*100).toFixed(0) + '% discount rate — the most rigorous payback measure. Always worse than BEP.'
-      : 'Discounted cashflows do not recover initial outlay within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
+      ? 'Year ' + dis_frac + ': cumulative savings in today\'s dollars (at ' + (discRate*100).toFixed(0) + '% discount rate) recover the full $' + total_cost.toLocaleString() + ' system cost. The most rigorous payback measure.'
+      : 'Discounted savings do not recover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
   });
 
-  // 5. NPV = ICF0 + SUM(DCF_t) — present value of all future net cashflows plus initial outlay
+  // 5. NPV = -total_cost + SUM(PV of annual savings) — investment view
   mils.push({
     label: 'Net Present Value (NPV)',
     cls: NPV >= 0 ? 'profit' : 'neg', badge: 'NPV',
     val: fmtD(NPV),
     sub: NPV >= 0
-      ? 'NPV = Initial outlay ($' + Math.abs(summary.ICF0||0).toLocaleString() + ') + PV of all future net cashflows at ' + (discRate*100).toFixed(0) + '% discount rate. Positive = financially viable investment.'
+      ? 'NPV = –$' + total_cost.toLocaleString() + ' (system) + PV of ' + anlYrs + 'yr savings at ' + (discRate*100).toFixed(0) + '% discount rate. Positive = investment beats the ' + (discRate*100).toFixed(0) + '% benchmark rate.'
       : 'NPV is negative — at a ' + (discRate*100).toFixed(0) + '% discount rate this system does not generate sufficient returns. Check system size, costs, or tariff assumptions.'
   });
 
-  // 6. IRR — annual return rate equivalent to this investment
+  // 6. IRR — annual return on the total investment
   if (IRR != null) {
     mils.push({
       label: 'IRR — Investment Return Rate',
       cls: IRR > discRate*100 ? 'profit' : 'breakeven', badge: 'IRR',
       val: IRR.toFixed(1) + '%',
-      sub: 'The annual return rate this solar system delivers on your upfront deposit. Compare with your savings account or mortgage rate. Exceeds discount rate (' + (discRate*100).toFixed(0) + '%) = good investment.'
+      sub: 'Annual return this system delivers on the $' + total_cost.toLocaleString() + ' investment. Compare to mortgage rate or savings account. Exceeds discount rate (' + (discRate*100).toFixed(0) + '%) = good investment.'
         + (MIRR != null ? ' MIRR: ' + MIRR.toFixed(1) + '% (conservative, accounts for reinvestment rate).' : '')
     });
   }
@@ -1405,8 +1410,142 @@ function updateROI() {
     insight.style.color = '#f87171';
   }
 
-  // -- Chart data --
-  var cumDCF_arr = [-year0_outflow];
+  // -- Show Maths dropdown --
+  (function() {
+    var smBar = document.getElementById('showMathsBar');
+    var smDet = document.getElementById('showMathsDetail');
+    if (!smBar || !smDet) return;
+    smBar.style.display = '';
+
+    function fmtDol(v) { return '$' + Math.round(v).toLocaleString(); }
+    function fmtYr(v)  { return Math.round(v * 10) / 10; }
+    var hr = '<hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:12px 0">';
+    var html = '';
+
+    // 1. Simple Payback
+    html += '<div style="font-weight:700;color:#f5c518;margin-bottom:4px">① Simple Payback</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Formula: Total system cost ÷ Year 1 net savings</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:11px">';
+    html += '<tr><td style="color:#aaa;padding:2px 8px 2px 0">Total system cost</td><td style="color:#fff">' + fmtDol(total_cost) + '</td></tr>';
+    if (annual_rows[0]) {
+      html += '<tr><td style="color:#aaa;padding:2px 8px 2px 0">Year 1 solar savings</td><td style="color:#4ade80">' + fmtDol(annual_rows[0].savings) + '</td></tr>';
+      html += '<tr><td style="color:#aaa;padding:2px 8px 2px 0">Year 1 maintenance</td><td style="color:#f87171">–' + fmtDol(annual_rows[0].opex) + '</td></tr>';
+      html += '<tr><td style="color:#aaa;padding:2px 8px 2px 0">Year 1 net savings</td><td style="color:#fff">' + fmtDol(annual_rows[0].savings - annual_rows[0].opex) + '</td></tr>';
+    }
+    html += '</table>';
+    if (simple_pb != null) {
+      html += '<div style="margin-top:6px;color:#f5c518">→ ' + fmtDol(total_cost) + ' ÷ ' + fmtDol(summary.yr1_net_savings) + ' = <strong>' + simple_pb.toFixed(1) + ' years</strong></div>';
+    }
+    html += hr;
+
+    // 2. CF+ Year
+    html += '<div style="font-weight:700;color:#4ade80;margin-bottom:4px">② Annual Cash Positive Year (CF+)</div>';
+    html += '<div style="color:#888;margin-bottom:6px">First year where solar savings exceed ALL outgoings' + (loan_amt > 0 ? ' including loan repayments' : '') + ':</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Savings</th>' + (loan_amt > 0 ? '<th style="text-align:right;padding:2px 6px">Loan repayments</th>' : '') + '<th style="text-align:right;padding:2px 6px">Maintenance</th><th style="text-align:right;padding:2px 6px">Net</th><th style="text-align:right;padding:2px 6px"></th></tr>';
+    var cfShowRows = Math.min(annual_rows.length, ann_cf_pos ? Math.min(ann_cf_pos + 1, annual_rows.length) : 5);
+    for (var ci = 0; ci < cfShowRows; ci++) {
+      var row = annual_rows[ci];
+      var net = row.Annual_NCF_t;
+      var ok  = net > 0;
+      var rowBg = ci % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
+      html += '<tr style="background:' + rowBg + '">';
+      html += '<td style="padding:3px 6px">Yr ' + row.t + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#4ade80">' + fmtDol(row.savings) + '</td>';
+      if (loan_amt > 0) html += '<td style="text-align:right;padding:3px 6px;color:#f87171">' + (row.F_t > 0 ? '–' + fmtDol(row.F_t) : '—') + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(row.opex + row.R_t) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (ok ? '#4ade80' : '#f87171') + '">' + (net >= 0 ? '' : '–') + fmtDol(Math.abs(net)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px">' + (ok ? '✓' : '✗') + '</td>';
+      html += '</tr>';
+    }
+    html += '</table>';
+    if (ann_cf_pos) html += '<div style="margin-top:6px;color:#4ade80">→ First CF+ year: <strong>Year ' + ann_cf_pos + '</strong></div>';
+    else html += '<div style="margin-top:6px;color:#f87171">→ No CF+ year in ' + anlYrs + ' year period</div>';
+    html += hr;
+
+    // 3. BEP
+    html += '<div style="font-weight:700;color:#38bdf8;margin-bottom:4px">③ Break-Even Point (BEP)</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Running total of solar savings vs $' + total_cost.toLocaleString() + ' system cost (undiscounted, financing-independent):</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Cumulative</th><th style="text-align:right;padding:2px 6px">vs ' + fmtDol(total_cost) + '</th></tr>';
+    var bepShowRows = Math.min(annual_rows.length, undis_be ? Math.min(undis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
+    var runCum = -total_cost;
+    for (var bi = 0; bi < bepShowRows; bi++) {
+      var brow = annual_rows[bi];
+      runCum += brow.Annual_Savings_t;
+      var recovered = runCum >= 0;
+      var rowBg2 = bi % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
+      html += '<tr style="background:' + rowBg2 + '">';
+      html += '<td style="padding:3px 6px">Yr ' + brow.t + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#4ade80">' + fmtDol(brow.Annual_Savings_t) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (runCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runCum >= 0 ? '' : '–') + fmtDol(Math.abs(runCum)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px">' + (recovered ? '<span style="color:#4ade80">✓ recovered</span>' : '<span style="color:#888">' + fmtDol(-runCum) + ' to go</span>') + '</td>';
+      html += '</tr>';
+    }
+    html += '</table>';
+    if (undis_frac != null) html += '<div style="margin-top:6px;color:#38bdf8">→ BEP: <strong>Year ' + fmtYr(undis_frac) + '</strong></div>';
+    else html += '<div style="margin-top:6px;color:#f87171">→ No BEP within ' + anlYrs + ' year period</div>';
+    html += hr;
+
+    // 4. DPB
+    html += '<div style="font-weight:700;color:#4ade80;margin-bottom:4px">④ Discounted Payback (DPB)</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Same as BEP but each year\'s savings are converted to today\'s value at ' + (discRate*100).toFixed(0) + '% discount rate:</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Discount ×</th><th style="text-align:right;padding:2px 6px">PV savings</th><th style="text-align:right;padding:2px 6px">Cumulative PV</th></tr>';
+    var dpbShowRows = Math.min(annual_rows.length, dis_be ? Math.min(dis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
+    var runDCum = -total_cost;
+    for (var di = 0; di < dpbShowRows; di++) {
+      var drow = annual_rows[di];
+      var discFactor = Math.pow(1 + discRate, drow.t);
+      var pvSav = drow.Annual_Savings_t / discFactor;
+      runDCum += pvSav;
+      var rowBg3 = di % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
+      html += '<tr style="background:' + rowBg3 + '">';
+      html += '<td style="padding:3px 6px">Yr ' + drow.t + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#4ade80">' + fmtDol(drow.Annual_Savings_t) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#888">÷ ' + discFactor.toFixed(3) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:#60a5fa">' + fmtDol(pvSav) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (runDCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runDCum >= 0 ? '' : '–') + fmtDol(Math.abs(runDCum)) + '</td>';
+      html += '</tr>';
+    }
+    html += '</table>';
+    if (dis_frac != null) html += '<div style="margin-top:6px;color:#4ade80">→ DPB: <strong>Year ' + fmtYr(dis_frac) + '</strong></div>';
+    else html += '<div style="margin-top:6px;color:#f87171">→ No DPB within ' + anlYrs + ' year period at ' + (discRate*100).toFixed(0) + '% discount rate</div>';
+    html += hr;
+
+    // 5. NPV
+    html += '<div style="font-weight:700;color:#4ade80;margin-bottom:4px">⑤ Net Present Value (NPV)</div>';
+    html += '<div style="color:#888;margin-bottom:6px">NPV = –' + fmtDol(total_cost) + ' (system cost) + sum of all ' + anlYrs + ' years of discounted savings:</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">÷ (1+' + (discRate*100).toFixed(0) + '%)^yr</th><th style="text-align:right;padding:2px 6px">PV</th></tr>';
+    html += '<tr style="background:rgba(255,255,255,.03)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px">—</td><td style="text-align:right;padding:3px 6px">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(total_cost) + '</td></tr>';
+    var showFirst = Math.min(5, annual_rows.length);
+    var showLast  = annual_rows.length > 7 ? 2 : 0;
+    for (var ni = 0; ni < showFirst; ni++) {
+      var nrow = annual_rows[ni];
+      var ndf  = Math.pow(1 + discRate, nrow.t);
+      var npvSav = nrow.Annual_Savings_t / ndf;
+      var rowBg4 = ni % 2 === 0 ? '' : 'rgba(255,255,255,.03)';
+      html += '<tr style="background:' + rowBg4 + '"><td style="padding:3px 6px">Yr ' + nrow.t + '</td><td style="text-align:right;padding:3px 6px;color:#4ade80">' + fmtDol(nrow.Annual_Savings_t) + '</td><td style="text-align:right;padding:3px 6px;color:#888">÷ ' + ndf.toFixed(3) + '</td><td style="text-align:right;padding:3px 6px;color:#60a5fa">' + fmtDol(npvSav) + '</td></tr>';
+    }
+    if (showLast > 0) {
+      html += '<tr><td colspan="4" style="text-align:center;padding:4px;color:#555">· · ·</td></tr>';
+      for (var nj = annual_rows.length - showLast; nj < annual_rows.length; nj++) {
+        var nlrow = annual_rows[nj];
+        var nldf  = Math.pow(1 + discRate, nlrow.t);
+        var nlpvSav = nlrow.Annual_Savings_t / nldf;
+        var rowBg5 = nj % 2 === 0 ? '' : 'rgba(255,255,255,.03)';
+        html += '<tr style="background:' + rowBg5 + '"><td style="padding:3px 6px">Yr ' + nlrow.t + '</td><td style="text-align:right;padding:3px 6px;color:#4ade80">' + fmtDol(nlrow.Annual_Savings_t) + '</td><td style="text-align:right;padding:3px 6px;color:#888">÷ ' + nldf.toFixed(3) + '</td><td style="text-align:right;padding:3px 6px;color:#60a5fa">' + fmtDol(nlpvSav) + '</td></tr>';
+      }
+    }
+    html += '</table>';
+    html += '<div style="margin-top:6px;color:' + (NPV >= 0 ? '#4ade80' : '#f87171') + '">→ NPV: <strong>' + fmtDol(NPV) + '</strong>' + (NPV >= 0 ? ' (positive — investment beats ' + (discRate*100).toFixed(0) + '% benchmark)' : ' (negative — returns below ' + (discRate*100).toFixed(0) + '% benchmark)') + '</div>';
+
+    smDet.innerHTML = html;
+  })();
+
+  // -- Chart data — investment view: starts at -total_cost --
+  var cumDCF_arr = [-total_cost];
   for (var ri = 0; ri < annual_rows.length; ri++) cumDCF_arr.push(annual_rows[ri].CumDCF);
   var labels = ['Now'];
   for (var li = 0; li < annual_rows.length; li++) labels.push('Yr ' + annual_rows[li].t);
@@ -1640,7 +1779,7 @@ function updateROI() {
 
   // -- Annual table --
   var tbl = '<table style="width:100%;border-collapse:collapse;font-size:10px"><thead><tr>'
-    + ['Yr','Savings ($)','Finance Out ($)','Opex + Replacements ($)','Annual NCF ($)','Discounted CF ($)','Cumulative Disc CF ($)'].map(function(h){
+    + ['Yr','Savings ($)','Finance Out ($)','Opex + Replacements ($)','Annual NCF ($)','PV Savings ($)','Cumulative PV ($)'].map(function(h){
         return '<th style="background:#1a1a1a;color:#f5c518;padding:4px 6px;text-align:right;white-space:nowrap">'+h+'</th>';
       }).join('') + '</tr></thead><tbody>';
   for (var ti = 0; ti < annual_rows.length; ti++) {
@@ -1653,7 +1792,7 @@ function updateROI() {
       + '<td style="padding:3px 6px;text-align:right;color:#f87171">'+fmtD(-r.F_t)+'</td>'
       + '<td style="padding:3px 6px;text-align:right;color:#f87171">'+fmtD(-(r.opex+r.R_t))+'</td>'
       + '<td style="padding:3px 6px;text-align:right;font-weight:600">'+fmtD(r.CF_t)+'</td>'
-      + '<td style="padding:3px 6px;text-align:right">'+fmtD(r.DCF_t)+'</td>'
+      + '<td style="padding:3px 6px;text-align:right">'+fmtD(r.Sav_DCF_t)+'</td>'
       + '<td style="padding:3px 6px;text-align:right;font-weight:700;color:'+cc+'">'+fmtD(r.CumDCF)+'</td>'
       + '</tr>';
   }

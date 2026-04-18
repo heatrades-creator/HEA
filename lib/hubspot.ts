@@ -39,14 +39,15 @@ export type HubStage =
   | "installed"
 
 function stageId(s: HubStage): string {
+  // IDs are specific to the HEA HubSpot pipeline (portal 443070630)
   const defaults: Record<HubStage, string> = {
-    new_lead:      "appointmentscheduled",
-    design:        "qualifiedtobuy",
-    proposal_sent: "presentationscheduled",
-    in_finance:    "decisionmakerboughtin",
-    contract:      "contractsent",
-    deposit_paid:  "closedwon",
-    installed:     "closedwon",
+    new_lead:      "2920893897",
+    design:        "2920893898",
+    proposal_sent: "2920893899",
+    in_finance:    "2920893900",
+    contract:      "closedwon",
+    deposit_paid:  "2920893903",
+    installed:     "2920893904",
   }
   const envKey: Record<HubStage, string> = {
     new_lead:      "HUBSPOT_STAGE_NEW_LEAD",

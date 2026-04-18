@@ -301,18 +301,22 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // Sync to HubSpot CRM — fire-and-forget, never blocks response
-    syncLeadToHubSpot(lead).then(({ contactId, dealId }) => {
+    // Sync to HubSpot CRM — awaited so Vercel doesn't terminate before it completes
+    try {
+      const { contactId, dealId } = await syncLeadToHubSpot(lead)
       if (contactId || dealId) {
-        prisma.lead.update({
+        await prisma.lead.update({
           where: { id: lead.id },
           data: {
             hubSpotContactId: contactId ?? undefined,
             hubSpotDealId:    dealId    ?? undefined,
           },
-        }).catch(console.error)
+        })
       }
-    }).catch(console.error)
+    } catch (hubErr) {
+      console.error("HubSpot sync error:", hubErr)
+      // non-fatal — lead already saved
+    }
 
   } catch (dbErr) {
     console.error("Intake lead DB save failed:", dbErr)

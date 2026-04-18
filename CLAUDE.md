@@ -76,9 +76,19 @@ Service pages import their matching constant. Pricing page solar cards → `INTA
 ## Environment Variables
 
 **Vercel (production):**
-`RESEND_API_KEY` · `EMAIL_FROM` · `EMAIL_ALERT_TO` (HEA.Trades@gmail.com) · `DATABASE_URL` · `NEXTAUTH_SECRET` · `NEXTAUTH_URL` · `JOBS_GAS_URL` · `NEXT_PUBLIC_SANITY_PROJECT_ID` · `NEXT_PUBLIC_SANITY_DATASET` · `SANITY_API_TOKEN`
+`RESEND_API_KEY` · `EMAIL_FROM` · `EMAIL_ALERT_TO` (HEA.Trades@gmail.com) · `DATABASE_URL` · `NEXTAUTH_SECRET` · `NEXTAUTH_URL` · `JOBS_GAS_URL` · `NEXT_PUBLIC_SANITY_PROJECT_ID` · `NEXT_PUBLIC_SANITY_DATASET` · `SANITY_API_TOKEN` · `HUBSPOT_ACCESS_TOKEN` · `HUBSPOT_STAGE_INSTALLED`
 
 **GitHub Secrets:** `CLASPRC_JSON`
+
+---
+
+## Branching & Deploy Rules
+
+**⚠️ ALWAYS commit and push directly to `main`.** Never leave work in a feature branch — Vercel only auto-deploys from `main`, so anything in a branch is dead code until merged. There is no code review process; Jesse is the sole developer. Branches cause silent failures where env vars are live but the matching code is not.
+
+- Use `git checkout main && git merge <branch> && git push origin main` to recover stranded branch work
+- If using worktree isolation, always merge back to main before ending the session
+- The only acceptable exception is a branch that will be merged in the same session it was created
 
 ---
 

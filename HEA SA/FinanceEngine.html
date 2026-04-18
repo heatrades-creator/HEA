@@ -316,6 +316,16 @@ function runEngine(inp) {
   var irrVal  = computeIRR(irrCashflows);
   var mirrVal = computeMIRR(irrCashflows, cfg.annual_rate || 0.05, cfg.discount_rate || 0.07);
 
+  // LCOE = NPV of all lifetime costs / Total lifetime kWh generated
+  // Answers "what does each kWh of solar cost you in today's money?" — compare to grid tariff
+  var total_pv_kwh = rows.reduce(function(s, r) { return s + r.E_pv_t; }, 0);
+  var lcoe_cost_pv = total_cost + rows.reduce(function(s, r) {
+    return s + (r.opex + r.R_t) / Math.pow(1 + cfg.discount_rate, r.t);
+  }, 0);
+  var LCOE_c_per_kwh = (total_pv_kwh > 0 && lcoe_cost_pv > 0)
+    ? (lcoe_cost_pv / total_pv_kwh) * 100   // ¢/kWh
+    : null;
+
   // Loan finish year
   var loan_finish_yr = null;
   if (loan_amt > 0 && fin_outflows) {
@@ -348,6 +358,8 @@ function runEngine(inp) {
       upfront_cost:     Math.round(total_cost),
       yr1_net_savings:  Math.round(yr1_net_savings),
       simple_pb_label:  simple_pb_label,
+      LCOE:             LCOE_c_per_kwh != null ? Math.round(LCOE_c_per_kwh * 10) / 10 : null,
+      lcoe_lifetime_kwh: Math.round(total_pv_kwh),
       loan_no_repayment_warn: loan_no_repayment_warn,
       ICF0:             Math.round(ICF0),  // = -cash_deposit (customer view)
       inv_repl_yr:      cfg.inv_repl_yr,

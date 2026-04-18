@@ -493,6 +493,11 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
         <div class="hint" style="color:#888">AER forecast ~3%/yr</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px">
+        <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">FiT change (% p.a.)</label>
+        <div class="fin-amount-wrap"><input id="fitEsc" type="number" value="0" min="-20" max="10" step="0.5" oninput="updateROI()" style="width:60px"><span>%</span></div>
+        <div class="hint" style="color:#888">FiT declining ~10%/yr in Aus</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
         <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;margin:0">Analysis period (years)</label>
         <div class="fin-amount-wrap"><input id="analysisYears" type="number" value="25" min="10" max="30" step="1" oninput="updateROI()" style="width:60px"><span>yr</span></div>
       </div>
@@ -551,6 +556,8 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <button class="btn btn-dark btn-sm" onclick="toggleAnnualTable()"> Show/Hide Full Annual Table</button>
     </div>
     <div id="annualTable" style="display:none;overflow-x:auto;max-height:320px;overflow-y:auto;margin-bottom:8px"></div>
+
+    <div id="roiSensitivity" style="margin-bottom:12px"></div>
 
     <div class="fin-note" id="roiNote"></div>
   </div>
@@ -1190,9 +1197,10 @@ function updateROI() {
       loanHint.style.display = 'none';
     }
   }
-  var discRate  = (parseFloat(document.getElementById('discountRate').value) || 7)    / 100;
-  var tEsc      = (parseFloat(document.getElementById('tariffEsc').value) || 3)       / 100;
-  var anlYrs    = parseInt(document.getElementById('analysisYears').value) || 25;
+  var discRate    = (parseFloat(document.getElementById('discountRate').value) || 7)    / 100;
+  var tEsc        = (parseFloat(document.getElementById('tariffEsc').value) || 3)       / 100;
+  var fitEscPct   = parseFloat(document.getElementById('fitEsc').value) || 0;
+  var anlYrs      = parseInt(document.getElementById('analysisYears').value) || 25;
   var maintCost = parseFloat(document.getElementById('maintCost').value) || 0;
   var invReplCostUser = document.getElementById('invReplCost').value !== ''
     ? parseFloat(document.getElementById('invReplCost').value) : null;
@@ -1237,6 +1245,7 @@ function updateROI() {
     battery_max_dod: 0.90,
     import_tariff: getEffTariff() / 100,
     fit:           (fv('fitC') || 3.3) / 100,
+    fit_esc:       fitEscPct / 100,
     supply_daily:  parseFloat(document.getElementById('connFeeCard').value || document.getElementById('connFee').value || 1.034),
     pv_degradation_rate: 0.005,
   };
@@ -1280,6 +1289,7 @@ function updateROI() {
   var asmParts = [
     'Panel deg: <strong>0.5%/yr</strong>',
     'Tariff esc: <strong>' + (tEsc*100).toFixed(1) + '%/yr</strong>',
+    fitEscPct !== 0 ? 'FiT esc: <strong>' + fitEscPct.toFixed(1) + '%/yr</strong>' : null,
     'Discount: <strong>' + (discRate*100).toFixed(1) + '%</strong>',
     'SCR: <strong>' + Math.round(direct_scr*100) + '%</strong>',
     'Inv repl yr ' + invReplYr + ': <strong>' + fmtD(inv_repl_cost) + '</strong>',
@@ -1357,6 +1367,19 @@ function updateROI() {
     });
   }
 
+  // 7. LCOE — levelised cost of energy vs current grid tariff
+  var LCOE = summary.LCOE;
+  var lcoe_lifetime_kwh = summary.lcoe_lifetime_kwh;
+  if (LCOE != null) {
+    var grid_tariff_c = getEffTariff();
+    mils.push({
+      label: 'LCOE — Your Solar Cost / kWh',
+      cls: LCOE < grid_tariff_c ? 'profit' : 'neg', badge: 'LCOE',
+      val: LCOE.toFixed(1) + 'c/kWh',
+      sub: 'Solar costs you ' + LCOE.toFixed(1) + 'c/kWh over ' + anlYrs + ' yrs (all system costs ÷ ' + (lcoe_lifetime_kwh||0).toLocaleString() + ' kWh lifetime). Grid today: ' + grid_tariff_c.toFixed(1) + 'c/kWh rising ' + (tEsc*100).toFixed(0) + '%/yr. Lower = cheaper energy than grid.'
+    });
+  }
+
   var mHtml = '';
   for (var mi = 0; mi < mils.length; mi++) {
     var m  = mils[mi];
@@ -1378,9 +1401,9 @@ function updateROI() {
     { label: 'Self-consumption',    param: 'direct_scr',          base: inp.direct_scr,          low: Math.max(0.1,inp.direct_scr-0.10), high: Math.min(1,inp.direct_scr+0.10), fmt: function(v){ return Math.round(v*100)+'%'; } },
     { label: 'Feed-in tariff',      param: 'fit',                 base: inp.fit,                 low: Math.max(0,inp.fit-0.02),          high: inp.fit+0.02, fmt: function(v){ return (v*100).toFixed(1)+'c/kWh'; } },
   ];
-  var sensHtml = '<div style="margin-top:18px"><div style="font-size:10px;font-weight:700;color:var(--muted,#888);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Sensitivity — NPV impact of ±1 step on key parameters</div>'
+  var sensHtml = '<div style="margin-top:18px"><div style="font-size:10px;font-weight:700;color:var(--muted,#888);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Sensitivity — NPV &amp; BEP impact of ±1 step on key parameters</div>'
     + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
-    + '<tr style="color:#888;font-size:10px"><th style="text-align:left;padding:3px 6px">Parameter</th><th style="text-align:right;padding:3px 6px">Base</th><th style="text-align:right;padding:3px 6px">Pessimistic NPV</th><th style="text-align:right;padding:3px 6px">Optimistic NPV</th></tr>';
+    + '<tr style="color:#888;font-size:10px"><th style="text-align:left;padding:3px 6px">Parameter</th><th style="text-align:right;padding:3px 6px">Base</th><th style="text-align:right;padding:3px 6px">Pessimistic NPV</th><th style="text-align:right;padding:3px 6px">Optimistic NPV</th><th style="text-align:right;padding:3px 6px">BEP (−)</th><th style="text-align:right;padding:3px 6px">BEP (+)</th></tr>';
 
   sensRows.forEach(function(sr) {
     var inpLow  = Object.assign({}, inp); inpLow[sr.param]  = sr.low;
@@ -1392,11 +1415,20 @@ function updateROI() {
     var colL = npvL >= NPV ? '#4ade80' : '#f87171';
     var colH = npvH >= NPV ? '#4ade80' : '#f87171';
     var rowBg = sensRows.indexOf(sr) % 2 === 0 ? 'rgba(255,255,255,0.03)' : 'transparent';
+    var bepBase = summary.undis_frac;
+    var bepL    = resLow.summary.undis_frac;
+    var bepH    = resHigh.summary.undis_frac;
+    var bepLStr = bepL != null ? 'Yr ' + bepL : '—';
+    var bepHStr = bepH != null ? 'Yr ' + bepH : '—';
+    var bepLCol = (bepBase != null && bepL != null) ? (bepL > bepBase ? '#f87171' : bepL < bepBase ? '#4ade80' : '#aaa') : '#aaa';
+    var bepHCol = (bepBase != null && bepH != null) ? (bepH > bepBase ? '#f87171' : bepH < bepBase ? '#4ade80' : '#aaa') : '#aaa';
     sensHtml += '<tr style="background:' + rowBg + '">'
       + '<td style="padding:4px 6px;color:#ccc">' + sr.label + '</td>'
       + '<td style="padding:4px 6px;text-align:right;color:#888">' + sr.fmt(sr.base) + '</td>'
       + '<td style="padding:4px 6px;text-align:right;color:' + colL + '">' + fmtD(npvL) + '</td>'
       + '<td style="padding:4px 6px;text-align:right;color:' + colH + '">' + fmtD(npvH) + '</td>'
+      + '<td style="padding:4px 6px;text-align:right;color:' + bepLCol + '">' + bepLStr + '</td>'
+      + '<td style="padding:4px 6px;text-align:right;color:' + bepHCol + '">' + bepHStr + '</td>'
       + '</tr>';
   });
   sensHtml += '</table></div>';

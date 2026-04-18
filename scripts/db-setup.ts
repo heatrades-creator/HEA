@@ -101,6 +101,9 @@ const migrations = [
   // HubSpot CRM
   `ALTER TABLE "Lead" ADD COLUMN "hubSpotContactId"  TEXT`,
   `ALTER TABLE "Lead" ADD COLUMN "hubSpotDealId"     TEXT`,
+  // Payment timestamps
+  `ALTER TABLE "Lead" ADD COLUMN "completionPaidAt"  DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "esvPaidAt"         DATETIME`,
 ]
 
 async function main() {

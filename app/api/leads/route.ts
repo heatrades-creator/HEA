@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { prisma } from "@/lib/db"
 import { sendNewLeadAlert } from "@/lib/email"
+import { syncLeadToHubSpot } from "@/lib/hubspot"
 
 const Schema = z.object({
   firstName:       z.string().min(1).max(100),
@@ -71,6 +72,19 @@ export async function POST(req: NextRequest) {
 
   // Fire-and-forget — don't block the response if email fails
   sendNewLeadAlert(lead).catch(console.error)
+
+  // Sync to HubSpot CRM — fire-and-forget, never blocks response
+  syncLeadToHubSpot(lead).then(({ contactId, dealId }) => {
+    if (contactId || dealId) {
+      prisma.lead.update({
+        where: { id: lead.id },
+        data: {
+          hubSpotContactId: contactId ?? undefined,
+          hubSpotDealId:    dealId    ?? undefined,
+        },
+      }).catch(console.error)
+    }
+  }).catch(console.error)
 
   // Call GAS createJob — creates Google Drive folder + Sheets entry + Telegram alert
   if (process.env.JOBS_GAS_URL) {

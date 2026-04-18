@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/db"
 import { verifyWebhookSignature } from "@/lib/webhooks"
 import { sendMilestoneAlert } from "@/lib/email"
+import { updateDealStage, type HubStage } from "@/lib/hubspot"
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -83,6 +84,16 @@ export async function POST(req: NextRequest) {
 
   if (action) {
     sendMilestoneAlert(lead, action).catch(console.error)
+  }
+
+  // Mirror deal stage to HubSpot — fire-and-forget
+  const hubStage: Record<string, HubStage> = {
+    proposal_sent: "proposal_sent",
+    job_sold:      "deposit_paid",
+    job_installed: "installed",
+  }
+  if (action && lead.hubSpotDealId && hubStage[action]) {
+    updateDealStage(lead.hubSpotDealId, hubStage[action]).catch(console.error)
   }
 
   return NextResponse.json({ ok: true })

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { Resend } from "resend"
 import { generateConsentPdf, generateJobCardPdf, type IntakeData } from "@/lib/intake-pdf"
 import { prisma } from "@/lib/db"
+import { syncLeadToHubSpot } from "@/lib/hubspot"
 
 const resend           = new Resend(process.env.RESEND_API_KEY)
 const FROM_ADDR        = process.env.EMAIL_FROM      ?? "noreply@hea-group.com.au"
@@ -269,7 +270,7 @@ export async function POST(req: NextRequest) {
     const parsed = parseAddress(d.address)
     const postcode = d.postcode ?? parsed.postcode
 
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         firstName,
         lastName,
@@ -299,6 +300,20 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // Sync to HubSpot CRM — fire-and-forget, never blocks response
+    syncLeadToHubSpot(lead).then(({ contactId, dealId }) => {
+      if (contactId || dealId) {
+        prisma.lead.update({
+          where: { id: lead.id },
+          data: {
+            hubSpotContactId: contactId ?? undefined,
+            hubSpotDealId:    dealId    ?? undefined,
+          },
+        }).catch(console.error)
+      }
+    }).catch(console.error)
+
   } catch (dbErr) {
     console.error("Intake lead DB save failed:", dbErr)
     // non-fatal — emails already sent

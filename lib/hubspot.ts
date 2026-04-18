@@ -125,10 +125,9 @@ export async function createDeal(lead: LeadLike, contactId: string): Promise<str
       headers: headers(),
       body: JSON.stringify({
         properties: {
-          dealname:   dealName,
-          pipeline:   process.env.HUBSPOT_PIPELINE_ID ?? "default",
-          dealstage:  stageId("new_lead"),
-          lead_source: lead.leadSource ?? "website",
+          dealname:    dealName,
+          pipeline:    process.env.HUBSPOT_PIPELINE_ID ?? "default",
+          dealstage:   stageId("new_lead"),
           description: lead.notes ?? "",
         },
         associations: [{

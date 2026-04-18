@@ -90,6 +90,7 @@ export async function upsertContact(lead: LeadLike): Promise<string | null> {
       headers: headers(),
       body: JSON.stringify({
         inputs: [{
+          id: lead.email,
           idProperty: "email",
           properties: {
             email:      lead.email,

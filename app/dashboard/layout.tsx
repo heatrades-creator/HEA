@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SignOutButton from './SignOutButton';
@@ -9,9 +10,18 @@ import { DashboardMobileNav } from '@/components/dashboard/DashboardMobileNav';
 export const metadata = { title: 'Dashboard | HEA' };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession();
+  let session = null;
+  try {
+    session = await getServerSession(authOptions);
+  } catch {
+    // auth misconfigured or env var missing — render children (login page)
+  }
 
   if (!session) {
+    // DO NOT redirect here — this layout wraps /dashboard/login too.
+    // Redirecting to /dashboard/login from within this layout causes an
+    // infinite redirect loop (layout → redirect → layout → redirect …).
+    // The middleware (middleware.ts) handles protecting non-login routes.
     return <>{children}</>;
   }
 

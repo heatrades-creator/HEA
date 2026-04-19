@@ -8,6 +8,12 @@ on:
       - 'GAS/**'
       - 'HEA SA/**'
 
+# Shared credential-write script used by every job
+# Each job writes creds then runs clasp push --force + clasp deploy
+# clasp deploy -i <id> updates the EXISTING live deployment (new version, same URL)
+# If no existing deployment exists yet, it creates the first one.
+# This means zero manual steps in GAS — push to main = live immediately.
+
 jobs:
   # ── Deploy HEA Solar Intake Form ──────────────────────────────────────────
   deploy-intake:
@@ -20,51 +26,39 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (latest)
+      - name: Install clasp
         run: npm install -g @google/clasp
 
-      - name: Write credentials to all possible locations
+      - name: Write credentials
         run: |
           set -e
           TOKEN='${{ secrets.CLASPRC_JSON }}'
-
-          echo "=== clasp version ==="
           clasp --version
-
-          echo "=== Token top-level keys ==="
-          echo "$TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(list(d.keys()))"
-
-          # Write the raw token to every location clasp might check
+          echo "$TOKEN" | python3 -c "import sys,json; d=json.load(sys.stdin); print('Token keys:', list(d.keys()))"
           echo "$TOKEN" > ~/.clasprc.json
-
-          mkdir -p ~/.config/clasp
+          mkdir -p ~/.config/clasp ~/.config/@google/clasp "${XDG_CONFIG_HOME:-$HOME/.config}/clasp"
           echo "$TOKEN" > ~/.config/clasp/default.json
-
-          mkdir -p ~/.config/@google/clasp
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
-
-          # Also try the XDG config dir
-          mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/clasp"
           echo "$TOKEN" > "${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json"
+          clasp whoami || echo "whoami check — verify token if this failed"
 
-          echo "=== Credentials written to all locations ==="
-          ls -la ~/.clasprc.json ~/.config/clasp/ ~/.config/@google/clasp/ 2>/dev/null || true
-
-      - name: Verify authentication
-        run: |
-          set -e
-          echo "=== Testing clasp auth (whoami) ==="
-          clasp whoami || echo "whoami failed — check token"
-
-      - name: Push to Google Apps Script
+      - name: Push and deploy
         working-directory: 'HEA INTAKE'
         run: |
           set -xe
-          echo "=== .clasp.json ==="
           cat .clasp.json
-          echo "=== Pushing... ==="
+          echo "=== Pushing code ==="
           clasp push --force
-          echo "=== Push complete ==="
+          echo "=== Updating live deployment (no manual GAS step needed) ==="
+          DEPLOY_ID=$(clasp deployments 2>&1 | grep -v "@HEAD" | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            echo "Updating deployment: $DEPLOY_ID"
+            clasp deploy -i "$DEPLOY_ID" --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          else
+            echo "No existing deployment found — creating first deployment"
+            clasp deploy --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          fi
+          echo "=== HEA Intake live immediately ==="
 
   # ── Deploy HEA Jobs API ───────────────────────────────────────────────────
   deploy-jobs-api:
@@ -77,34 +71,37 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (latest)
+      - name: Install clasp
         run: npm install -g @google/clasp
 
-      - name: Write credentials to all possible locations
+      - name: Write credentials
         run: |
           set -e
           TOKEN='${{ secrets.CLASPRC_JSON }}'
           echo "$TOKEN" > ~/.clasprc.json
-          mkdir -p ~/.config/@google/clasp
+          mkdir -p ~/.config/@google/clasp ~/.config/clasp
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
-          mkdir -p ~/.config/clasp
           echo "$TOKEN" > ~/.config/clasp/credentials.json
 
-      - name: Skip if script ID not set
+      - name: Push and deploy
         working-directory: GAS
         run: |
-          if grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
+          if grep -q "REPLACE_WITH" .clasp.json; then
             echo "Jobs API script ID not configured — skipping"
             exit 0
           fi
-
-      - name: Push to Google Apps Script
-        working-directory: GAS
-        run: |
-          if ! grep -q "REPLACE_WITH_JOBS_API_SCRIPT_ID" .clasp.json; then
-            set -xe
-            clasp push --force
+          set -xe
+          cat .clasp.json
+          echo "=== Pushing code ==="
+          clasp push --force
+          echo "=== Updating live deployment ==="
+          DEPLOY_ID=$(clasp deployments 2>&1 | grep -v "@HEAD" | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            clasp deploy -i "$DEPLOY_ID" --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          else
+            clasp deploy --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           fi
+          echo "=== HEA Jobs API live immediately ==="
 
   # ── Deploy HEA Battery Photo Portal ──────────────────────────────────────
   deploy-photo-portal:
@@ -117,31 +114,29 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (latest)
+      - name: Install clasp
         run: npm install -g @google/clasp
 
-      - name: Write credentials to all possible locations
+      - name: Write credentials
         run: |
           set -e
           TOKEN='${{ secrets.CLASPRC_JSON }}'
           echo "$TOKEN" > ~/.clasprc.json
-          mkdir -p ~/.config/@google/clasp
+          mkdir -p ~/.config/@google/clasp ~/.config/clasp
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
-          mkdir -p ~/.config/clasp
           echo "$TOKEN" > ~/.config/clasp/credentials.json
 
-      - name: Push and deploy to Google Apps Script
+      - name: Push and deploy
         working-directory: GAS/PhotoPortal
         run: |
           set -xe
-          echo "=== .clasp.json ==="
           cat .clasp.json
-          echo "=== Pushing code… ==="
+          echo "=== Pushing code ==="
           clasp push --force
-          echo "=== Creating new version and updating deployment… ==="
+          echo "=== Updating live deployment ==="
           clasp deploy -i "AKfycbwERmJbdTrnpM_-ABgXGtRolMCzSG2nDWJNyJjhfDx-baSI1BJWiehTdCM9qW0VSWU" \
             --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "=== PhotoPortal deploy complete — live immediately ==="
+          echo "=== PhotoPortal live immediately ==="
 
   # ── Deploy HEA Solar Analyser ─────────────────────────────────────────────
   deploy-solar-analyser:
@@ -154,32 +149,32 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install clasp (latest)
+      - name: Install clasp
         run: npm install -g @google/clasp
 
-      - name: Write credentials to all possible locations
+      - name: Write credentials
         run: |
           set -e
           TOKEN='${{ secrets.CLASPRC_JSON }}'
           echo "$TOKEN" > ~/.clasprc.json
-          mkdir -p ~/.config/@google/clasp
+          mkdir -p ~/.config/@google/clasp ~/.config/clasp
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
-          mkdir -p ~/.config/clasp
           echo "$TOKEN" > ~/.config/clasp/credentials.json
 
-      - name: Push and deploy to Google Apps Script
+      - name: Push and deploy
         working-directory: 'HEA SA'
         run: |
           set -xe
-          echo "=== .clasp.json ==="
           cat .clasp.json
-          echo "=== Pushing HEA Solar Analyser... ==="
+          echo "=== Pushing code ==="
           clasp push --force
-          echo "=== Creating new version and updating deployment… ==="
+          echo "=== Updating live deployment (no manual GAS step needed) ==="
           DEPLOY_ID=$(clasp deployments 2>&1 | grep -v "@HEAD" | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
           if [ -n "$DEPLOY_ID" ]; then
+            echo "Updating deployment: $DEPLOY_ID"
             clasp deploy -i "$DEPLOY_ID" --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           else
+            echo "No existing deployment found — creating first deployment"
             clasp deploy --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           fi
-          echo "=== Solar Analyser deploy complete — live immediately ==="
+          echo "=== HEA Solar Analyser live immediately ==="

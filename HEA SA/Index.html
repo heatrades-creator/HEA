@@ -139,7 +139,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
   <img src="https://hea-group.com.au/_next/static/media/Logo_transparent.02d8e37d.png" alt="HEA">
   <div>
     <h1>Solar Interval Analyser</h1>
-    <span>NEM12 -> load profile -> generation model -> live system sizing -> payback</span>
+    <span>NEM12 -> load profile -> generation model -> live system sizing -> payback &nbsp;<span id="versionBadge" style="background:rgba(245,197,24,.2);color:#f5c518;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:800">v2.03</span></span>
   </div>
 </div>
 <div class="main">
@@ -180,6 +180,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <div id="driveList"></div>
     </div>
   </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampS1"></span> — § Client &amp; Data</div>
 </div>
 
 <!-- STEP 2 -->
@@ -329,6 +330,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
     </div>
     <p class="hint">!! CL runs overnight -- solar cannot offset it. Savings apply to main consumption only.</p>
   </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampS2"></span> — § System &amp; Tariff</div>
 </div>
 
 <!-- ANALYSE -->
@@ -397,6 +399,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <strong style="color:#f87171">If you do nothing (no solar):</strong>
       <span id="doNothingText"></span>
     </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampExplorer"></span> — § Live System Explorer</div>
   </div>
 
   <!-- Bill Comparison -->
@@ -440,12 +443,13 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <div><div class="sav-label">Bill reduction per year</div><div class="sav-val" id="b-yr-save">--</div></div>
       <div><div class="sav-label">Incl. connection + grid charges</div><div style="font-size:11px;color:#666;margin-top:2px" id="b-note"></div></div>
     </div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampBill"></span> — § Bill Comparison</div>
   </div>
 
   <!-- ROI / Finance Card -->
   <div class="roi-card" id="roiCard" style="display:none">
-    <h2>Lifetime Return Calculator</h2>
-    <p style="font-size:11px;color:#888;margin:-10px 0 6px">Enter full system cost + payment details below. Shows 4 separate payback metrics.</p>
+    <h2 style="justify-content:space-between">Lifetime Return Calculator <span id="roiVersion" style="font-size:10px;color:#f5c518;font-weight:700;background:rgba(245,197,24,.1);border-radius:4px;padding:2px 8px;letter-spacing:.5px">v2.03</span></h2>
+    <p style="font-size:11px;color:#888;margin:-10px 0 6px">Enter full system cost + payment details. <strong style="color:#aaa">Cash Paid Upfront can be $0 for a full loan.</strong> Shows 7 payback metrics.</p>
     <div style="display:inline-block;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:3px 10px;font-size:10px;color:#60a5fa;font-weight:700;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase">Customer Cashflow View — upfront deposit as Year 0, loan repayments in annual NCF</div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;background:rgba(255,255,255,.05);border-radius:8px;padding:13px;margin-bottom:12px">
@@ -560,6 +564,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
     <div id="roiSensitivity" style="margin-bottom:12px"></div>
 
     <div class="fin-note" id="roiNote"></div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampROI"></span> — § Lifetime Return Calculator</div>
   </div>
 
   <!-- Chart -->
@@ -641,6 +646,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <button class="btn btn-dark btn-sm" onclick="reRun()" style="padding:8px 16px;font-size:12px">↺ New Analysis</button>
     </div>
     <div id="pdfStatus" style="margin-top:9px;text-align:center"></div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampChart"></span> — § Generation vs Load</div>
   </div>
 
 </div><!-- /resultPanel -->
@@ -648,6 +654,10 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// == Version ==
+const ANALYSER_VERSION = 'v2.03';
+document.addEventListener('DOMContentLoaded',function(){['stampS1','stampS2','stampExplorer','stampBill','stampROI','stampChart','versionBadge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ANALYSER_VERSION;});var rv=document.getElementById('roiVersion');if(rv)rv.textContent=ANALYSER_VERSION;});
+
 // == Constants ==
 const PANEL_W_DEFAULT = 440; // fallback
 function getPanelW(){var el=document.getElementById('panelWatt');return parseFloat(el?el.value:null)||PANEL_W_DEFAULT;}
@@ -1183,16 +1193,24 @@ function updateROI() {
   var intRate   = (parseFloat(document.getElementById('finInterestRate').value) || 5) / 100;
 
   // Show loan summary under repayment field
+  // Uses daily-compound effective rate (matches Australian personal loan: interest accrues daily, charged monthly)
   var loanHint = document.getElementById('loanSummaryHint');
   if (loanHint) {
     if (loan_amt > 0 && repayAmt > 0) {
-      var lw = 0, r_p_h = intRate / ppy;
-      if (r_p_h < 1e-9) { lw = loan_amt / repayAmt; }
-      else { var rt = loan_amt * r_p_h / repayAmt; if(rt<1) lw = -Math.log(1-rt)/Math.log(1+r_p_h); }
-      var lyr = (lw/ppy).toFixed(1);
+      var lw = 0;
+      var r_p_h = intRate > 1e-9 ? Math.pow(1 + intRate / 365, 365 / ppy) - 1 : 0;
+      if (r_p_h < 1e-9) {
+        lw = loan_amt / repayAmt;
+      } else {
+        var rt = loan_amt * r_p_h / repayAmt;
+        if (rt < 1) lw = -Math.log(1 - rt) / Math.log(1 + r_p_h);
+      }
+      var lyr = (lw / ppy).toFixed(1);
+      var lmo = Math.round(lw / ppy * 12);
       var tint = Math.max(0, repayAmt * lw - loan_amt);
+      var periodLabel = period === 'week' ? 'weekly' : period === 'fortnight' ? 'fortnightly' : 'monthly';
       loanHint.style.display = 'block';
-      loanHint.textContent = 'Loan paid off in ~' + lyr + ' yrs (~' + Math.round(lw) + ' payments). Total interest: $' + Math.round(tint).toLocaleString() + '. Higher repayments = paid off faster but more cash out per year.';
+      loanHint.textContent = 'Loan paid off in ~' + lyr + ' yrs (~' + lmo + ' months, ' + Math.round(lw) + ' ' + periodLabel + ' payments). Total interest: $' + Math.round(tint).toLocaleString() + '. Increase repayments to pay off faster.';
     } else {
       loanHint.style.display = 'none';
     }
@@ -1313,13 +1331,21 @@ function updateROI() {
       : (simple_pb_label || 'Year 1 net savings ≤ 0 — check system size or tariff inputs')
   });
 
+  // Pre-compute annual loan repayments for card sub-texts
+  var ann_loan_repayments = repayAmt * ppy;
+  var yr1_sav_gross = annual_rows[0] ? annual_rows[0].savings : 0;
+
   // 2. CF+ Year — first year Annual_NCF_t > 0 (financing-aware: savings minus ALL costs incl. loan)
+  var cfPlusNote = '';
+  if (loan_amt > 0 && repayAmt > 0 && ann_loan_repayments > yr1_sav_gross) {
+    cfPlusNote = ' Loan repayments ($' + fmtD(ann_loan_repayments) + '/yr) exceed Year 1 solar savings (' + fmtD(yr1_sav_gross) + ') so the loan must be largely paid off before CF+ is reached.';
+  }
   mils.push({
     label: 'CF+ Year',
     cls: ann_cf_pos ? 'profit' : 'neg', badge: 'CF+',
     val: ann_cf_pos ? 'Year ' + ann_cf_pos : 'Never CF+ in period',
     sub: ann_cf_pos
-      ? 'Year ' + ann_cf_pos + ': first year your solar savings (' + fmtD(annual_rows[ann_cf_pos-1] ? annual_rows[ann_cf_pos-1].savings : 0) + ') exceed ALL annual outgoings — maintenance, replacements' + (loan_amt > 0 ? ', and loan repayments' : '') + '.'
+      ? 'Year ' + ann_cf_pos + ': first year solar savings (' + fmtD(annual_rows[ann_cf_pos-1] ? annual_rows[ann_cf_pos-1].savings : 0) + ') beat ALL outgoings — maintenance, replacements' + (loan_amt > 0 ? ', and loan repayments' : '') + '.' + cfPlusNote
       : 'No year in the analysis period has a positive annual net cashflow — check system size, costs, or extend the analysis period'
   });
 
@@ -1834,13 +1860,14 @@ function updateROI() {
   }
   document.getElementById('annualTable').innerHTML = tbl + '</tbody></table>';
 
-  // Footer note
+  // Footer note + version stamp
+  var loanStr = loan_amt > 0 && repayAmt > 0
+    ? ' | Loan: ' + fmtD(loan_amt) + ' @ ' + fmtD(repayAmt) + '/' + period + ' — paid off in ~' + loan_weeks.toFixed(1) + ' wks (~' + Math.round(loan_weeks/52*12) + ' months), total interest ' + fmtD(total_interest)
+    : (cash_deposit > 0 && cash_deposit >= total_cost ? ' | Cash purchase' : (loan_amt > 0 ? ' | Loan — enter repayments' : ' | Cash purchase'));
   var finNote = 'System cost: ' + fmtD(total_cost)
-    + (cash_deposit > 0 ? ' (' + fmtD(cash_deposit) + ' cash + ' + fmtD(loan_amt) + ' financed)' : '')
-    + (loan_amt > 0 && repayAmt > 0
-      ? ' | Loan repaid in ~' + loan_weeks.toFixed(1) + ' wks, total interest ' + fmtD(total_interest)
-      : ' | Cash purchase')
-    + '. Tariff esc ' + (tEsc*100).toFixed(1) + '%/yr. Panel deg 0.5%/yr. Estimates only.';
+    + (cash_deposit > 0 && cash_deposit < total_cost ? ' ($' + cash_deposit.toLocaleString() + ' cash + $' + loan_amt.toLocaleString() + ' financed)' : '')
+    + loanStr
+    + '. Tariff esc ' + (tEsc*100).toFixed(1) + '%/yr. Panel deg 0.5%/yr. Estimates only. ' + ANALYSER_VERSION;
   document.getElementById('roiNote').textContent = finNote;
 }
 function updateCursorPanel(yr,rows,cumDCF,C_upfront,anlYrs){

@@ -1349,32 +1349,24 @@ function updateROI() {
       : 'No year in the analysis period has a positive annual net cashflow — check system size, costs, or extend the analysis period'
   });
 
-  // 3. BEP — customer cashflow view: when cumulative (savings - loan - costs) recovers out-of-pocket deposit
-  var bep_warn_sub = '⚠ Enter loan repayments above — without repayments set, a break-even year cannot be calculated (the loan obligation is not being counted).';
-  var bep_loan_note = '';
-  if (loan_amt > 0 && repayAmt > 0) {
-    bep_loan_note = ' Why longer than Simple Payback (' + (simple_pb ? simple_pb.toFixed(1) : '?') + ' yr): loan repayments (' + fmtD(ann_loan_repayments) + '/yr) exceed solar savings in early years — the loan period is a net-negative phase that delays break-even.';
-  }
-  var bep_start_label = cash_deposit > 0 ? 'your $' + cash_deposit.toLocaleString() + ' out-of-pocket deposit' : 'your net position ($0 — full loan means no upfront cash)';
+  // 3. BEP — investment view: when cumulative savings recover full system cost (financing-independent)
   mils.push({
     label: 'Break-Even Point (BEP)',
-    cls: loan_no_repayment_warn ? 'neg' : (undis_be ? 'breakeven' : 'neg'), badge: 'BEP',
-    val: loan_no_repayment_warn ? 'Set repayments' : (undis_frac != null ? 'Year ' + undis_frac : 'No BEP in ' + anlYrs + 'yr'),
-    sub: loan_no_repayment_warn ? bep_warn_sub
-      : (undis_be
-        ? 'Year ' + undis_frac + ': cumulative (savings − repayments − running costs) has recovered ' + bep_start_label + ' (undiscounted).' + bep_loan_note
-        : 'Running total does not break even within ' + anlYrs + ' years — check system size or costs')
+    cls: undis_be ? 'breakeven' : 'neg', badge: 'BEP',
+    val: undis_frac != null ? 'Year ' + undis_frac : 'No BEP in ' + anlYrs + 'yr',
+    sub: undis_be
+      ? 'Year ' + undis_frac + ': cumulative solar savings recover the full $' + total_cost.toLocaleString() + ' system cost (undiscounted). Same result regardless of how you finance the system.'
+      : 'Cumulative savings do not recover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years — check system size or costs'
   });
 
-  // 4. DPB — customer cashflow view, discounted to today's dollars
+  // 4. DPB — investment view, discounted to today's dollars
   mils.push({
     label: 'Discounted Payback (DPB)',
-    cls: loan_no_repayment_warn ? 'neg' : (dis_be ? 'breakeven' : 'neg'), badge: 'DPB',
-    val: loan_no_repayment_warn ? 'Set repayments' : (dis_frac != null ? 'Year ' + dis_frac : 'No DPB in ' + anlYrs + 'yr'),
-    sub: loan_no_repayment_warn ? bep_warn_sub
-      : (dis_be
-        ? 'Year ' + dis_frac + ': same as BEP but each year\'s net cashflow is shrunk to today\'s value at ' + (discRate*100).toFixed(0) + '% discount rate (a dollar in 10 years is worth less than a dollar today).'
-        : 'Discounted cashflows do not break even within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate')
+    cls: dis_be ? 'breakeven' : 'neg', badge: 'DPB',
+    val: dis_frac != null ? 'Year ' + dis_frac : 'No DPB in ' + anlYrs + 'yr',
+    sub: dis_be
+      ? 'Year ' + dis_frac + ': cumulative savings in today\'s dollars (at ' + (discRate*100).toFixed(0) + '% discount rate) recover the full $' + total_cost.toLocaleString() + ' system cost.'
+      : 'Discounted savings do not recover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
   });
 
   // 5. NPV = -total_cost + SUM(PV of annual savings) — investment view
@@ -1530,67 +1522,57 @@ function updateROI() {
     else html += '<div style="margin-top:6px;color:#f87171">→ No CF+ year in ' + anlYrs + ' year period</div>';
     html += hr;
 
-    // 3. BEP — customer cashflow view (from out-of-pocket deposit)
+    // 3. BEP — investment view: cumulative savings vs total system cost (financing-independent)
     html += '<div style="font-weight:700;color:#38bdf8;margin-bottom:4px">③ Break-Even Point (BEP)</div>';
-    if (loan_no_repayment_warn) {
-      html += '<div style="color:#f87171;padding:8px;background:rgba(248,113,113,.08);border-radius:4px">⚠ Loan repayments not set — enter repayments above to calculate BEP.</div>';
-    } else {
-      var bepDeposit = cash_deposit || 0;
-      html += '<div style="color:#888;margin-bottom:6px">Running total of (savings – loan repayments – costs) starting from your $' + bepDeposit.toLocaleString() + ' out-of-pocket payment:</div>';
-      html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
-      html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Net cash flow</th><th style="text-align:right;padding:2px 6px">Running total</th><th style="text-align:right;padding:2px 6px"></th></tr>';
-      html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(bepDeposit) + '</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(bepDeposit) + '</td><td></td></tr>';
-      var bepShowRows = Math.min(annual_rows.length, undis_be ? Math.min(undis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
-      var runCum = -bepDeposit;
-      for (var bi = 0; bi < bepShowRows; bi++) {
-        var brow = annual_rows[bi];
-        runCum += brow.Annual_NCF_t;
-        var recovered = runCum >= 0;
-        var rowBg2 = bi % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
-        var ncfColor = brow.Annual_NCF_t >= 0 ? '#4ade80' : '#f87171';
-        html += '<tr style="background:' + rowBg2 + '">';
-        html += '<td style="padding:3px 6px">Yr ' + brow.t + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px;color:' + ncfColor + '">' + (brow.Annual_NCF_t >= 0 ? '' : '–') + fmtDol(Math.abs(brow.Annual_NCF_t)) + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px;color:' + (runCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runCum >= 0 ? '' : '–') + fmtDol(Math.abs(runCum)) + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px">' + (recovered ? '<span style="color:#4ade80">✓ break even</span>' : '<span style="color:#888">' + fmtDol(-runCum) + ' to go</span>') + '</td>';
-        html += '</tr>';
-      }
-      html += '</table>';
-      if (undis_frac != null) html += '<div style="margin-top:6px;color:#38bdf8">→ BEP: <strong>Year ' + fmtYr(undis_frac) + '</strong></div>';
-      else html += '<div style="margin-top:6px;color:#f87171">→ No BEP within ' + anlYrs + ' year period</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Running total of annual savings (no loan costs) vs $' + total_cost.toLocaleString() + ' system cost. Same result regardless of financing:</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Running total</th><th style="text-align:right;padding:2px 6px"></th></tr>';
+    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(total_cost) + '</td><td></td></tr>';
+    var bepShowRows = Math.min(annual_rows.length, undis_be ? Math.min(undis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
+    var runCum = -total_cost;
+    for (var bi = 0; bi < bepShowRows; bi++) {
+      var brow = annual_rows[bi];
+      runCum += brow.Annual_Savings_t;
+      var recovered = runCum >= 0;
+      var rowBg2 = bi % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
+      var savColor = brow.Annual_Savings_t >= 0 ? '#4ade80' : '#f87171';
+      html += '<tr style="background:' + rowBg2 + '">';
+      html += '<td style="padding:3px 6px">Yr ' + brow.t + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + savColor + '">' + (brow.Annual_Savings_t >= 0 ? '' : '–') + fmtDol(Math.abs(brow.Annual_Savings_t)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (runCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runCum >= 0 ? '' : '–') + fmtDol(Math.abs(runCum)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px">' + (recovered ? '<span style="color:#4ade80">✓ break even</span>' : '<span style="color:#888">' + fmtDol(-runCum) + ' to go</span>') + '</td>';
+      html += '</tr>';
     }
+    html += '</table>';
+    if (undis_frac != null) html += '<div style="margin-top:6px;color:#38bdf8">→ BEP: <strong>Year ' + fmtYr(undis_frac) + '</strong></div>';
+    else html += '<div style="margin-top:6px;color:#f87171">→ No BEP within ' + anlYrs + ' year period</div>';
     html += hr;
 
-    // 4. DPB — customer cashflow view, discounted
+    // 4. DPB — investment view, discounted to today's dollars
     html += '<div style="font-weight:700;color:#4ade80;margin-bottom:4px">④ Discounted Payback (DPB)</div>';
-    if (loan_no_repayment_warn) {
-      html += '<div style="color:#f87171;padding:8px;background:rgba(248,113,113,.08);border-radius:4px">⚠ Loan repayments not set — enter repayments above to calculate DPB.</div>';
-    } else {
-      html += '<div style="color:#888;margin-bottom:6px">Same as BEP but each year\'s net cash flow is shrunk to "today\'s value" at ' + (discRate*100).toFixed(0) + '% (because $1 in 10 years is worth less than $1 today):</div>';
-      html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
-      html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Net cash flow</th><th style="text-align:right;padding:2px 6px">Today\'s value</th><th style="text-align:right;padding:2px 6px">Running total</th></tr>';
-      var dpbDeposit = cash_deposit || 0;
-      var dpbShowRows = Math.min(annual_rows.length, dis_be ? Math.min(dis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
-      var runDCum = -dpbDeposit;
-      html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(dpbDeposit) + '</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(dpbDeposit) + '</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(dpbDeposit) + '</td></tr>';
-      for (var di = 0; di < dpbShowRows; di++) {
-        var drow = annual_rows[di];
-        var discFactor = Math.pow(1 + discRate, drow.t);
-        var pvNcf = drow.Annual_NCF_t / discFactor;
-        runDCum += pvNcf;
-        var rowBg3 = di % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
-        var pvColor = pvNcf >= 0 ? '#60a5fa' : '#f87171';
-        html += '<tr style="background:' + rowBg3 + '">';
-        html += '<td style="padding:3px 6px">Yr ' + drow.t + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px;color:' + (drow.Annual_NCF_t >= 0 ? '#4ade80' : '#f87171') + '">' + (drow.Annual_NCF_t >= 0 ? '' : '–') + fmtDol(Math.abs(drow.Annual_NCF_t)) + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px;color:' + pvColor + '">' + (pvNcf >= 0 ? '' : '–') + fmtDol(Math.abs(pvNcf)) + '</td>';
-        html += '<td style="text-align:right;padding:3px 6px;color:' + (runDCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runDCum >= 0 ? '' : '–') + fmtDol(Math.abs(runDCum)) + '</td>';
-        html += '</tr>';
-      }
-      html += '</table>';
-      if (dis_frac != null) html += '<div style="margin-top:6px;color:#4ade80">→ DPB: <strong>Year ' + fmtYr(dis_frac) + '</strong></div>';
-      else html += '<div style="margin-top:6px;color:#f87171">→ No DPB within ' + anlYrs + ' year period at ' + (discRate*100).toFixed(0) + '% discount rate</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Same as BEP but each year\'s savings are shrunk to "today\'s value" at ' + (discRate*100).toFixed(0) + '% (because $1 in 10 years is worth less than $1 today):</div>';
+    html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
+    html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Today\'s value</th><th style="text-align:right;padding:2px 6px">Running total</th></tr>';
+    var dpbShowRows = Math.min(annual_rows.length, dis_be ? Math.min(dis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
+    var runDCum = -total_cost;
+    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(total_cost) + '</td></tr>';
+    for (var di = 0; di < dpbShowRows; di++) {
+      var drow = annual_rows[di];
+      var discFactor = Math.pow(1 + discRate, drow.t);
+      var pvSav = drow.Annual_Savings_t / discFactor;
+      runDCum += pvSav;
+      var rowBg3 = di % 2 === 0 ? 'rgba(255,255,255,.03)' : '';
+      var pvColor = pvSav >= 0 ? '#60a5fa' : '#f87171';
+      html += '<tr style="background:' + rowBg3 + '">';
+      html += '<td style="padding:3px 6px">Yr ' + drow.t + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (drow.Annual_Savings_t >= 0 ? '#4ade80' : '#f87171') + '">' + (drow.Annual_Savings_t >= 0 ? '' : '–') + fmtDol(Math.abs(drow.Annual_Savings_t)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + pvColor + '">' + (pvSav >= 0 ? '' : '–') + fmtDol(Math.abs(pvSav)) + '</td>';
+      html += '<td style="text-align:right;padding:3px 6px;color:' + (runDCum >= 0 ? '#4ade80' : '#f87171') + '">' + (runDCum >= 0 ? '' : '–') + fmtDol(Math.abs(runDCum)) + '</td>';
+      html += '</tr>';
     }
+    html += '</table>';
+    if (dis_frac != null) html += '<div style="margin-top:6px;color:#4ade80">→ DPB: <strong>Year ' + fmtYr(dis_frac) + '</strong></div>';
+    else html += '<div style="margin-top:6px;color:#f87171">→ No DPB within ' + anlYrs + ' year period at ' + (discRate*100).toFixed(0) + '% discount rate</div>';
     html += hr;
 
     // 5. NPV
@@ -1624,8 +1606,8 @@ function updateROI() {
     smDet.innerHTML = html;
   })();
 
-  // -- Chart data — customer cashflow view: starts at -cash_deposit --
-  var cumDCF_arr = [-year0_outflow];
+  // -- Chart data — investment view: starts at -total_cost --
+  var cumDCF_arr = [-total_cost];
   for (var ri = 0; ri < annual_rows.length; ri++) cumDCF_arr.push(annual_rows[ri].CumDCF);
   var labels = ['Now'];
   for (var li = 0; li < annual_rows.length; li++) labels.push('Yr ' + annual_rows[li].t);

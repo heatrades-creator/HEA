@@ -19,7 +19,9 @@ async function fetchStats(): Promise<UsageStats> {
   try {
     const res = await fetch(`${gasUrl}?action=proposalStats`, { cache: 'no-store' });
     if (!res.ok) throw new Error('GAS error');
-    return res.json();
+    const data = await res.json();
+    if (!data || typeof data !== 'object') return fallback;
+    return { ...fallback, ...data };
   } catch {
     return fallback;
   }

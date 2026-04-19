@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import SignOutButton from './SignOutButton';
@@ -13,7 +14,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    return <>{children}</>;
+    redirect('/dashboard/login');
   }
 
   return (

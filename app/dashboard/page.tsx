@@ -27,7 +27,7 @@ async function getJobs(): Promise<Job[]> {
   try {
     const res = await fetch(gasUrl, { cache: 'no-store' });
     if (!res.ok) return [];
-    return res.json();
+    return await res.json();
   } catch {
     return [];
   }
@@ -40,7 +40,7 @@ async function getUsage(): Promise<UsageStats> {
   try {
     const res = await fetch(`${gasUrl}?action=proposalStats`, { cache: 'no-store' });
     if (!res.ok) return fallback;
-    return res.json();
+    return await res.json();
   } catch {
     return fallback;
   }

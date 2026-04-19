@@ -9,7 +9,7 @@ async function getJobs() {
   try {
     const res = await fetch(gasUrl, { cache: 'no-store' });
     if (!res.ok) return [];
-    return res.json();
+    return await res.json();
   } catch {
     return [];
   }

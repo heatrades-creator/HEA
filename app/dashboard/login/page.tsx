@@ -6,8 +6,12 @@ import { authOptions } from '@/lib/auth';
 export const metadata = { title: 'Staff Login | HEA' };
 
 export default async function LoginPage() {
-  const session = await getServerSession(authOptions);
-  if (session) redirect('/dashboard');
+  try {
+    const session = await getServerSession(authOptions);
+    if (session) redirect('/dashboard');
+  } catch {
+    // auth misconfigured or env var missing — render login page
+  }
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center">

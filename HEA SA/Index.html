@@ -3116,14 +3116,24 @@ function applyOptimisation() {
 // =============================================================================
 
 // =============================================================================
-// BATTERY REBATE ENGINE -- Cheaper Home Battery Program 2026
-// Pre-May:  flat STC rate 8.4 * $37/STC = $311/kWh rebate (all sizes)
-// Post-May: tiered STC factor + rate drops to 6.8
-//   0-14 kWh:  100% factor -> $252/kWh rebate
-//   14-28 kWh:  60% factor -> $151/kWh rebate
-//   28-50 kWh:  15% factor ->  $38/kWh rebate
-// STC rate continues declining every 6 months after May 2026
-// Source: CHBP government announcement Dec 2025 / Amber Industry Briefing Mar 2026
+// BATTERY REBATE ENGINE -- Cheaper Home Battery Program (CHBP)
+//
+// Formula (CER rules, always tiered — factor changes by date, bands are constant):
+//   eligible_kwh = min(usable_kwh, 50)           ← scheme cap
+//   band1 = min(eligible, 14)                    × factor × 1.00  (100%)
+//   band2 = min(max(eligible-14, 0), 14)         × factor × 0.60   (60%)
+//   band3 = min(max(eligible-28, 0), 22)         × factor × 0.15   (15%)
+//   battery_stcs = floor(band1 + band2 + band3)  ← single floor on total sum
+//
+// Battery STC factor schedule (CER):
+//   Before 2026-05-01: factor 8.4
+//   From   2026-05-01: factor 6.8
+//   (Add future periods to BAT_STC_FACTOR_SCHEDULE as CER updates)
+//
+// AS/NZS 5139:2019 is an installation safety standard required for eligibility —
+// it is NOT the source of the STC quantity formula.
+//
+// Sources: CHBP government announcement Dec 2025 / Amber Industry Briefing Mar 2026
 // =============================================================================
 
 var REBATE_CLIFF_DATE = new Date('2026-05-01');
@@ -3132,16 +3142,30 @@ function isPostMayRebate() {
   return new Date() >= REBATE_CLIFF_DATE;
 }
 
+// CER battery STC factor schedule — update this array when CER publishes new periods.
+var BAT_STC_FACTOR_SCHEDULE = [
+  { start: new Date('2023-01-01'), end: new Date('2026-04-30'), factor: 8.4 },
+  { start: new Date('2026-05-01'), end: new Date('2030-12-31'), factor: 6.8 },
+];
+
+function getBatteryStcFactor() {
+  var now = new Date();
+  for (var i = 0; i < BAT_STC_FACTOR_SCHEDULE.length; i++) {
+    var p = BAT_STC_FACTOR_SCHEDULE[i];
+    if (now >= p.start && now <= p.end) return p.factor;
+  }
+  return 6.8; // safe fallback: latest known rate
+}
+
 function calcBatteryStcs(kwh) {
   if (kwh <= 0) return 0;
-  if (!isPostMayRebate()) {
-    return Math.floor(kwh * 8.4);
-  } else {
-    var t1 = Math.min(kwh, 14);
-    var t2 = Math.max(0, Math.min(kwh - 14, 14));
-    var t3 = Math.max(0, Math.min(kwh - 28, 22));
-    return Math.floor(t1 * 6.8 * 1.00) + Math.floor(t2 * 6.8 * 0.60) + Math.floor(t3 * 6.8 * 0.15);
-  }
+  var eligible = Math.min(kwh, 50); // scheme cap: only first 50 kWh eligible
+  var f  = getBatteryStcFactor();
+  var b1 = Math.min(eligible, 14);
+  var b2 = Math.min(Math.max(eligible - 14, 0), 14);
+  var b3 = Math.min(Math.max(eligible - 28, 0), 22);
+  // Single floor on total sum (not per band) — matches CER test vectors
+  return Math.floor(b1 * f * 1.00 + b2 * f * 0.60 + b3 * f * 0.15);
 }
 
 function calcBatteryRebate(kwh) {
@@ -3274,8 +3298,11 @@ function updatePriceEstimate() {
   var batBOS = batKwh > 0 ? 640 : 0;
 
   // ?? STC REBATE (solar panels) ??
-  var ZONE_RATING = 1.382; // VIC Zone 3
-  var DEEMING_YRS = 5;
+  // CER formula: floor(system_kW × zone_rating × deeming_years)
+  // Deeming period falls by 1 per year: 2026=5, 2027=4, ... 2030=1
+  var ZONE_RATING = 1.382; // VIC Zone 3 (CER postcode table)
+  var PV_DEEMING_BY_YEAR = { 2024:7, 2025:6, 2026:5, 2027:4, 2028:3, 2029:2, 2030:1 };
+  var DEEMING_YRS = PV_DEEMING_BY_YEAR[new Date().getFullYear()] || 5;
   var STC_PRICE   = 37.20;
   var stcs        = Math.floor(kw * ZONE_RATING * DEEMING_YRS);
   var stcValue    = stcs * STC_PRICE;

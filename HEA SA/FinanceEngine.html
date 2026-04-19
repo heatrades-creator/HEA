@@ -52,7 +52,9 @@ const ASSUMPTION_PROVENANCE = {
 
 function buildFinanceOutflows(principal, repayment_per_period, ppy, annual_rate, analysis_years) {
   if (principal <= 0 || repayment_per_period <= 0) return new Array(analysis_years).fill(0);
-  var r_p = annual_rate / ppy;
+  // Daily interest compounded to per-period effective rate — matches Australian personal loan practice
+  // (interest accrues daily on outstanding balance, charged monthly, repaid weekly/fortnightly/monthly)
+  var r_p = annual_rate > 1e-9 ? Math.pow(1 + annual_rate / 365, 365 / ppy) - 1 : 0;
   var n_periods;
   if (r_p < 1e-9) {
     n_periods = principal / repayment_per_period;
@@ -61,7 +63,8 @@ function buildFinanceOutflows(principal, repayment_per_period, ppy, annual_rate,
     if (ratio >= 1) {
       // Repayment <= interest accrual — loan cannot amortise (negative amortisation)
       // Return special sentinel so caller can show validation error
-      return { invalid: true, reason: 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period is too low — it does not cover the interest of $' + (principal * r_p).toFixed(2) + ' per period. The loan will never be paid off. Increase repayments.' };
+      var interest_per_period = principal * r_p;
+      return { invalid: true, reason: 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period is too low — it does not cover the interest of $' + interest_per_period.toFixed(2) + ' per period. The loan will never be paid off. Increase repayments.' };
     }
     n_periods = -Math.log(1 - ratio) / Math.log(1 + r_p);
   }
@@ -133,10 +136,11 @@ function computeMIRR(cashflows, financeRate, reinvestRate) {
 // ── Negative amortisation guard — checked by updateROI before calling runEngine
 function checkLoanServicability(principal, repayment_per_period, ppy, annual_rate) {
   if (principal <= 0 || repayment_per_period <= 0 || annual_rate <= 0) return null;
-  var r_p = annual_rate / ppy;
+  var r_p = Math.pow(1 + annual_rate / 365, 365 / ppy) - 1;
   if (r_p < 1e-9) return null;
-  if (principal * r_p >= repayment_per_period) {
-    return 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period does not cover interest ($' + (principal * r_p).toFixed(2) + ' per period). Increase repayments or reduce the loan amount.';
+  var interest_per_period = principal * r_p;
+  if (interest_per_period >= repayment_per_period) {
+    return 'Repayment of $' + repayment_per_period.toFixed(2) + ' per period does not cover interest ($' + interest_per_period.toFixed(2) + ' per period). Increase repayments or reduce the loan amount.';
   }
   return null;
 }
@@ -165,10 +169,10 @@ function runEngine(inp) {
   }
   var fin_outflows = fin_outflows_raw;
 
-  // Loan summary
+  // Loan summary — daily interest compounded to effective per-period rate
   var loan_periods = 0, total_interest = 0;
   if (loan_amt > 0 && repayment > 0) {
-    var r_p2 = ann_rate / ppy;
+    var r_p2 = ann_rate > 1e-9 ? Math.pow(1 + ann_rate / 365, 365 / ppy) - 1 : 0;
     if (r_p2 < 1e-9) {
       loan_periods = loan_amt / repayment;
     } else {

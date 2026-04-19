@@ -184,76 +184,57 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
 </div>
 
 <!-- STAFF PRICING CONFIG — hidden from customers, toggle with Ctrl+Shift+P -->
-<div id="staffPricingPanel" style="display:none;background:#110800;border:2px solid #f97316;border-radius:10px;padding:18px;margin-bottom:14px;position:relative">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="color:#f97316;font-weight:800;font-size:13px;letter-spacing:.5px">🔒 STAFF ONLY — Pricing Config</div>
-    <div style="font-size:10px;color:#555">Ctrl+Shift+P to toggle · Not visible to customers</div>
-  </div>
+<div id="staffPricingPanel" style="display:none;background:#0d0500;border:2px solid #f97316;border-radius:10px;padding:16px;margin-bottom:14px">
 
-  <!-- Presets row -->
-  <div style="margin-bottom:16px">
-    <div style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Quick Presets — click to fill fields below</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px" id="pcPresetBtns"></div>
-  </div>
-
-  <!-- Pricing fields grid -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px">
-    <div>
-      <label style="color:#f97316;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">Gross System Price ($)</label>
-      <input id="pcGross" type="number" step="100" placeholder="e.g. 23346" oninput="pcCalc()"
-        style="width:100%;background:#1a0a00;border:1px solid #f97316;border-radius:5px;padding:7px 10px;color:#fff;font-size:13px;font-weight:700">
-      <div style="font-size:10px;color:#555;margin-top:3px">Total before rebates/discounts</div>
-    </div>
-    <div>
-      <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">STC Quantity</label>
-      <input id="pcStcQty" type="number" step="1" placeholder="e.g. 352" oninput="pcCalc()"
-        style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:7px 10px;color:#fff;font-size:13px">
-      <div style="font-size:10px;color:#555;margin-top:3px">Small-scale Technology Certificates</div>
-    </div>
-    <div>
-      <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">STC Price ($/cert)</label>
-      <input id="pcStcPrice" type="number" step="0.5" value="38" placeholder="38" oninput="pcCalc()"
-        style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:7px 10px;color:#fff;font-size:13px">
-      <div style="font-size:10px;color:#555;margin-top:3px">Current STC market price</div>
-    </div>
-    <div>
-      <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">CHB Rebate ($)</label>
-      <input id="pcChb" type="number" step="100" placeholder="0" oninput="pcCalc()"
-        style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:7px 10px;color:#fff;font-size:13px">
-      <div style="font-size:10px;color:#555;margin-top:3px">Cheaper Home Batteries (VIC battery rebate)</div>
-    </div>
-    <div>
-      <label style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">Other Rebates / Discounts ($)</label>
-      <input id="pcOther" type="number" step="100" placeholder="0" oninput="pcCalc()"
-        style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:7px 10px;color:#fff;font-size:13px">
-      <div style="font-size:10px;color:#555;margin-top:3px">Any other incentive or discount</div>
-    </div>
-    <div>
-      <label style="color:#60a5fa;font-size:10px;text-transform:uppercase;letter-spacing:.3px;display:block;margin-bottom:4px">Notes / Customer Context</label>
-      <textarea id="pcNotes" rows="3" placeholder="e.g. Fox ESS KH10 + CQ6-L7, CHB eligible..."
-        style="width:100%;background:#1a1a1a;border:1px solid #333;border-radius:5px;padding:7px 10px;color:#aaa;font-size:11px;resize:vertical"></textarea>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="color:#f97316;font-weight:800;font-size:13px;letter-spacing:.5px">🔒 STAFF ONLY — Price List Builder</div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="pcAddGroup()" style="background:#f97316;color:#000;font-weight:800;font-size:11px;padding:5px 12px;border:none;border-radius:5px;cursor:pointer">+ Add Group</button>
+      <button onclick="pcSave();alert('Saved!')" style="background:#1a1a1a;color:#4ade80;font-weight:700;font-size:11px;padding:5px 12px;border:1px solid #4ade80;border-radius:5px;cursor:pointer">💾 Save</button>
+      <button onclick="pcReset()" style="background:transparent;color:#f87171;font-weight:600;font-size:11px;padding:5px 10px;border:1px solid #f87171;border-radius:5px;cursor:pointer">Reset</button>
+      <div style="font-size:10px;color:#444">Ctrl+Shift+P to hide</div>
     </div>
   </div>
 
-  <!-- Net price result + breakdown -->
-  <div style="background:rgba(249,115,22,.08);border:1.5px solid rgba(249,115,22,.4);border-radius:8px;padding:14px;margin-bottom:14px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <span style="color:#aaa;font-size:12px;font-weight:600">Net Customer Price</span>
-      <span id="pcNetDisplay" style="color:#f97316;font-size:22px;font-weight:800">$—</span>
-    </div>
-    <div id="pcBreakdown" style="font-size:10.5px;color:#777;line-height:1.9;font-family:monospace"></div>
-  </div>
+  <!-- BOM table -->
+  <div id="pcBomTable" style="margin-bottom:14px"></div>
 
-  <!-- Apply buttons -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button onclick="pcApply('net')"
-      style="background:#f97316;color:#000;font-weight:800;font-size:12px;padding:9px 20px;border:none;border-radius:6px;cursor:pointer;letter-spacing:.3px">
-      ↓ Apply NET price to calculator
-    </button>
-    <button onclick="pcApply('gross')"
-      style="background:transparent;color:#f97316;font-weight:700;font-size:12px;padding:9px 20px;border:1.5px solid #f97316;border-radius:6px;cursor:pointer">
-      Apply GROSS price (no rebates)
-    </button>
+  <!-- Rebate strip + totals -->
+  <div style="background:#1a0800;border:1px solid #333;border-radius:8px;padding:14px">
+    <div style="color:#aaa;font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Rebates &amp; Net Price</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px">
+      <div>
+        <label style="color:#888;font-size:10px;display:block;margin-bottom:3px">STC Quantity</label>
+        <input id="pcStcQty" type="number" step="1" placeholder="e.g. 352" oninput="pcCalc()"
+          style="width:100%;background:#111;border:1px solid #333;border-radius:4px;padding:6px 8px;color:#fff;font-size:12px">
+      </div>
+      <div>
+        <label style="color:#888;font-size:10px;display:block;margin-bottom:3px">STC Price ($/cert)</label>
+        <input id="pcStcPrice" type="number" step="0.5" value="38" oninput="pcCalc()"
+          style="width:100%;background:#111;border:1px solid #333;border-radius:4px;padding:6px 8px;color:#fff;font-size:12px">
+      </div>
+      <div>
+        <label style="color:#888;font-size:10px;display:block;margin-bottom:3px">CHB Rebate ($)</label>
+        <input id="pcChb" type="number" step="100" placeholder="0" oninput="pcCalc()"
+          style="width:100%;background:#111;border:1px solid #333;border-radius:4px;padding:6px 8px;color:#fff;font-size:12px">
+      </div>
+      <div>
+        <label style="color:#888;font-size:10px;display:block;margin-bottom:3px">Other Discount ($)</label>
+        <input id="pcOther" type="number" step="100" placeholder="0" oninput="pcCalc()"
+          style="width:100%;background:#111;border:1px solid #333;border-radius:4px;padding:6px 8px;color:#fff;font-size:12px">
+      </div>
+    </div>
+    <!-- Totals breakdown -->
+    <div id="pcBreakdown" style="font-size:11px;color:#777;font-family:monospace;white-space:pre;line-height:1.8;margin-bottom:10px"></div>
+    <!-- Net price + apply -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:22px;font-weight:800;color:#f97316">Net: <span id="pcNetDisplay">$—</span></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="pcApply('net')"  style="background:#f97316;color:#000;font-weight:800;font-size:12px;padding:9px 18px;border:none;border-radius:6px;cursor:pointer">↓ Apply NET to calculator</button>
+        <button onclick="pcApply('gross')" style="background:transparent;color:#f97316;font-weight:700;font-size:12px;padding:9px 18px;border:1.5px solid #f97316;border-radius:6px;cursor:pointer">Apply GROSS</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -733,7 +714,261 @@ const ANALYSER_VERSION = 'v2.03';
 document.addEventListener('DOMContentLoaded',function(){['stampS1','stampS2','stampExplorer','stampBill','stampROI','stampChart','versionBadge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ANALYSER_VERSION;});var rv=document.getElementById('roiVersion');if(rv)rv.textContent=ANALYSER_VERSION;});
 
 // ── STAFF PRICING CONFIG ─────────────────────────────────────────────────────
-// Ctrl+Shift+P to toggle panel visibility
+var PC_STORAGE_KEY = 'hea_pricelist_v2';
+var pcData = { groups: [] };
+
+function pcUid() { return 'pc_' + Date.now() + '_' + Math.random().toString(36).substr(2,4); }
+function pcEsc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function pcFmt(n) { return '$' + (Math.round(n)||0).toLocaleString(); }
+
+// ── Persistence
+function pcSave() {
+  try { localStorage.setItem(PC_STORAGE_KEY, JSON.stringify(pcData)); } catch(e) {}
+}
+function pcLoad() {
+  try {
+    var s = localStorage.getItem(PC_STORAGE_KEY);
+    if (s) { pcData = JSON.parse(s); return; }
+  } catch(e) {}
+  pcData = { groups: pcDefaultData() };
+}
+function pcReset() {
+  if (!confirm('Reset price list to defaults? This cannot be undone.')) return;
+  pcData = { groups: pcDefaultData() };
+  pcSave();
+  pcRender();
+  pcCalc();
+}
+
+// ── Default seed data (edit prices here when market changes)
+function pcDefaultData() {
+  function grp(name, items) { return { id: pcUid(), name: name, collapsed: false, items: items.map(function(r){ return { id: pcUid(), name: r[0], unit: r[1], unitPrice: r[2], qty: r[3]||1, included: false }; }) }; }
+  return [
+    grp('Fox ESS Batteries', [
+      ['Fox ESS KH10 10kWh Battery',   'unit', 8200, 1],
+      ['Fox ESS KH5 5kWh Battery',     'unit', 5100, 1],
+      ['Fox ESS KH30 30kWh Battery',   'unit', 18500,1],
+      ['Fox ESS Hybrid Inverter 8kW',  'unit', 3200, 1],
+    ]),
+    grp('BYD Batteries', [
+      ['BYD HVM 11.0 kWh',             'unit', 9200, 1],
+      ['BYD HVS 5.1 kWh Module',       'unit', 4800, 1],
+      ['BYD HVM 22.1 kWh',             'unit', 14500,1],
+    ]),
+    grp('Sungrow Batteries', [
+      ['Sungrow SBR096 9.6kWh',        'unit', 7800, 1],
+      ['Sungrow SBR128 12.8kWh',       'unit', 9500, 1],
+      ['Sungrow SH10RS Hybrid Inv',    'unit', 2800, 1],
+    ]),
+    grp('Tesla / Other Batteries', [
+      ['Tesla Powerwall 2 (13.5kWh)',  'unit', 12500,1],
+      ['Enphase IQ Battery 10T',       'unit', 11000,1],
+      ['Alpha ESS Smile B3',           'unit', 6500, 1],
+    ]),
+    grp('Inverters', [
+      ['Fronius Symo GEN24 6kW',       'unit', 2400, 1],
+      ['Fronius Symo GEN24 10kW',      'unit', 2900, 1],
+      ['SolarEdge SE7600H',            'unit', 2600, 1],
+      ['Goodwe GW10K-ET',              'unit', 2200, 1],
+      ['Enphase IQ8M Microinverter',   'unit', 320,  1],
+    ]),
+    grp('Solar Panels', [
+      ['Q-Cells Q.PEAK DUO BLK-G10+ 400W', 'unit', 280, 1],
+      ['REC Alpha 405W',               'unit', 310, 1],
+      ['Jinko Tiger Neo 430W',         'unit', 240, 1],
+      ['Canadian Solar HiKu 410W',     'unit', 235, 1],
+    ]),
+    grp('DC Cabling & Hardware', [
+      ['DC Cable 4mm²',                'm',    3.50, 0],
+      ['DC Cable 6mm²',                'm',    5.20, 0],
+      ['MC4 Connector Pair',           'pair', 4.50, 0],
+      ['DC Isolator 32A',              'unit', 55,   0],
+      ['String Combiner Box 4-input',  'unit', 180,  0],
+      ['Cable Tray 3m',                'unit', 28,   0],
+      ['Roof Penetration Seal',        'unit', 35,   0],
+    ]),
+    grp('AC Electrical & Switchboard', [
+      ['AC Isolator 40A',              'unit', 65,   0],
+      ['Circuit Breaker 32A',          'unit', 45,   0],
+      ['Circuit Breaker 16A',          'unit', 38,   0],
+      ['RCD 40A',                      'unit', 85,   0],
+      ['Switchboard Upgrade (partial)','unit', 650,  0],
+      ['Switchboard Upgrade (full)',   'unit', 1400, 0],
+      ['AC Cable 6mm² (m)',            'm',    8.50, 0],
+    ]),
+    grp('Labour & Installation', [
+      ['Installation Day — 2 Elec',   'day',  1800, 0],
+      ['Installation Day — 3 Elec',   'day',  2600, 0],
+      ['Electrical inspection fee',    'unit', 350,  0],
+      ['CEC Grid-connect sign-off',    'unit', 220,  0],
+      ['Network connection app.',      'unit', 0,    0],
+    ]),
+    grp('Mounting & Racking', [
+      ['Tile roof mount per panel',    'unit', 28,   0],
+      ['Metal roof clamp',             'unit', 18,   0],
+      ['Flat roof ballast tray',       'unit', 95,   0],
+      ['Rail 4.4m',                    'unit', 65,   0],
+      ['End clamp set',                'unit', 8,    0],
+    ]),
+  ];
+}
+
+// ── Totals
+function pcGrossTotal() {
+  return pcData.groups.reduce(function(s,g) {
+    return s + g.items.reduce(function(s2,item) {
+      return s2 + (item.included ? (item.unitPrice||0)*(item.qty||0) : 0);
+    }, 0);
+  }, 0);
+}
+
+// ── Render
+function pcRender() {
+  var tbl = document.getElementById('pcBomTable');
+  if (!tbl) return;
+  var html = '';
+  var colStyle = 'display:grid;grid-template-columns:28px 1fr 64px 90px 60px 72px 28px 54px;gap:3px;align-items:center';
+  pcData.groups.forEach(function(grp) {
+    var grpTotal = grp.items.reduce(function(s,i){ return s+(i.included?(i.unitPrice||0)*(i.qty||0):0);},0);
+    var ticked   = grp.items.filter(function(i){return i.included;}).length;
+    html += '<div style="margin-bottom:8px">';
+    // Group header
+    html += '<div style="display:flex;align-items:center;gap:6px;background:#1a0800;border:1.5px solid #f97316;border-radius:6px;padding:7px 10px;cursor:pointer;user-select:none" onclick="pcToggleGroup(\'' + grp.id + '\')">';
+    html += '<span style="color:#f97316;font-size:11px;width:12px">' + (grp.collapsed ? '▶' : '▼') + '</span>';
+    html += '<input type="text" value="' + pcEsc(grp.name) + '" onclick="event.stopPropagation()" onchange="pcRenameGroup(\'' + grp.id + '\',this.value)" style="flex:1;background:transparent;border:none;color:#f97316;font-weight:800;font-size:12px;cursor:text;outline:none">';
+    html += '<span style="color:#888;font-size:10px;white-space:nowrap">' + ticked + '/' + grp.items.length + ' ticked · ' + pcFmt(grpTotal) + '</span>';
+    html += '<button onclick="event.stopPropagation();pcAddRow(\'' + grp.id + '\')" style="background:#f97316;color:#000;border:none;border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;cursor:pointer">+ Row</button>';
+    html += '<button onclick="event.stopPropagation();pcDeleteGroup(\'' + grp.id + '\')" style="background:transparent;color:#f87171;border:1px solid rgba(248,113,113,.4);border-radius:4px;padding:2px 6px;font-size:10px;cursor:pointer">✕</button>';
+    html += '</div>';
+    if (!grp.collapsed) {
+      // Column headers
+      html += '<div style="' + colStyle + ';padding:2px 4px;margin-top:3px">';
+      html += '<span></span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase">Item name</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase">Unit</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase">Unit price</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase">Qty</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase;text-align:right">Total</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase;text-align:center">✓</span>';
+      html += '<span style="font-size:9px;color:#444;text-transform:uppercase">Edit</span>';
+      html += '</div>';
+      grp.items.forEach(function(item) {
+        var total = (item.unitPrice||0)*(item.qty||0);
+        var rowBg = item.included ? 'rgba(74,222,128,.05)' : 'rgba(255,255,255,.015)';
+        html += '<div style="' + colStyle + ';background:' + rowBg + ';border-radius:4px;padding:3px 4px;margin-top:2px">';
+        // Row number / drag indicator
+        html += '<span style="color:#333;font-size:9px;text-align:center;cursor:grab">⋮⋮</span>';
+        // Name
+        html += '<input type="text" value="' + pcEsc(item.name) + '" onchange="pcUpdateItem(\'' + grp.id + '\',\'' + item.id + '\',\'name\',this.value)" style="background:#0d0d0d;border:1px solid #222;border-radius:3px;padding:4px 6px;color:#ccc;font-size:11px;width:100%">';
+        // Unit
+        html += '<input type="text" value="' + pcEsc(item.unit||'unit') + '" onchange="pcUpdateItem(\'' + grp.id + '\',\'' + item.id + '\',\'unit\',this.value)" style="background:#0d0d0d;border:1px solid #222;border-radius:3px;padding:4px 5px;color:#888;font-size:11px;width:100%">';
+        // Unit price
+        html += '<div style="display:flex;align-items:center;gap:1px"><span style="color:#444;font-size:10px;flex-shrink:0">$</span><input type="number" step="0.01" value="' + (item.unitPrice||0) + '" onchange="pcUpdateItem(\'' + grp.id + '\',\'' + item.id + '\',\'unitPrice\',parseFloat(this.value)||0)" style="background:#0d0d0d;border:1px solid #222;border-radius:3px;padding:4px 4px;color:#ddd;font-size:11px;width:100%"></div>';
+        // Qty
+        html += '<input type="number" step="0.1" min="0" value="' + (item.qty||0) + '" onchange="pcUpdateItem(\'' + grp.id + '\',\'' + item.id + '\',\'qty\',parseFloat(this.value)||0)" style="background:#0d0d0d;border:1px solid #222;border-radius:3px;padding:4px 5px;color:#ddd;font-size:11px;width:100%">';
+        // Total
+        html += '<span style="font-size:11px;text-align:right;font-weight:' + (item.included?'700':'400') + ';color:' + (item.included?'#4ade80':'#555') + '">' + pcFmt(total) + '</span>';
+        // Include checkbox
+        html += '<input type="checkbox"' + (item.included?' checked':'') + ' onchange="pcUpdateItem(\'' + grp.id + '\',\'' + item.id + '\',\'included\',this.checked)" style="width:16px;height:16px;cursor:pointer;accent-color:#4ade80;margin:auto">';
+        // Actions
+        html += '<div style="display:flex;flex-direction:column;gap:1px">';
+        html += '<div style="display:flex;gap:1px">';
+        html += '<button title="Insert row above" onclick="pcInsertRow(\'' + grp.id + '\',\'' + item.id + '\',-1)" style="flex:1;background:#111;color:#888;border:1px solid #2a2a2a;border-radius:2px;padding:1px 0;font-size:9px;cursor:pointer;line-height:1">↑+</button>';
+        html += '<button title="Insert row below" onclick="pcInsertRow(\'' + grp.id + '\',\'' + item.id + '\',1)"  style="flex:1;background:#111;color:#888;border:1px solid #2a2a2a;border-radius:2px;padding:1px 0;font-size:9px;cursor:pointer;line-height:1">↓+</button>';
+        html += '</div>';
+        html += '<button title="Delete row" onclick="pcDeleteRow(\'' + grp.id + '\',\'' + item.id + '\')" style="background:transparent;color:#f87171;border:none;padding:1px 0;font-size:10px;cursor:pointer;line-height:1;width:100%">✕</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  tbl.innerHTML = html;
+  pcCalc();
+}
+
+// ── Data mutation helpers
+function pcFindGroup(gid) { return pcData.groups.find(function(g){return g.id===gid;}); }
+
+function pcToggleGroup(gid) {
+  var g = pcFindGroup(gid); if (!g) return;
+  g.collapsed = !g.collapsed; pcSave(); pcRender();
+}
+function pcRenameGroup(gid, name) {
+  var g = pcFindGroup(gid); if (!g) return;
+  g.name = name; pcSave();
+}
+function pcDeleteGroup(gid) {
+  if (!confirm('Delete this entire group and all its rows?')) return;
+  pcData.groups = pcData.groups.filter(function(g){return g.id!==gid;});
+  pcSave(); pcRender();
+}
+function pcAddGroup() {
+  pcData.groups.push({ id: pcUid(), name: 'New Group', collapsed: false, items: [
+    { id: pcUid(), name: 'New item', unit: 'unit', unitPrice: 0, qty: 1, included: false }
+  ]});
+  pcSave(); pcRender();
+}
+function pcAddRow(gid) {
+  var g = pcFindGroup(gid); if (!g) return;
+  g.items.push({ id: pcUid(), name: 'New item', unit: 'unit', unitPrice: 0, qty: 1, included: false });
+  pcSave(); pcRender();
+}
+function pcInsertRow(gid, afterId, dir) {
+  var g = pcFindGroup(gid); if (!g) return;
+  var idx = g.items.findIndex(function(i){return i.id===afterId;});
+  if (idx < 0) return;
+  var insertAt = dir > 0 ? idx + 1 : idx;
+  var newRow = { id: pcUid(), name: 'New item', unit: 'unit', unitPrice: 0, qty: 1, included: false };
+  g.items.splice(insertAt, 0, newRow);
+  pcSave(); pcRender();
+}
+function pcDeleteRow(gid, rowId) {
+  var g = pcFindGroup(gid); if (!g) return;
+  g.items = g.items.filter(function(i){return i.id!==rowId;});
+  pcSave(); pcRender();
+}
+function pcUpdateItem(gid, rowId, field, value) {
+  var g = pcFindGroup(gid); if (!g) return;
+  var item = g.items.find(function(i){return i.id===rowId;}); if (!item) return;
+  item[field] = value;
+  pcSave(); pcRender();
+}
+
+// ── Totals + rebates
+function pcCalc() {
+  var gross    = pcGrossTotal();
+  var stcQty   = parseFloat(document.getElementById('pcStcQty').value)   || 0;
+  var stcPrice = parseFloat(document.getElementById('pcStcPrice').value) || 38;
+  var chb      = parseFloat(document.getElementById('pcChb').value)      || 0;
+  var other    = parseFloat(document.getElementById('pcOther').value)    || 0;
+  var stcTotal = stcQty * stcPrice;
+  var totalRebate = stcTotal + chb + other;
+  var net = Math.max(0, gross - totalRebate);
+  var nd = document.getElementById('pcNetDisplay');
+  if (nd) nd.textContent = gross > 0 ? pcFmt(net) : '$—';
+  var bd = '';
+  if (gross > 0)    bd += 'Gross (ticked items):  ' + pcFmt(gross) + '\n';
+  if (stcTotal > 0) bd += 'STC rebate:          – ' + pcFmt(stcTotal) + '  (' + stcQty + ' × $' + stcPrice + '/cert)\n';
+  if (chb > 0)      bd += 'CHB rebate:          – ' + pcFmt(chb) + '\n';
+  if (other > 0)    bd += 'Other discount:      – ' + pcFmt(other) + '\n';
+  if (totalRebate > 0) bd += '────────────────────────────────────\nNet customer price:    ' + pcFmt(net);
+  var bde = document.getElementById('pcBreakdown');
+  if (bde) bde.textContent = bd;
+  return { gross: gross, net: net };
+}
+
+function pcApply(which) {
+  var res = pcCalc();
+  var price = which === 'gross' ? res.gross : res.net;
+  if (price <= 0) { alert('Tick at least one item in the price list first.'); return; }
+  var el = document.getElementById('finTotalCost');
+  if (el) { el.value = Math.round(price); el.dispatchEvent(new Event('input')); }
+  var roi = document.getElementById('roiCard');
+  if (roi) roi.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Keyboard shortcut + init
 document.addEventListener('keydown', function(e) {
   if (e.ctrlKey && e.shiftKey && e.key === 'P') {
     e.preventDefault();
@@ -741,75 +976,10 @@ document.addEventListener('keydown', function(e) {
     p.style.display = p.style.display === 'none' ? 'block' : 'none';
   }
 });
-
-// System presets — update prices here when market changes
-var PC_PRESETS = [
-  { label: '6.6kW Solar',         gross: 8900,  stcQty: 98,  stcPrice: 38, chb: 0,     note: '6.6kW panels, no battery' },
-  { label: '10kW Solar',          gross: 11500, stcQty: 148, stcPrice: 38, chb: 0,     note: '10kW panels, no battery' },
-  { label: '13.3kW Solar',        gross: 14200, stcQty: 198, stcPrice: 38, chb: 0,     note: '13.3kW panels, no battery' },
-  { label: '6.6kW + 10kWh Bat',   gross: 18400, stcQty: 135, stcPrice: 38, chb: 4000,  note: '6.6kW + 10kWh battery, CHB eligible' },
-  { label: '10kW + 15kWh Bat',    gross: 23346, stcQty: 352, stcPrice: 38, chb: 13376, note: 'Fox ESS KH10 + CQ6-L7' },
-  { label: '13.3kW + 20kWh Bat',  gross: 28500, stcQty: 420, stcPrice: 38, chb: 14000, note: '13.3kW + 20kWh battery' },
-];
-
 document.addEventListener('DOMContentLoaded', function() {
-  var wrap = document.getElementById('pcPresetBtns');
-  if (!wrap) return;
-  PC_PRESETS.forEach(function(p, i) {
-    var btn = document.createElement('button');
-    btn.textContent = p.label;
-    btn.style.cssText = 'background:#1a0a00;border:1px solid #f97316;color:#f97316;border-radius:5px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer';
-    btn.onclick = function() { pcLoadPreset(i); };
-    wrap.appendChild(btn);
-  });
+  pcLoad();
+  pcRender();
 });
-
-function pcLoadPreset(i) {
-  var p = PC_PRESETS[i];
-  document.getElementById('pcGross').value    = p.gross;
-  document.getElementById('pcStcQty').value   = p.stcQty;
-  document.getElementById('pcStcPrice').value = p.stcPrice;
-  document.getElementById('pcChb').value      = p.chb || '';
-  document.getElementById('pcOther').value    = '';
-  document.getElementById('pcNotes').value    = p.note || '';
-  pcCalc();
-}
-
-function pcCalc() {
-  var gross    = parseFloat(document.getElementById('pcGross').value)    || 0;
-  var stcQty   = parseFloat(document.getElementById('pcStcQty').value)   || 0;
-  var stcPrice = parseFloat(document.getElementById('pcStcPrice').value) || 0;
-  var chb      = parseFloat(document.getElementById('pcChb').value)      || 0;
-  var other    = parseFloat(document.getElementById('pcOther').value)    || 0;
-  var stcTotal = stcQty * stcPrice;
-  var totalRebate = stcTotal + chb + other;
-  var net = Math.max(0, gross - totalRebate);
-  var fmt = function(n) { return '$' + Math.round(n).toLocaleString(); };
-  document.getElementById('pcNetDisplay').textContent = gross > 0 ? fmt(net) : '$—';
-  var bd = '';
-  if (gross > 0)    bd += 'Gross price:    ' + fmt(gross) + '\n';
-  if (stcTotal > 0) bd += 'STC rebate:   – ' + fmt(stcTotal) + '  (' + stcQty + ' × ' + fmt(stcPrice) + ')\n';
-  if (chb > 0)      bd += 'CHB rebate:   – ' + fmt(chb) + '\n';
-  if (other > 0)    bd += 'Other:        – ' + fmt(other) + '\n';
-  if (totalRebate > 0) bd += '─────────────────────────\nNet price:      ' + fmt(net);
-  document.getElementById('pcBreakdown').style.whiteSpace = 'pre';
-  document.getElementById('pcBreakdown').textContent = bd;
-  return { gross: gross, net: net };
-}
-
-function pcApply(which) {
-  var res = pcCalc();
-  var price = which === 'gross' ? res.gross : res.net;
-  if (price <= 0) { alert('Enter a Gross System Price first.'); return; }
-  var el = document.getElementById('finTotalCost');
-  if (el) {
-    el.value = price;
-    el.dispatchEvent(new Event('input'));
-  }
-  // Scroll to ROI card
-  var roi = document.getElementById('roiCard');
-  if (roi) roi.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 // ── END STAFF PRICING CONFIG ─────────────────────────────────────────────────
 
 // == Constants ==

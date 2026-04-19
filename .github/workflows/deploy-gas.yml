@@ -168,13 +168,7 @@ jobs:
           cat .clasp.json
           echo "=== Pushing code ==="
           clasp push --force
-          echo "=== Updating live deployment (no manual GAS step needed) ==="
-          DEPLOY_ID=$(clasp deployments 2>&1 | grep -v "@HEAD" | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
-          if [ -n "$DEPLOY_ID" ]; then
-            echo "Updating deployment: $DEPLOY_ID"
-            clasp deploy -i "$DEPLOY_ID" --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          else
-            echo "No existing deployment found — creating first deployment"
-            clasp deploy --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          fi
+          echo "=== Updating live deployment ==="
+          clasp deploy -i "AKfycbzZuPvjN6yzPbXUk4OajTLFbDoTMjrxqPgAWqsqJuZAqXfqHhdEsAJ8v1_MOD931nc" \
+            --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "=== HEA Solar Analyser live immediately ==="

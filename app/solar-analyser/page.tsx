@@ -19,7 +19,7 @@ function SolarAnalyserContent() {
   const driveUrl      = params.get("driveUrl")
 
   // Build GAS URL with client params so the script can pre-fill fields
-  const GAS_BASE = "https://script.google.com/macros/s/AKfycbzI42lh28ASdcxa2F6b8_euLk9KBcfvg4VfxR-bI3Jl3dLPTxvFGDKuZJh2_tqvZiE/exec"
+  const GAS_BASE = "https://script.google.com/macros/s/AKfycbzZuPvjN6yzPbXUk4OajTLFbDoTMjrxqPgAWqsqJuZAqXfqHhdEsAJ8v1_MOD931nc/exec"
   const gasParams = new URLSearchParams()
   if (name)          gasParams.set("name", name)
   if (email)         gasParams.set("email", email)

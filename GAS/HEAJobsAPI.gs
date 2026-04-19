@@ -121,6 +121,15 @@ function doPost(e) {
     }
   }
 
+  if (action === 'saveIntakeDocs') {
+    try {
+      return jsonResponse(saveIntakeDocs_(body));
+    } catch (err) {
+      console.error('saveIntakeDocs_ error:', err);
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
   if (action === 'savePaymentRecord') {
     try {
       const job = findJobByNumber(sheet, body.jobNumber);
@@ -338,6 +347,48 @@ function jsonResponse(data) {
 // ---------------------------------------------------------------------------
 // Drive folder helpers
 // ---------------------------------------------------------------------------
+
+// Saves intake docs (consent PDF, job card PDF, electricity bill, roof photo) to the
+// client's existing Drive folder. Called from Next.js after createJob succeeds.
+function saveIntakeDocs_(data) {
+  if (!data.jobNumber) throw new Error('jobNumber required');
+
+  const job = findJobByNumber(getSheet(), data.jobNumber);
+  if (!job || !job.driveUrl) throw new Error('Job not found or has no Drive folder: ' + data.jobNumber);
+
+  const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) throw new Error('Cannot parse folder ID from driveUrl: ' + job.driveUrl);
+
+  const folder = DriveApp.getFolderById(match[1]);
+  const clientName = (job.clientName || data.jobNumber).trim();
+  const saved = [];
+
+  function saveToFolder_(fileName, base64, mimeType) {
+    const existing = folder.getFilesByName(fileName);
+    while (existing.hasNext()) existing.next().setTrashed(true);
+    const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, fileName);
+    const f = folder.createFile(blob);
+    f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    saved.push(fileName);
+  }
+
+  if (data.consentPdfBase64) {
+    saveToFolder_(clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+  }
+  if (data.jobCardPdfBase64) {
+    saveToFolder_(clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
+  }
+  if (data.billBase64 && data.billName) {
+    const ext = (data.billName.split('.').pop() || 'pdf').toLowerCase();
+    saveToFolder_(clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+  }
+  if (data.roofPhotoBase64 && data.roofPhotoName) {
+    const ext = (data.roofPhotoName.split('.').pop() || 'jpg').toLowerCase();
+    saveToFolder_(clientName + ' - Roof Photo.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');
+  }
+
+  return { success: true, saved };
+}
 
 function safeString_(input) {
   return String(input || '').trim()

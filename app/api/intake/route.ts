@@ -132,6 +132,27 @@ export async function POST(req: NextRequest) {
       : Promise.resolve(),
   ])
 
+  // Save intake docs (PDFs + bill + roof photo) to client's Drive folder — non-fatal
+  if (gasJobNumber && process.env.JOBS_GAS_URL) {
+    const docsPayload: Record<string, string | null> = {
+      action:   "saveIntakeDocs",
+      jobNumber: gasJobNumber,
+      ...(consentPdf        ? { consentPdfBase64:  Buffer.from(consentPdf).toString("base64") } : {}),
+      ...(jobCardPdf        ? { jobCardPdfBase64:  Buffer.from(jobCardPdf).toString("base64") } : {}),
+      ...(d.billBase64      ? { billBase64: d.billBase64, billName: d.billName ?? null, billMime: d.billMime ?? null } : {}),
+      ...(d.roofPhotoBase64 ? { roofPhotoBase64: d.roofPhotoBase64, roofPhotoName: d.roofPhotoName ?? null, roofPhotoMime: d.roofPhotoMime ?? null } : {}),
+    }
+    try {
+      await fetch(process.env.JOBS_GAS_URL, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(docsPayload),
+      })
+    } catch (e) {
+      console.error("saveIntakeDocs failed:", e)
+    }
+  }
+
   // Photo portal link — all service types, as long as we have a job number and the portal is configured
   const photoPortalLink = PHOTO_PORTAL_URL && gasJobNumber
     ? `${PHOTO_PORTAL_URL}?jobNumber=${gasJobNumber}&service=${encodeURIComponent(d.service)}`

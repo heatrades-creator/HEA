@@ -185,81 +185,6 @@ function getCategoriesForService_(service) {
 
   return cats;
 }
-      checkCompliance: false,
-      section:         'roof',
-    });
-    cats.push({
-      id:              'existing_inverter',
-      label:           'Existing Inverter (if present)',
-      instruction:     'If there is an existing solar inverter, photograph the full unit including the model/label plate.',
-      required:        false,
-      checkCompliance: false,
-      section:         'roof',
-    });
-  }
-
-  // Battery location photos (with AS/NZS 5139 compliance check)
-  if (isBattery) {
-    cats.push({
-      id:              'battery_location_1',
-      label:           'Proposed Location 1',
-      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
-      required:        true,
-      checkCompliance: true,
-      section:         'battery',
-    });
-    cats.push({
-      id:              'battery_location_2',
-      label:           'Proposed Location 2',
-      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
-      required:        false,
-      checkCompliance: true,
-      section:         'battery',
-    });
-    cats.push({
-      id:              'battery_location_3',
-      label:           'Proposed Location 3',
-      instruction:     'Stand back so the full wall and surrounding area is visible. Include any nearby windows, doors, hot water unit, and the ceiling above.',
-      required:        false,
-      checkCompliance: true,
-      section:         'battery',
-    });
-  }
-
-  // EV charger photos
-  if (isEV) {
-    cats.push({
-      id:              'ev_charger_location',
-      label:           'Proposed EV Charger Location',
-      instruction:     'Photo of where you want the charger installed — garage wall, outside wall, etc. Step back to show the full area around it.',
-      required:        true,
-      checkCompliance: false,
-      section:         'ev',
-    });
-    cats.push({
-      id:              'ev_cable_path',
-      label:           'Cable Path to Switchboard',
-      instruction:     'Show the route from the proposed charger location back to the switchboard.',
-      required:        false,
-      checkCompliance: false,
-      section:         'ev',
-    });
-  }
-
-  // Fallback if service not recognised
-  if (!isSolar && !isBattery && !isEV) {
-    cats.push({
-      id:              'proposed_location',
-      label:           'Proposed Installation Area',
-      instruction:     'Photo of where the equipment will be installed. Step back to show the full area.',
-      required:        true,
-      checkCompliance: false,
-      section:         'general',
-    });
-  }
-
-  return cats;
-}
 
 // ── Client-callable functions ────────────────────────────────────────────────
 
@@ -827,17 +752,13 @@ function getJobFolder_(jobNumber) {
 
 function getOrCreatePhotosFolder_(jobNumber) {
   const jobFolder = getJobFolder_(jobNumber);
-
-  if (jobFolder) {
-    const folders = jobFolder.getFoldersByName('Site Photos');
-    if (folders.hasNext()) return folders.next();
-    return jobFolder.createFolder('Site Photos');
+  if (!jobFolder) {
+    throw new Error(
+      'Could not find the Drive folder for job ' + jobNumber + '. ' +
+      'Please contact HEA to confirm your job number is correct.'
+    );
   }
-
-  // Fallback: create under CLIENTS_FOLDER root
-  const root     = DriveApp.getFolderById(CLIENTS_FOLDER);
-  const name     = jobNumber + ' — Site Photos';
-  const existing = root.getFoldersByName(name);
-  if (existing.hasNext()) return existing.next();
-  return root.createFolder(name);
+  const folders = jobFolder.getFoldersByName('Site Photos');
+  if (folders.hasNext()) return folders.next();
+  return jobFolder.createFolder('Site Photos');
 }

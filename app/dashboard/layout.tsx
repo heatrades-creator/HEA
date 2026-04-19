@@ -5,11 +5,12 @@ import SignOutButton from './SignOutButton';
 import ProposalUsageBadge from '@/components/dashboard/ProposalUsageBadge';
 import DashboardNav from '@/components/dashboard/DashboardNav';
 import { DashboardMobileNav } from '@/components/dashboard/DashboardMobileNav';
+import { authOptions } from '@/lib/auth';
 
 export const metadata = { title: 'Dashboard | HEA' };
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
   if (!session) {
     return <>{children}</>;

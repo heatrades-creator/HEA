@@ -1,11 +1,12 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import LoginButton from './LoginButton';
+import { authOptions } from '@/lib/auth';
 
 export const metadata = { title: 'Staff Login | HEA' };
 
 export default async function LoginPage() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (session) redirect('/dashboard');
 
   return (

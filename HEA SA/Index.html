@@ -139,7 +139,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
   <img src="https://hea-group.com.au/_next/static/media/Logo_transparent.02d8e37d.png" alt="HEA">
   <div>
     <h1>Solar Interval Analyser</h1>
-    <span>NEM12 -> load profile -> generation model -> live system sizing -> payback &nbsp;<span id="versionBadge" style="background:rgba(245,197,24,.2);color:#f5c518;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:800">v2.02</span></span>
+    <span>NEM12 -> load profile -> generation model -> live system sizing -> payback &nbsp;<span id="versionBadge" style="background:rgba(245,197,24,.2);color:#f5c518;border-radius:3px;padding:1px 5px;font-size:10px;font-weight:800">v2.03</span></span>
   </div>
 </div>
 <div class="main">
@@ -180,6 +180,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <div id="driveList"></div>
     </div>
   </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampS1"></span> — § Client &amp; Data</div>
 </div>
 
 <!-- STEP 2 -->
@@ -329,6 +330,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
     </div>
     <p class="hint">!! CL runs overnight -- solar cannot offset it. Savings apply to main consumption only.</p>
   </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampS2"></span> — § System &amp; Tariff</div>
 </div>
 
 <!-- ANALYSE -->
@@ -397,6 +399,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <strong style="color:#f87171">If you do nothing (no solar):</strong>
       <span id="doNothingText"></span>
     </div>
+  <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampExplorer"></span> — § Live System Explorer</div>
   </div>
 
   <!-- Bill Comparison -->
@@ -440,11 +443,12 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <div><div class="sav-label">Bill reduction per year</div><div class="sav-val" id="b-yr-save">--</div></div>
       <div><div class="sav-label">Incl. connection + grid charges</div><div style="font-size:11px;color:#666;margin-top:2px" id="b-note"></div></div>
     </div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampBill"></span> — § Bill Comparison</div>
   </div>
 
   <!-- ROI / Finance Card -->
   <div class="roi-card" id="roiCard" style="display:none">
-    <h2 style="justify-content:space-between">Lifetime Return Calculator <span id="roiVersion" style="font-size:10px;color:#f5c518;font-weight:700;background:rgba(245,197,24,.1);border-radius:4px;padding:2px 8px;letter-spacing:.5px">v2.02</span></h2>
+    <h2 style="justify-content:space-between">Lifetime Return Calculator <span id="roiVersion" style="font-size:10px;color:#f5c518;font-weight:700;background:rgba(245,197,24,.1);border-radius:4px;padding:2px 8px;letter-spacing:.5px">v2.03</span></h2>
     <p style="font-size:11px;color:#888;margin:-10px 0 6px">Enter full system cost + payment details. <strong style="color:#aaa">Cash Paid Upfront can be $0 for a full loan.</strong> Shows 7 payback metrics.</p>
     <div style="display:inline-block;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);border-radius:5px;padding:3px 10px;font-size:10px;color:#60a5fa;font-weight:700;letter-spacing:.5px;margin-bottom:12px;text-transform:uppercase">Customer Cashflow View — upfront deposit as Year 0, loan repayments in annual NCF</div>
 
@@ -560,6 +564,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
     <div id="roiSensitivity" style="margin-bottom:12px"></div>
 
     <div class="fin-note" id="roiNote"></div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampROI"></span> — § Lifetime Return Calculator</div>
   </div>
 
   <!-- Chart -->
@@ -641,6 +646,7 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
       <button class="btn btn-dark btn-sm" onclick="reRun()" style="padding:8px 16px;font-size:12px">↺ New Analysis</button>
     </div>
     <div id="pdfStatus" style="margin-top:9px;text-align:center"></div>
+    <div style="font-size:8px;color:#888;text-align:right;margin-top:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:4px;font-family:monospace">HEA Solar Analyser <span id="stampChart"></span> — § Generation vs Load</div>
   </div>
 
 </div><!-- /resultPanel -->
@@ -649,7 +655,8 @@ textarea{font-family:'Courier New',monospace;font-size:10.5px;resize:vertical}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 // == Version ==
-const ANALYSER_VERSION = 'v2.02';
+const ANALYSER_VERSION = 'v2.03';
+document.addEventListener('DOMContentLoaded',function(){['stampS1','stampS2','stampExplorer','stampBill','stampROI','stampChart','versionBadge'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent=ANALYSER_VERSION;});var rv=document.getElementById('roiVersion');if(rv)rv.textContent=ANALYSER_VERSION;});
 
 // == Constants ==
 const PANEL_W_DEFAULT = 440; // fallback

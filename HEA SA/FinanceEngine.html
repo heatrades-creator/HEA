@@ -255,12 +255,15 @@ function runEngine(inp) {
       DCF_t: DCF_t, CumDCF: 0, CumCF: 0 });
   }
 
-  // Cumulative series — investment view: starts from -total_cost, accumulates Annual_Savings_t
-  // BEP/DPB answer "when do cumulative savings recover the full system cost?" — financing-independent
+  // Cumulative series — total cost of ownership view: starts from -(total_cost + total_interest)
+  // BEP/DPB answer "when do savings recover everything you paid (system + financing costs)?"
+  // Cash purchase: total_interest = 0, so start = -total_cost (same as before)
+  // Loan: start = -(system + interest), so higher repayments = less interest = earlier BEP
   // CF+ Year (ann_cf_pos) remains financing-aware (Annual_NCF_t includes loan repayments)
   var loan_no_repayment_warn = (loan_amt > 0 && repayment <= 0);
-  var cumUndis = -total_cost;
-  var cumDis   = -total_cost;
+  var total_invested = total_cost + total_interest;  // what the customer actually pays all up
+  var cumUndis = -total_invested;
+  var cumDis   = -total_invested;
   var undis_be = null, dis_be = null;
 
   for (var i = 0; i < rows.length; i++) {
@@ -282,7 +285,7 @@ function runEngine(inp) {
     if (be_yr === null) return null;
     if (be_yr === 1) {
       var cf1 = rows[0][cfKey];
-      return cf1 > 0 ? total_cost / cf1 : 1;
+      return cf1 > 0 ? total_invested / cf1 : 1;
     }
     var prev = rows[be_yr-2][exactKey] !== undefined ? rows[be_yr-2][exactKey] : rows[be_yr-2][cumKey];
     var dcf  = rows[be_yr-1][cfKey];
@@ -338,7 +341,7 @@ function runEngine(inp) {
   return {
     ok: true,
     summary: {
-      total_cost: total_cost, cash_deposit: cash_deposit,
+      total_cost: total_cost, total_invested: Math.round(total_invested), cash_deposit: cash_deposit,
       loan_amt: loan_amt, year0_outflow: year0_outflow,
       loan_weeks: Math.round(loan_weeks * 10) / 10,
       total_interest: Math.round(total_interest),

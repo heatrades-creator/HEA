@@ -1300,6 +1300,7 @@ function updateROI() {
   var loan_finish_yr = summary.loan_finish_yr;
   var loan_weeks   = summary.loan_weeks;
   var total_interest = summary.total_interest;
+  var total_invested = summary.total_invested;  // total_cost + total_interest
   var year0_outflow = summary.year0_outflow;
   var loan_no_repayment_warn = summary.loan_no_repayment_warn;
 
@@ -1349,24 +1350,26 @@ function updateROI() {
       : 'No year in the analysis period has a positive annual net cashflow — check system size, costs, or extend the analysis period'
   });
 
-  // 3. BEP — investment view: when cumulative savings recover full system cost (financing-independent)
+  // 3. BEP — total cost of ownership: savings recover system cost + interest paid
+  var bepBase = total_invested || total_cost;
+  var bepInterestNote = total_interest > 0 ? ' ($' + total_cost.toLocaleString() + ' system + $' + total_interest.toLocaleString() + ' interest)' : '';
   mils.push({
     label: 'Break-Even Point (BEP)',
     cls: undis_be ? 'breakeven' : 'neg', badge: 'BEP',
     val: undis_frac != null ? 'Year ' + undis_frac : 'No BEP in ' + anlYrs + 'yr',
     sub: undis_be
-      ? 'Year ' + undis_frac + ': cumulative solar savings recover the full $' + total_cost.toLocaleString() + ' system cost (undiscounted). Same result regardless of how you finance the system.'
-      : 'Cumulative savings do not recover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years — check system size or costs'
+      ? 'Year ' + undis_frac + ': cumulative solar savings recover $' + bepBase.toLocaleString() + ' total cost of ownership' + bepInterestNote + ' (undiscounted).'
+      : 'Savings do not recover the $' + bepBase.toLocaleString() + ' total cost' + bepInterestNote + ' within ' + anlYrs + ' years'
   });
 
-  // 4. DPB — investment view, discounted to today's dollars
+  // 4. DPB — total cost of ownership, discounted to today's dollars
   mils.push({
     label: 'Discounted Payback (DPB)',
     cls: dis_be ? 'breakeven' : 'neg', badge: 'DPB',
     val: dis_frac != null ? 'Year ' + dis_frac : 'No DPB in ' + anlYrs + 'yr',
     sub: dis_be
-      ? 'Year ' + dis_frac + ': cumulative savings in today\'s dollars (at ' + (discRate*100).toFixed(0) + '% discount rate) recover the full $' + total_cost.toLocaleString() + ' system cost.'
-      : 'Discounted savings do not recover the $' + total_cost.toLocaleString() + ' system cost within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
+      ? 'Year ' + dis_frac + ': cumulative savings in today\'s dollars recover $' + bepBase.toLocaleString() + ' total cost' + bepInterestNote + ' at ' + (discRate*100).toFixed(0) + '% discount rate.'
+      : 'Discounted savings do not recover $' + bepBase.toLocaleString() + ' total cost within ' + anlYrs + ' years at ' + (discRate*100).toFixed(0) + '% discount rate'
   });
 
   // 5. NPV = -total_cost + SUM(PV of annual savings) — investment view
@@ -1522,14 +1525,16 @@ function updateROI() {
     else html += '<div style="margin-top:6px;color:#f87171">→ No CF+ year in ' + anlYrs + ' year period</div>';
     html += hr;
 
-    // 3. BEP — investment view: cumulative savings vs total system cost (financing-independent)
+    // 3. BEP — total cost of ownership: savings vs (system cost + interest)
+    var smBepBase = total_invested || total_cost;
+    var smInterestNote = total_interest > 0 ? ' + $' + total_interest.toLocaleString() + ' interest = $' + smBepBase.toLocaleString() + ' total' : '';
     html += '<div style="font-weight:700;color:#38bdf8;margin-bottom:4px">③ Break-Even Point (BEP)</div>';
-    html += '<div style="color:#888;margin-bottom:6px">Running total of annual savings (no loan costs) vs $' + total_cost.toLocaleString() + ' system cost. Same result regardless of financing:</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Running total of annual savings vs $' + total_cost.toLocaleString() + ' system' + smInterestNote + ':</div>';
     html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
     html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Running total</th><th style="text-align:right;padding:2px 6px"></th></tr>';
-    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(total_cost) + '</td><td></td></tr>';
+    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(smBepBase) + '</td><td></td></tr>';
     var bepShowRows = Math.min(annual_rows.length, undis_be ? Math.min(undis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
-    var runCum = -total_cost;
+    var runCum = -smBepBase;
     for (var bi = 0; bi < bepShowRows; bi++) {
       var brow = annual_rows[bi];
       runCum += brow.Annual_Savings_t;
@@ -1548,14 +1553,14 @@ function updateROI() {
     else html += '<div style="margin-top:6px;color:#f87171">→ No BEP within ' + anlYrs + ' year period</div>';
     html += hr;
 
-    // 4. DPB — investment view, discounted to today's dollars
+    // 4. DPB — total cost of ownership, discounted to today's dollars
     html += '<div style="font-weight:700;color:#4ade80;margin-bottom:4px">④ Discounted Payback (DPB)</div>';
-    html += '<div style="color:#888;margin-bottom:6px">Same as BEP but each year\'s savings are shrunk to "today\'s value" at ' + (discRate*100).toFixed(0) + '% (because $1 in 10 years is worth less than $1 today):</div>';
+    html += '<div style="color:#888;margin-bottom:6px">Same as BEP but each year\'s savings are shrunk to "today\'s value" at ' + (discRate*100).toFixed(0) + '% (because $1 in 10 years is worth less than $1 today). Target: $' + smBepBase.toLocaleString() + smInterestNote + ':</div>';
     html += '<table style="border-collapse:collapse;width:100%;font-size:10.5px">';
     html += '<tr style="color:#666;font-size:10px"><th style="text-align:left;padding:2px 6px">Year</th><th style="text-align:right;padding:2px 6px">Annual savings</th><th style="text-align:right;padding:2px 6px">Today\'s value</th><th style="text-align:right;padding:2px 6px">Running total</th></tr>';
     var dpbShowRows = Math.min(annual_rows.length, dis_be ? Math.min(dis_be + 1, annual_rows.length) : Math.min(15, annual_rows.length));
-    var runDCum = -total_cost;
-    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(total_cost) + '</td></tr>';
+    var runDCum = -smBepBase;
+    html += '<tr style="background:rgba(255,255,255,.05)"><td style="padding:3px 6px">Yr 0</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">—</td><td style="text-align:right;padding:3px 6px;color:#f87171">–' + fmtDol(smBepBase) + '</td></tr>';
     for (var di = 0; di < dpbShowRows; di++) {
       var drow = annual_rows[di];
       var discFactor = Math.pow(1 + discRate, drow.t);
@@ -1606,8 +1611,8 @@ function updateROI() {
     smDet.innerHTML = html;
   })();
 
-  // -- Chart data — investment view: starts at -total_cost --
-  var cumDCF_arr = [-total_cost];
+  // -- Chart data — total cost of ownership view: starts at -(total_cost + total_interest) --
+  var cumDCF_arr = [-(total_invested || total_cost)];
   for (var ri = 0; ri < annual_rows.length; ri++) cumDCF_arr.push(annual_rows[ri].CumDCF);
   var labels = ['Now'];
   for (var li = 0; li < annual_rows.length; li++) labels.push('Yr ' + annual_rows[li].t);

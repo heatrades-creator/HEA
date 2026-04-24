@@ -53,6 +53,14 @@ function doGet(e) {
     return jsonResponse(getProposalStats_());
   }
 
+  if (e.parameter.action === 'checkNMI' && e.parameter.jobNumber) {
+    return jsonResponse(checkNMI_(e.parameter.jobNumber));
+  }
+
+  if (e.parameter.action === 'checkEstimation' && e.parameter.jobNumber) {
+    return jsonResponse(checkEstimation_(e.parameter.jobNumber));
+  }
+
   if (e.parameter.action === 'getAllDocuments') {
     return jsonResponse(getAllDocuments_());
   }
@@ -666,6 +674,63 @@ function extractTemplatePlaceholders() {
     Logger.log(key + '  →  found on: ' + [...new Set(found[key])].join(', '));
   });
   Logger.log('=== END ===');
+}
+
+// ---------------------------------------------------------------------------
+// Drive auto-detection — NMI data + Estimation documents
+// ---------------------------------------------------------------------------
+
+// Returns { hasNMI, fileName, fileUrl, nmiSubfolderUrl }
+// Checks the 00_NMI_Data subfolder inside the client's Drive folder.
+function checkNMI_(jobNumber) {
+  var job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasNMI: false, nmiSubfolderUrl: null };
+  var match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) return { hasNMI: false, nmiSubfolderUrl: null };
+  try {
+    var clientFolder = DriveApp.getFolderById(match[1]);
+    var nmiFolder = getOrCreateDriveFolder_(clientFolder, '00_NMI_Data');
+    var nmiSubfolderUrl = nmiFolder.getUrl();
+    var files = nmiFolder.getFiles();
+    if (files.hasNext()) {
+      var file = files.next();
+      return { hasNMI: true, fileName: file.getName(), fileUrl: file.getUrl(), nmiSubfolderUrl: nmiSubfolderUrl };
+    }
+    return { hasNMI: false, nmiSubfolderUrl: nmiSubfolderUrl };
+  } catch(err) {
+    Logger.log('checkNMI_ error: ' + err);
+    return { hasNMI: false, nmiSubfolderUrl: null };
+  }
+}
+
+// Returns { hasEstimation, fileName, fileUrl }
+// Checks 03_Signed then 01_Quotes for any PDF that looks like an estimation/proposal.
+function checkEstimation_(jobNumber) {
+  var job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasEstimation: false };
+  var match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) return { hasEstimation: false };
+  try {
+    var clientFolder = DriveApp.getFolderById(match[1]);
+    var subfolders = ['03_Signed', '01_Quotes', '02_Proposals'];
+    for (var i = 0; i < subfolders.length; i++) {
+      var iter = clientFolder.getFoldersByName(subfolders[i]);
+      if (!iter.hasNext()) continue;
+      var sub = iter.next();
+      var files = sub.getFiles();
+      while (files.hasNext()) {
+        var f = files.next();
+        var name = f.getName().toLowerCase();
+        if (name.indexOf('.pdf') !== -1 || name.indexOf('estimat') !== -1 || name.indexOf('proposal') !== -1 || name.indexOf('solar') !== -1) {
+          return { hasEstimation: true, fileName: f.getName(), fileUrl: f.getUrl(), folder: subfolders[i] };
+        }
+      }
+    }
+    return { hasEstimation: false };
+  } catch(err) {
+    Logger.log('checkEstimation_ error: ' + err);
+    return { hasEstimation: false };
+  }
 }
 
 // ---------------------------------------------------------------------------

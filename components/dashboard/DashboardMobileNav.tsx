@@ -76,6 +76,16 @@ const icons = {
       <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
     </svg>
   ),
+  pipeline: (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+  ),
+  pipelineSmall: (
+    <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+    </svg>
+  ),
   solar: (
     <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
@@ -96,10 +106,10 @@ const icons = {
 // ── Bottom tab definitions ───────────────────────────────────────────────────
 
 const BOTTOM_TABS = [
-  { label: 'Home',   href: '/dashboard',        exact: true,  icon: icons.home   },
-  { label: 'Jobs',   href: '/dashboard/jobs',    exact: false, icon: icons.jobs   },
-  { label: 'Board',  href: '/dashboard/kanban',  exact: false, icon: icons.kanban },
-  { label: 'People', href: '/dashboard/c2/people', exact: false, icon: icons.people },
+  { label: 'Home',     href: '/dashboard',          exact: true,  icon: icons.home     },
+  { label: 'Jobs',     href: '/dashboard/jobs',      exact: false, icon: icons.jobs     },
+  { label: 'Pipeline', href: '/dashboard/pipeline',  exact: false, icon: icons.pipeline },
+  { label: 'Board',    href: '/dashboard/kanban',    exact: false, icon: icons.kanban   },
 ] as const;
 
 // ── Full drawer nav (mirrors DashboardNav sections) ──────────────────────────
@@ -109,8 +119,9 @@ const DRAWER_SECTIONS = [
     label: 'Workspace',
     items: [
       { label: 'Overview',       href: '/dashboard',         exact: true,  icon: icons.home,      external: false },
-      { label: 'Jobs',           href: '/dashboard/jobs',    exact: false, icon: icons.jobs,      external: false },
-      { label: 'Kanban',         href: '/dashboard/kanban',  exact: false, icon: icons.kanban,    external: false },
+      { label: 'Jobs',           href: '/dashboard/jobs',      exact: false, icon: icons.jobs,          external: false },
+      { label: 'Pipeline',       href: '/dashboard/pipeline', exact: false, icon: icons.pipelineSmall, external: false },
+      { label: 'Kanban',         href: '/dashboard/kanban',   exact: false, icon: icons.kanban,        external: false },
     ],
   },
   {

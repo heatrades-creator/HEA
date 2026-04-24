@@ -16,22 +16,27 @@
 
 ## Auto-Deploy: GAS via Clasp
 
-Push to `main` touching `HEA INTAKE/**`, `GAS/**`, or `HEA SA/**` → `.github/workflows/deploy-gas.yml` runs → clasp pushes to Google Apps Script.
+Push to `main` touching `HEA INTAKE/**`, `GAS/**`, or `HEA SA/**` → `.github/workflows/deploy-gas.yml` runs → clasp pushes **and** creates a new deployment version. **No manual GAS steps are ever needed — push to `main` = live immediately.**
+
+The workflow does two things per script:
+1. `clasp push --force` — syncs the code
+2. `clasp deploy -i <DEPLOYMENT_ID>` — bumps the live deployment to a new version (same URL, new code)
+
+For scripts without a hardcoded deployment ID (Jobs API, Intake Form), the workflow queries `clasp deployments`, grabs the latest non-HEAD ID, and updates it. If no deployment exists yet it creates the first one.
 
 **Credentials:** GitHub secret `CLASPRC_JSON` is written to 4 locations in the workflow (all of them — clasp v3 is inconsistent about which it reads).
-
-**⚠️ After clasp push, GAS needs a new deployment version to go live:**
-GAS project → Deploy → Manage Deployments → Edit → New version → Deploy.
 
 **If pushes silently fail** (GAS "Last modified" doesn't update):
 1. `clasp login` on a machine signed in as `hea.trades@gmail.com`
 2. Copy `~/.clasprc.json` → update `CLASPRC_JSON` in GitHub Secrets
 
 **GAS scripts:**
-| Folder | Purpose |
-|---|---|
-| `HEA INTAKE/` | Intake form backend (PDFs, email, Drive, Sheets) — Code.gs + Index.html |
-| `GAS/` | Jobs API (Drive folders, Sheet entries, Telegram alerts) |
+| Folder | Purpose | Deployment ID |
+|---|---|---|
+| `HEA INTAKE/` | Intake form backend (PDFs, email, Drive, Sheets) | dynamic (queried at deploy time) |
+| `GAS/` | Jobs API (Drive folders, Sheet entries, Telegram alerts) | dynamic (queried at deploy time) |
+| `GAS/PhotoPortal/` | Client photo upload portal + AS/NZS 5139 compliance check | `AKfycbwERmJbdTrnpM_-ABgXGtRolMCzSG2nDWJNyJjhfDx-baSI1BJWiehTdCM9qW0VSWU` |
+| `HEA SA/` | Solar analyser | `AKfycbzZuPvjN6yzPbXUk4OajTLFbDoTMjrxqPgAWqsqJuZAqXfqHhdEsAJ8v1_MOD931nc` |
 
 ---
 

@@ -1,6 +1,22 @@
 # HEA Group — Claude Code Context
 
+## The Golden Rule
+
+**Always expand existing systems. Never build parallel ones.**
+
+Before writing any new file, search the codebase for the existing implementation. HEA has mature, working systems for jobs (GAS), leads (Prisma), email (Resend), PDF (pdf-lib), auth (NextAuth), CMS (Sanity), and CRM (HubSpot). Every new feature is an extension of one of these — not a new system alongside them.
+
+Signs you are about to make a mistake:
+- Creating a new database table that duplicates GAS job data
+- Building a new dashboard at a new route instead of adding a page to `/dashboard`
+- Adding a new email utility instead of extending `lib/email.ts`
+- Fetching GAS data in a new way instead of reusing the `JOBS_GAS_URL` fetch pattern
+- Creating a `/admin/pipeline` when the pipeline belongs in `/dashboard`
+
+---
+
 ## Stack
+
 | Layer | Tech | Deploy trigger |
 |---|---|---|
 | Website + intake form | Next.js 16 App Router · Tailwind | Push to `main` → Vercel auto |
@@ -9,8 +25,208 @@
 | PDF generation | `pdf-lib` in `lib/intake-pdf.ts` — NO puppeteer | Serverless-safe |
 | Database | Prisma + Turso libSQL (`lib/db.ts`) | Turso cloud |
 | GAS scripts | clasp via GitHub Actions on push to `main` | See GAS section |
+| CRM | HubSpot (`lib/hubspot.ts`) | Via access token |
 
 **Live:** `https://hea-group.com.au` · Studio: `/studio` · Intake: `/intake`
+
+---
+
+## The Two Dashboards — Know the Difference
+
+There are two separate protected dashboards. They serve different users and use different data sources. **Do not mix them.**
+
+### `/dashboard` — Alexis's Operational Dashboard (white theme)
+- **Who:** Alexis (admin worker), Jesse (field work)
+- **Data source:** GAS Jobs API (`JOBS_GAS_URL`) — Google Sheets as the source of truth
+- **Auth:** NextAuth session (same as admin)
+- **Theme:** White background, `#111827` text, `#ffd100` accents, `border-[#e5e9f0]`
+- **Nav:** `DashboardNav.tsx` (sidebar) + `DashboardMobileNav.tsx` (bottom tab bar + slide-up drawer)
+- **Layout:** `app/dashboard/layout.tsx`
+- **Key pages:**
+  - `/dashboard` — Overview with job stats + pipeline funnel
+  - `/dashboard/jobs` — Full job list (GAS)
+  - `/dashboard/jobs/[jobNumber]` — Job detail (GAS)
+  - `/dashboard/kanban` — Kanban board (GAS statuses)
+  - `/dashboard/pipeline` — Sales pipeline (3 stages, GAS-backed)
+  - `/dashboard/documents` — Proposal documents
+  - `/dashboard/templates` — Document templates
+  - `/dashboard/c2/` — Command section (people, recruitment, onboarding, units, tasks)
+  - `/dashboard/settings` — User settings
+
+**When adding a new page Alexis uses → add it to `/dashboard`, add a nav item to both `DashboardNav.tsx` and `DashboardMobileNav.tsx`.**
+
+### `/admin` — Jesse's Admin Dashboard (dark theme)
+- **Who:** Jesse (admin ops only)
+- **Data source:** Prisma + Turso (marketing leads, audit log)
+- **Auth:** NextAuth + `isAdminEmail()` check (`lib/auth.ts`)
+- **Theme:** Dark `#111827` background, white text, `#ffd100` accents
+- **Nav:** `AdminNav.tsx`
+- **Key pages:**
+  - `/admin` — Overview
+  - `/admin/leads` — Lead management (Prisma `Lead` model)
+  - `/admin/pipeline` — Admin lead pipeline (Prisma stages)
+  - `/admin/jobs` — Job overview
+  - `/admin/audit` — Audit log
+
+**When adding admin-only features → add to `/admin`. When adding operational features for Alexis → add to `/dashboard`.**
+
+---
+
+## GAS Jobs API — The Operational Source of Truth
+
+All job data lives in Google Sheets, managed by `GAS/HEAJobsAPI.gs`. Next.js is a read/write proxy.
+
+### GASJob shape (used across all `/dashboard` components)
+```typescript
+// Canonical type defined in: components/dashboard/pipeline/BuildTheDealCard.tsx
+type GASJob = {
+  jobNumber: string    // e.g. "HEA-2026-001"
+  clientName: string
+  phone: string
+  email: string
+  address: string
+  status: string       // 'Lead' | 'Quoted' | 'Contract' | 'Booked' | 'In Progress' | 'Complete'
+  driveUrl: string     // Google Drive folder URL for this client
+  notes: string
+  systemSize: string   // kW value as string, e.g. "6.6"
+  totalPrice: string   // e.g. "$12,500"
+  annualBill: string   // annual electricity bill
+}
+```
+
+### Valid GAS statuses (in order)
+`Lead` → `Quoted` → `Contract` → `Booked` → `In Progress` → `Complete`
+
+### Fetching jobs in a server component
+```typescript
+const res = await fetch(process.env.JOBS_GAS_URL!, { cache: 'no-store' })
+const jobs: GASJob[] = await res.json()
+```
+
+### Updating job status from Next.js
+POST to `/api/dashboard/pipeline/move-stage` with `{ jobNumber, status }`.
+This proxies to GAS `action: 'updateJob'`.
+
+### GAS Drive folder structure per client
+Each client gets a folder under the HEA Drive root:
+```
+ClientName_YYYY-MM-DD/
+  00_NMI_Data/      ← PowerCor NMI files land here
+  01_Quotes/        ← Quote PDFs
+  02_Proposals/     ← Proposal documents
+  03_Signed/        ← Signed estimation/contract
+  04_Installed/     ← Post-install photos
+```
+`driveUrl` on the job points to the root client folder.
+
+### GAS Drive auto-detection
+`GAS/HEAJobsAPI.gs` exposes two GET actions for file-presence checks:
+
+| Action | Returns | Used by |
+|--------|---------|---------|
+| `?action=checkNMI&jobNumber=X` | `{ hasNMI, fileName, fileUrl, nmiSubfolderUrl }` | `/api/dashboard/pipeline/check-nmi` |
+| `?action=checkEstimation&jobNumber=X` | `{ hasEstimation, fileName, fileUrl }` | `/api/dashboard/pipeline/check-estimation` |
+
+These are called from `BuildTheDealCard.tsx` on mount and every 30s while polling.
+
+---
+
+## Sales Pipeline (`/dashboard/pipeline`)
+
+Three stages backed entirely by GAS job statuses. No separate database.
+
+| Stage | Column title | GAS statuses | Card component |
+|-------|-------------|-------------|----------------|
+| 1 | Build the Deal | `Lead` | `BuildTheDealCard.tsx` |
+| 2 | Close the Deal | `Quoted`, `Contract`, `Booked`, `In Progress` | `CloseTheDealCard.tsx` |
+| 3 | Post-Install | `Complete` | `PostInstallCard.tsx` |
+
+### Component files
+```
+app/dashboard/pipeline/page.tsx                  ← Server: fetches GAS, splits into 3 arrays
+components/dashboard/pipeline/SalesPipelineBoard.tsx  ← Client: 3-column layout, optimistic moves
+components/dashboard/pipeline/BuildTheDealCard.tsx    ← Stage 1 card (NMI auto-detect, polling)
+components/dashboard/pipeline/CloseTheDealCard.tsx    ← Stage 2 card (stock, date, deposit)
+components/dashboard/pipeline/PostInstallCard.tsx     ← Stage 3 card (review, thank you)
+```
+
+### Stage advance flow
+1. Card calls `POST /api/dashboard/pipeline/move-stage` with new GAS status
+2. `onAdvanced(jobNumber)` callback fires on success
+3. `SalesPipelineBoard` removes the card from current column, prepends to next — no page reload
+
+### BuildTheDealCard NMI polling pattern
+When Alexis clicks "Get NMI Data":
+- Opens PowerCor portal in new tab
+- Opens client's Drive NMI subfolder in new tab  
+- Sets `polling = true` → `setInterval` calls `checkNMI` + `checkEst` every 30s
+- Dot turns green automatically when file is detected
+
+---
+
+## API Routes — Proxy Pattern
+
+All `/api/dashboard/pipeline/*` routes follow the same pattern:
+
+```typescript
+export async function GET/POST(req: NextRequest) {
+  const session = await getServerSession(authOptions)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // validate params
+  const gasUrl = process.env.JOBS_GAS_URL
+  if (!gasUrl) return NextResponse.json({ error: 'GAS not configured' }, { status: 503 })
+  // proxy to GAS
+  const res = await fetch(`${gasUrl}?action=...`, { cache: 'no-store' })
+  return NextResponse.json(await res.json())
+}
+```
+
+**Existing dashboard pipeline API routes:**
+- `GET /api/dashboard/pipeline/check-nmi?jobNumber=X`
+- `GET /api/dashboard/pipeline/check-estimation?jobNumber=X`
+- `POST /api/dashboard/pipeline/move-stage` — body: `{ jobNumber, status }`
+
+---
+
+## Admin API Routes — Prisma Pattern
+
+All `/api/admin/pipeline/[id]/*` routes follow this pattern:
+
+```typescript
+export async function POST(req, { params }) {
+  const session = await getServerSession(authOptions)
+  if (!session || !isAdminEmail(session.user?.email)) return 401
+  const lead = await prisma.lead.findUnique({ where: { id: params.id } })
+  if (!lead) return 404
+  await prisma.lead.update({
+    where: { id: params.id },
+    data: {
+      fieldName: value,
+      auditEntries: { create: { action: 'action_name', performedBy: session.user.email } }
+    }
+  })
+  // fire-and-forget HubSpot sync if needed
+}
+```
+
+---
+
+## GAS Scripts — Adding New Actions
+
+To add a new action to `GAS/HEAJobsAPI.gs`:
+
+1. Add a branch to `doGet(e)` or `doPost(e)`:
+```javascript
+if (e.parameter.action === 'myAction' && e.parameter.jobNumber) {
+  return jsonResponse(myAction_(e.parameter.jobNumber));
+}
+```
+
+2. Write the helper function `myAction_(jobNumber)` that returns a plain object.
+
+3. Push to `main` — GAS auto-deploys via GitHub Actions. **No manual steps.**
+
+The GAS script reads from `getSheet_()` (the jobs Google Sheet) and `DriveApp` for file operations.
 
 ---
 
@@ -50,6 +266,25 @@ GAS iframe = fixed ~750px CSS viewport on mobile → CSS @media useless → JS `
 | `app/api/intake/route.ts` | Validates → generates PDFs → emails client + Jesse → notifies Jobs API |
 | `lib/intake-pdf.ts` | `generateConsentPdf()` + `generateJobCardPdf()` via pdf-lib |
 
+Intake submissions create a Prisma `Lead` record AND notify the GAS Jobs API. Both systems receive the lead.
+
+---
+
+## Prisma Lead Model — Marketing/Admin Only
+
+The Prisma `Lead` model tracks **marketing leads** (from `/intake`, `/api/leads`, web forms). It is NOT the operational job system — that's GAS.
+
+Key fields:
+- `estimationSignedAt` — Stage 1→2 gate in `/admin/pipeline`
+- `installedAt` — Stage 2→3 gate
+- `appointmentAt`, `buildDate`, `depositAmountAud` — sales milestone tracking
+- `googleReviewReceivedAt`, `thankYouSentAt` — post-install tracking
+- `hubspotContactId`, `hubspotDealId` — CRM sync
+
+**When to use Prisma vs GAS:**
+- Prisma: marketing leads, admin audit trail, HubSpot sync, per-lead notes
+- GAS: operational jobs, Drive folders, Telegram alerts, job status
+
 ---
 
 ## Lead Links
@@ -62,6 +297,35 @@ INTAKE_URL_BATTERY = "/intake?service=battery"
 INTAKE_URL_EV      = "/intake?service=ev"
 ```
 Service pages import their matching constant. Pricing page solar cards → `INTAKE_URL_SOLAR`, battery cards → `INTAKE_URL_BATTERY`.
+
+---
+
+## Email (`lib/email.ts`)
+
+All transactional email goes through Resend via `lib/email.ts`. Do not create new email utilities — extend this file.
+
+Key exports:
+- `sendIntakeEmail()` — client confirmation + Jesse alert with PDFs attached
+- `sendLeadNotification()` — simple lead alert
+- `sendReviewRequest()` — Google review request email
+
+**Google Review URL:** `https://g.page/r/CSOEwnVc3aFIEBE/review`
+Use the URL in `lib/constants.ts` as the canonical source — do not hardcode it elsewhere.
+
+---
+
+## HubSpot CRM (`lib/hubspot.ts`)
+
+HubSpot has a 7-stage pipeline. Sync happens fire-and-forget from API routes — never block the response on HubSpot.
+
+Key function:
+```typescript
+updateHubSpotDeal(leadId: string, stage: string)
+// stage values: 'appointmentscheduled' | 'qualifiedtobuy' | 'presentationscheduled' | 
+//               'decisionmakerboughtin' | 'contractsent' | 'closedwon' | 'closedlost'
+```
+
+Env var: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_INSTALLED`
 
 ---
 
@@ -105,6 +369,8 @@ Service pages import their matching constant. Pricing page solar cards → `INTA
 - **PDF on Vercel** — use `pdf-lib` only (no puppeteer/playwright — no native deps)
 - **Async server components** — all pages that fetch data are `async` functions
 - **No bare `<Footer />`** — always pass `data` prop
+- **White theme in `/dashboard`** — bg-white cards, `#111827` text, `#ffd100` accents, `border-[#e5e9f0]`
+- **Dark theme in `/admin`** — `bg-[#111827]` / `bg-[#202020]` backgrounds
 
 ---
 
@@ -116,22 +382,65 @@ Service pages import their matching constant. Pricing page solar cards → `INTA
 | Clasp push silently fails | Token format / credential location | Write raw token to 4 paths in workflow |
 | Vercel build: `_achieved` TS errors | Archived files included in compilation | `exclude: ["_achieved"]` in tsconfig |
 | Vercel build: pricing page `any` type | Missing explicit `PricingPkg[]` annotation | Add type annotation to SOLAR_PACKAGES / BATTERY_PACKAGES |
+| Footer/Nav TS error: Logo_transparent.png | Image import path mismatch | Pre-existing, do not re-investigate |
 
 ---
 
-## Folder Map (non-obvious)
+## Folder Map
 
 ```
-app/intake/          ← Public intake form (new, mobile-first)
-app/api/intake/      ← Intake API: PDFs + emails
-app/api/leads/       ← Simpler lead capture (no PDFs)
-app/admin/           ← Internal dashboard (NextAuth protected)
-app/studio/          ← Sanity Studio (embedded)
-app/proposal/[token] ← Customer proposal viewer
-components/HEAAdvisor.tsx    ← AI chat widget → /api/advisor/explain
-components/HEAEstimator.tsx  ← Interactive savings estimator
-components/SocialProofBar.tsx← Reviews + manufacturer brand strip
-HEA INTAKE/          ← GAS project (clasp-managed)
-GAS/                 ← GAS Jobs API (clasp-managed)
-_achieved/           ← Archived/unused files (excluded from TS)
+app/intake/               ← Public intake form (mobile-first, Next.js)
+app/api/intake/           ← Intake API: PDFs + emails + GAS notification
+app/api/leads/            ← Simpler lead capture (no PDFs)
+app/api/admin/            ← Admin-only API routes (Prisma, NextAuth protected)
+app/api/dashboard/        ← Dashboard API routes (GAS proxy, session protected)
+  pipeline/
+    check-nmi/            ← Proxies GAS checkNMI action
+    check-estimation/     ← Proxies GAS checkEstimation action
+    move-stage/           ← Proxies GAS updateJob action
+app/dashboard/            ← Alexis's operational dashboard (white theme)
+  page.tsx                ← Overview: stats + pipeline funnel
+  jobs/                   ← Job list + job detail pages
+  kanban/                 ← Kanban board (GAS statuses)
+  pipeline/               ← 3-stage sales pipeline (GAS-backed)
+  documents/              ← Proposal documents
+  templates/              ← Document templates
+  c2/                     ← Command: people, recruitment, onboarding, units, tasks
+  settings/               ← User settings
+app/admin/                ← Jesse's admin dashboard (dark theme)
+  leads/                  ← Lead management (Prisma)
+  pipeline/               ← Admin lead pipeline (Prisma stages)
+  jobs/                   ← Job overview
+  audit/                  ← Audit log
+app/studio/               ← Sanity Studio (embedded)
+app/proposal/[token]/     ← Customer proposal viewer
+components/dashboard/     ← All /dashboard UI components
+  DashboardNav.tsx        ← Sidebar nav (desktop)
+  DashboardMobileNav.tsx  ← Bottom tab bar + slide-up drawer (mobile)
+  pipeline/               ← Sales pipeline card components
+    BuildTheDealCard.tsx  ← Stage 1: NMI detect, estimation, move to Quoted
+    CloseTheDealCard.tsx  ← Stage 2: stock, build date, deposit, mark installed
+    PostInstallCard.tsx   ← Stage 3: review request + thank you tracking
+    SalesPipelineBoard.tsx ← Client wrapper: 3 columns + optimistic moves
+components/admin/         ← All /admin UI components
+  AdminNav.tsx
+  pipeline/               ← Admin pipeline cards + modals
+components/HEAAdvisor.tsx ← AI chat widget → /api/advisor/explain
+components/HEAEstimator.tsx ← Interactive savings estimator
+components/SocialProofBar.tsx ← Reviews + manufacturer brand strip
+lib/email.ts              ← All transactional email (Resend)
+lib/hubspot.ts            ← HubSpot CRM sync
+lib/auth.ts               ← NextAuth config + isAdminEmail()
+lib/db.ts                 ← Prisma client (Turso)
+lib/constants.ts          ← Shared URLs + Google Review URL
+lib/intake-pdf.ts         ← PDF generation (pdf-lib)
+lib/sanity.ts             ← Sanity CMS client
+GAS/                      ← Jobs API GAS script (clasp-managed)
+  HEAJobsAPI.gs           ← Main: doGet/doPost, Drive folders, Sheets
+HEA INTAKE/               ← Intake form GAS script (clasp-managed)
+HEA SA/                   ← Solar analyser GAS script (clasp-managed)
+GAS/PhotoPortal/          ← Photo upload portal GAS script
+prisma/schema.prisma      ← Prisma schema (Turso SQLite)
+scripts/db-setup.ts       ← Idempotent DB migrations (ALTER TABLE)
+_achieved/                ← Archived/unused files (excluded from TS)
 ```

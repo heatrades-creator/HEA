@@ -3,6 +3,7 @@ import React from "react";
 import Nav from "@/components/Nav";
 import Hero from "@/components/Hero";
 import SocialProofBar from "@/components/SocialProofBar";
+import StatsTickerBar from "@/components/StatsTickerBar";
 import HEARoutingBar from "@/components/HEARoutingBar";
 import HEAAdvisor from "@/components/HEAAdvisor";
 import Services from "@/components/Services";
@@ -40,7 +41,10 @@ export default async function Home() {
       {/* 2. Social Proof */}
       <SocialProofBar />
 
-      {/* 2b. Routing — "What are you here for?" */}
+      {/* 2b. Stats — animated install / kW / savings counters */}
+      <StatsTickerBar />
+
+      {/* 2c. Routing — "What are you here for?" */}
       <HEARoutingBar />
 
       {/* 3. Why HEA */}

@@ -93,6 +93,7 @@ export default function BatteryStorageBendigo() {
       pricingNote="Battery pricing depends on capacity, chemistry, and whether a new inverter is required. Retrofit installations onto existing solar may also require switchboard work. Contact us for a quote based on your specific setup — or see our pricing page for indicative starting ranges."
       faqs={FAQS}
       breadcrumb={BREADCRUMB}
+      showBatteryDecisionEngine={true}
     />
   );
 }

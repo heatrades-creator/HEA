@@ -1,6 +1,16 @@
 "use client";
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  ResponsiveContainer,
+} from "recharts";
 import { GAS_INTAKE_URL } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -63,6 +73,35 @@ function computeEstimate(inputs: EstimatorInputs): EstimateOutput {
 
 function fmt(n: number) {
   return n.toLocaleString("en-AU");
+}
+
+// ─── Payback chart — cumulative savings over 15 years ────────────────────────
+// Math pattern sourced from pranayponnappa/Solar-ROI-Calculator
+
+function generatePaybackData(cost: number, annualSavings: number) {
+  return Array.from({ length: 16 }, (_, year) => ({
+    year,
+    cumSavings: Math.round(year * annualSavings),
+    cost,
+  }));
+}
+
+// ─── Custom chart tooltip ─────────────────────────────────────────────────────
+
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: number;
+}
+
+function PaybackTooltip({ active, payload, label }: TooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-slate-700 mb-0.5">Year {label}</p>
+      <p className="text-yellow-600">${payload[0].value.toLocaleString("en-AU")} cumulative savings</p>
+    </div>
+  );
 }
 
 // ─── Toggle button group ──────────────────────────────────────────────────────
@@ -174,52 +213,112 @@ export default function HEAEstimator() {
       </div>
 
       {/* Output */}
-      {estimate && (
-        <div className="mt-8 bg-white rounded-2xl border-2 border-yellow-400 p-6 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-wider text-yellow-600 mb-4">
-            Indicative Estimate
-          </p>
+      {estimate && (() => {
+        const midPrice = Math.round((estimate.priceMin + estimate.priceMax) / 2);
+        const midSavings = Math.round((estimate.savingsMin + estimate.savingsMax) / 2);
+        const paybackData = generatePaybackData(midPrice, midSavings);
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <p className="text-xs text-slate-400 mb-1">System Size</p>
-              <p className="text-xl sm:text-2xl font-bold text-slate-900">~{estimate.systemKw} kW</p>
+        return (
+          <div className="mt-8 bg-white rounded-2xl border-2 border-yellow-400 p-6 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-yellow-600 mb-4">
+              Indicative Estimate
+            </p>
+
+            {/* 2×2 output grid — unchanged */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <p className="text-xs text-slate-400 mb-1">System Size</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">~{estimate.systemKw} kW</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Est. Payback</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">{estimate.paybackYears}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Price Range</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
+                  ${fmt(estimate.priceMin)}–${fmt(estimate.priceMax)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Est. Annual Savings</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">
+                  ${fmt(estimate.savingsMin)}–${fmt(estimate.savingsMax)}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Est. Payback</p>
-              <p className="text-xl sm:text-2xl font-bold text-slate-900">{estimate.paybackYears}</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Price Range</p>
-              <p className="text-xl sm:text-2xl font-bold text-slate-900">
-                ${fmt(estimate.priceMin)}–${fmt(estimate.priceMax)}
+
+            {/* ── 15-Year Payback Chart ── */}
+            <div className="mb-6 pt-4 border-t border-slate-100">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+                15-Year Savings Projection
+              </p>
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart data={paybackData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="savingsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#fde047" stopOpacity={0.75} />
+                      <stop offset="95%" stopColor="#fde047" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis
+                    dataKey="year"
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => `Yr ${v}`}
+                    interval={2}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`}
+                    width={36}
+                  />
+                  <Tooltip content={<PaybackTooltip />} />
+                  <ReferenceLine
+                    y={midPrice}
+                    stroke="#94a3b8"
+                    strokeDasharray="5 4"
+                    label={{ value: "System cost", position: "insideTopRight", fontSize: 9, fill: "#94a3b8", dy: -6 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cumSavings"
+                    stroke="#eab308"
+                    strokeWidth={2.5}
+                    fill="url(#savingsGradient)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: "#eab308", strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-slate-400 text-center mt-1">
+                Savings line crosses the dashed cost threshold at your payback point — {estimate.paybackYears}.
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 mb-1">Est. Annual Savings</p>
-              <p className="text-xl sm:text-2xl font-bold text-slate-900">
-                ${fmt(estimate.savingsMin)}–${fmt(estimate.savingsMax)}
-              </p>
-            </div>
+
+            {/* Disclaimer — unchanged */}
+            <p className="text-xs text-slate-400 italic mb-5">
+              * Indicative only. Actual quote is based on your Powercor NEM12 usage data and site conditions.
+              STC rebates applied. Prices may vary.
+            </p>
+
+            <a
+              href={GAS_INTAKE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold px-6 py-3 rounded-xl
+                hover:bg-yellow-300 hover:shadow-lg transition-all duration-200 text-sm"
+            >
+              Get My Accurate Quote
+              <ChevronRight className="w-4 h-4" />
+            </a>
           </div>
-
-          <p className="text-xs text-slate-400 italic mb-5">
-            * Indicative only. Actual quote is based on your Powercor NEM12 usage data and site conditions.
-            STC rebates applied. Prices may vary.
-          </p>
-
-          <a
-            href={GAS_INTAKE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold px-6 py-3 rounded-xl
-              hover:bg-yellow-300 hover:shadow-lg transition-all duration-200 text-sm"
-          >
-            Get My Accurate Quote
-            <ChevronRight className="w-4 h-4" />
-          </a>
-        </div>
-      )}
+        );
+      })()}
 
       {!ready && (
         <div className="mt-8 bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center">

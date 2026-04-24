@@ -6,6 +6,7 @@ import TrustStrip from "@/components/TrustStrip";
 import FAQAccordion from "@/components/FAQAccordion";
 import HEAComparison from "@/components/HEAComparison";
 import HEAAdvisor from "@/components/HEAAdvisor";
+import BatteryDecisionEngine from "@/components/BatteryDecisionEngine";
 import Link from "next/link";
 import { ChevronRight, Check } from "lucide-react";
 import { GAS_INTAKE_URL, HEA_PHONE } from "@/lib/constants";
@@ -26,6 +27,7 @@ interface ServicePageProps {
   pricingNote: string;
   faqs: FAQ[];
   breadcrumb: { label: string; href: string }[];
+  showBatteryDecisionEngine?: boolean;
 }
 
 const ServicePageLayout = ({
@@ -39,6 +41,7 @@ const ServicePageLayout = ({
   pricingNote,
   faqs,
   breadcrumb,
+  showBatteryDecisionEngine = false,
 }: ServicePageProps) => {
   return (
     <>
@@ -141,6 +144,15 @@ const ServicePageLayout = ({
             </div>
           </div>
         </section>
+
+        {/* Battery Decision Engine — battery page only */}
+        {showBatteryDecisionEngine && (
+          <section className="py-16 px-4 bg-white">
+            <div className="max-w-2xl mx-auto">
+              <BatteryDecisionEngine />
+            </div>
+          </section>
+        )}
 
         {/* Pricing Note */}
         <section className="py-14 px-4 bg-white">

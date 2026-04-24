@@ -78,6 +78,25 @@ model Lead {
   soldAt              DateTime?
   installedAt         DateTime?
 
+  // Pipeline — Stage 1 (Build the Deal)
+  appointmentAt      DateTime?
+  appointmentNotes   String?
+  solarVicEligible   Boolean?
+  solarVicAppliedAt  DateTime?
+  financeRequired    Boolean?
+  financeProvider    String?
+  estimationSignedAt DateTime?   // Stage 1→2 gate
+
+  // Pipeline — Stage 2 (Close the Deal)
+  stockConfirmed  Boolean?
+  buildDate       DateTime?
+  quoteSignedAt   DateTime?
+  depositAmountAud Float?
+
+  // Pipeline — Stage 3 (Post-Install)
+  googleReviewReceivedAt DateTime?
+  thankYouSentAt         DateTime?
+
   // Customer proposal access token (for /proposal/[token] page)
   proposalToken String @unique @default(cuid())
 

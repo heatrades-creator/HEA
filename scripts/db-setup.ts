@@ -104,6 +104,22 @@ const migrations = [
   // Payment timestamps
   `ALTER TABLE "Lead" ADD COLUMN "completionPaidAt"  DATETIME`,
   `ALTER TABLE "Lead" ADD COLUMN "esvPaidAt"         DATETIME`,
+  // Pipeline — Stage 1 (Build the Deal)
+  `ALTER TABLE "Lead" ADD COLUMN "appointmentAt"      DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "appointmentNotes"   TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "solarVicEligible"   INTEGER`,
+  `ALTER TABLE "Lead" ADD COLUMN "solarVicAppliedAt"  DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "financeRequired"    INTEGER`,
+  `ALTER TABLE "Lead" ADD COLUMN "financeProvider"    TEXT`,
+  `ALTER TABLE "Lead" ADD COLUMN "estimationSignedAt" DATETIME`,
+  // Pipeline — Stage 2 (Close the Deal)
+  `ALTER TABLE "Lead" ADD COLUMN "stockConfirmed"     INTEGER`,
+  `ALTER TABLE "Lead" ADD COLUMN "buildDate"          DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "quoteSignedAt"      DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "depositAmountAud"   REAL`,
+  // Pipeline — Stage 3 (Post-Install)
+  `ALTER TABLE "Lead" ADD COLUMN "googleReviewReceivedAt" DATETIME`,
+  `ALTER TABLE "Lead" ADD COLUMN "thankYouSentAt"     DATETIME`,
 ]
 
 async function main() {

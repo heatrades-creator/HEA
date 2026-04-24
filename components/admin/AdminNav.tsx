@@ -5,10 +5,11 @@ import Link from "next/link"
 import SignOutButton from "@/app/dashboard/SignOutButton"
 
 const NAV_LINKS = [
-  { href: "/admin",       label: "Overview" },
-  { href: "/admin/leads", label: "Leads" },
-  { href: "/admin/jobs",  label: "Jobs" },
-  { href: "/admin/audit", label: "Audit Log" },
+  { href: "/admin",          label: "Overview" },
+  { href: "/admin/pipeline", label: "Pipeline" },
+  { href: "/admin/leads",    label: "Leads" },
+  { href: "/admin/jobs",     label: "Jobs" },
+  { href: "/admin/audit",    label: "Audit Log" },
 ]
 
 const linkClass =

@@ -37,6 +37,17 @@ const ACTION_LABELS: Record<string, string> = {
   job_installed:             "Installation complete",
   premium_imagery_requested: "Premium imagery enabled",
   permit_pack_requested:     "Permit pack ordered",
+  review_requested:          "Google review requested",
+  appointment_set:           "Appointment scheduled",
+  solar_vic_updated:         "Solar Vic status updated",
+  finance_updated:           "Finance details updated",
+  estimation_signed:         "Estimation signed",
+  stock_confirmed:           "Stock confirmed",
+  build_date_set:            "Build date set",
+  quote_signed:              "Quote signed",
+  build_date_updated:        "Build date updated",
+  google_review_received:    "Google review received",
+  thank_you_sent:            "Thank you sent",
 }
 
 function fmtDate(iso: string) {

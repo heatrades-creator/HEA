@@ -578,11 +578,11 @@ function IntakeFormInner() {
 
                     <div>
                       <Label>Which way does your main roof face?</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {["North", "North-East", "North-West", "East", "West", "Not sure"].map(v => (
+                      <div className="grid grid-cols-4 gap-2">
+                        {["North", "North East", "East", "South East", "South", "South West", "West", "North West"].map(v => (
                           <button key={v} type="button"
                             onClick={() => setValue("roofOrientation", watch("roofOrientation") === v ? "" : v)}
-                            className={`py-2.5 px-2 rounded-xl border text-xs font-medium transition-all ${
+                            className={`py-2.5 px-1 rounded-xl border text-xs font-medium transition-all ${
                               watch("roofOrientation") === v ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-400"
                             }`}
                           >{v}</button>

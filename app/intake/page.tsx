@@ -651,8 +651,7 @@ function IntakeFormInner() {
                 />
 
                 {/* ── Battery location photos ─────────────────────────────── */}
-                {hasBattery && (
-                  <div className="border-t border-slate-100 pt-5">
+                <div className="border-t border-slate-100 pt-5">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
                       Proposed battery location <span className="font-normal normal-case text-slate-400">(optional — 3 angles helps us plan before the site visit)</span>
                     </p>
@@ -753,8 +752,7 @@ function IntakeFormInner() {
                         inputRef={batteryPhoto3Ref}
                       />
                     </div>
-                  </div>
-                )}
+                </div>
 
                 <div>
                   <Label>Electricity bill (optional — strongly recommended)</Label>

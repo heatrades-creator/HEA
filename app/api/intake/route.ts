@@ -28,7 +28,7 @@ const Schema = z.object({
   systemSize:    z.string().max(100).optional(),
   batterySize:   z.string().max(100).optional(),
   nmiConsent:    z.boolean(),
-  nmiConsentAt:  z.string().datetime(),
+  nmiConsentAt:  z.string().datetime().optional(),
   // Optional roof details from client
   roofMaterial:    z.string().max(100).optional(),
   roofOrientation: z.string().max(100).optional(),
@@ -126,9 +126,11 @@ export async function POST(req: NextRequest) {
   let gasDriveUrl:  string | undefined
 
   await Promise.all([
-    // PDFs
-    Promise.all([generateConsentPdf(intakeData), generateJobCardPdf(intakeData)])
-      .then(([c, j]) => { consentPdf = c; jobCardPdf = j })
+    // PDFs — consent PDF only when client gave explicit consent
+    Promise.all([
+      d.nmiConsent ? generateConsentPdf(intakeData) : Promise.resolve(null),
+      generateJobCardPdf(intakeData),
+    ]).then(([c, j]) => { consentPdf = c; jobCardPdf = j })
       .catch(err => console.error("PDF generation failed:", err)),
 
     // GAS createJob
@@ -392,7 +394,7 @@ export async function POST(req: NextRequest) {
         status:       "pending_review",
         gasJobNumber: gasJobNumber ?? null,
         gasDriveUrl:  gasDriveUrl  ?? null,
-        nmiConsentAt: d.nmiConsent ? new Date(d.nmiConsentAt) : null,
+        nmiConsentAt: d.nmiConsent && d.nmiConsentAt ? new Date(d.nmiConsentAt) : null,
         occupants:     d.occupants     ?? null,
         homeDaytime:   d.homeDaytime   ?? null,
         hotWater:      d.hotWater      ?? null,

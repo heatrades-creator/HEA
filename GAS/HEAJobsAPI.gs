@@ -348,8 +348,9 @@ function jsonResponse(data) {
 // Drive folder helpers
 // ---------------------------------------------------------------------------
 
-// Saves intake docs (consent PDF, job card PDF, electricity bill, roof photo) to the
-// client's existing Drive folder. Called from Next.js after createJob succeeds.
+// Saves intake docs (consent PDF, job card PDF, electricity bill, photos) to the
+// client's existing Drive folder. PDFs and bill go to the root; all photos go to
+// the "Photos" subfolder so they stay separate from documents.
 function saveIntakeDocs_(data) {
   if (!data.jobNumber) throw new Error('jobNumber required');
 
@@ -363,28 +364,54 @@ function saveIntakeDocs_(data) {
   const clientName = (job.clientName || data.jobNumber).trim();
   const saved = [];
 
-  function saveToFolder_(fileName, base64, mimeType) {
-    const existing = folder.getFilesByName(fileName);
+  // All photo uploads land in the Photos subfolder
+  const photosFolder = getOrCreateDriveFolder_(folder, 'Photos');
+
+  function saveFile_(targetFolder, fileName, base64, mimeType) {
+    const existing = targetFolder.getFilesByName(fileName);
     while (existing.hasNext()) existing.next().setTrashed(true);
     const blob = Utilities.newBlob(Utilities.base64Decode(base64), mimeType, fileName);
-    const f = folder.createFile(blob);
+    const f = targetFolder.createFile(blob);
     f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     saved.push(fileName);
   }
 
+  // PDFs and bill → root client folder
   if (data.consentPdfBase64) {
-    saveToFolder_(clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+    saveFile_(folder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
   }
   if (data.jobCardPdfBase64) {
-    saveToFolder_(clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
+    saveFile_(folder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
   }
   if (data.billBase64 && data.billName) {
     const ext = (data.billName.split('.').pop() || 'pdf').toLowerCase();
-    saveToFolder_(clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+    saveFile_(folder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
   }
+
+  // All photos → Photos subfolder
   if (data.roofPhotoBase64 && data.roofPhotoName) {
     const ext = (data.roofPhotoName.split('.').pop() || 'jpg').toLowerCase();
-    saveToFolder_(clientName + ' - Roof Photo.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');
+    saveFile_(photosFolder, clientName + ' - Roof Photo.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');
+  }
+  if (data.roofGroundPhotoBase64 && data.roofGroundPhotoName) {
+    const ext = (data.roofGroundPhotoName.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - Roof Ground Photo.' + ext, data.roofGroundPhotoBase64, data.roofGroundPhotoMime || 'image/jpeg');
+  }
+  if (data.switchboardPhotoBase64 && data.switchboardPhotoName) {
+    const ext = (data.switchboardPhotoName.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - Switchboard.' + ext, data.switchboardPhotoBase64, data.switchboardPhotoMime || 'image/jpeg');
+  }
+  if (data.batteryPhoto1Base64 && data.batteryPhoto1Name) {
+    const ext = (data.batteryPhoto1Name.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - Battery Location Angle 1.' + ext, data.batteryPhoto1Base64, data.batteryPhoto1Mime || 'image/jpeg');
+  }
+  if (data.batteryPhoto2Base64 && data.batteryPhoto2Name) {
+    const ext = (data.batteryPhoto2Name.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - Battery Location Angle 2.' + ext, data.batteryPhoto2Base64, data.batteryPhoto2Mime || 'image/jpeg');
+  }
+  if (data.batteryPhoto3Base64 && data.batteryPhoto3Name) {
+    const ext = (data.batteryPhoto3Name.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - Battery Location Angle 3.' + ext, data.batteryPhoto3Base64, data.batteryPhoto3Mime || 'image/jpeg');
   }
 
   return { success: true, saved };

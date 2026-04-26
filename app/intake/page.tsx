@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { useSearchParams } from "next/navigation"
-import { Camera, Check, ChevronRight, Upload, X, Loader2 } from "lucide-react"
+import { Camera, Check, ChevronDown, ChevronRight, Upload, X, Loader2 } from "lucide-react"
 
 // ── Schema ────────────────────────────────────────────────────────────────────
 const Schema = z.object({
@@ -139,6 +139,56 @@ function RadioRow({
   )
 }
 
+// ── Reusable photo upload widget ──────────────────────────────────────────────
+function PhotoUpload({
+  label, hint, file, setFile, inputRef,
+}: {
+  label: string
+  hint?: string
+  file: File | null
+  setFile: (f: File | null) => void
+  inputRef: React.RefObject<HTMLInputElement>
+}) {
+  return (
+    <div>
+      <Label>{label}</Label>
+      {hint && <p className="text-xs text-slate-400 mb-3">{hint}</p>}
+      {file ? (
+        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+          <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-slate-800 truncate">{file.name}</p>
+            <p className="text-xs text-slate-400">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
+          </div>
+          <button type="button" onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = "" }}>
+            <X className="w-4 h-4 text-slate-400" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="w-full border-2 border-dashed border-slate-200 rounded-xl p-5 flex flex-col items-center gap-2 hover:border-slate-400 transition-colors"
+        >
+          <Camera className="w-6 h-6 text-slate-400" />
+          <p className="text-sm text-slate-500">Tap to take photo or upload</p>
+        </button>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={e => {
+          const f = e.target.files?.[0]
+          if (f && f.size <= 5 * 1024 * 1024) setFile(f)
+          else if (f) alert("File must be under 5 MB")
+        }}
+      />
+    </div>
+  )
+}
+
 // ── Main form (inner — needs useSearchParams) ─────────────────────────────────
 function IntakeFormInner() {
   const params = useSearchParams()
@@ -149,10 +199,21 @@ function IntakeFormInner() {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted]   = useState(false)
   const [submitError, setSubmitError] = useState("")
-  const [billFile, setBillFile]         = useState<File | null>(null)
-  const [roofPhotoFile, setRoofPhotoFile] = useState<File | null>(null)
-  const fileRef      = useRef<HTMLInputElement>(null)
-  const roofPhotoRef = useRef<HTMLInputElement>(null)
+  const [billFile, setBillFile]               = useState<File | null>(null)
+  const [roofPhotoFile, setRoofPhotoFile]     = useState<File | null>(null)
+  const [roofGroundPhotoFile, setRoofGroundPhotoFile]   = useState<File | null>(null)
+  const [switchboardPhotoFile, setSwitchboardPhotoFile] = useState<File | null>(null)
+  const [batteryPhoto1File, setBatteryPhoto1File]       = useState<File | null>(null)
+  const [batteryPhoto2File, setBatteryPhoto2File]       = useState<File | null>(null)
+  const [batteryPhoto3File, setBatteryPhoto3File]       = useState<File | null>(null)
+  const [batteryParamsOpen, setBatteryParamsOpen]       = useState(false)
+  const fileRef           = useRef<HTMLInputElement>(null)
+  const roofPhotoRef      = useRef<HTMLInputElement>(null)
+  const roofGroundPhotoRef   = useRef<HTMLInputElement>(null)
+  const switchboardPhotoRef  = useRef<HTMLInputElement>(null)
+  const batteryPhoto1Ref     = useRef<HTMLInputElement>(null)
+  const batteryPhoto2Ref     = useRef<HTMLInputElement>(null)
+  const batteryPhoto3Ref     = useRef<HTMLInputElement>(null)
 
   const {
     register, handleSubmit, watch, setValue, trigger,
@@ -170,6 +231,9 @@ function IntakeFormInner() {
       setValue("service", defaultService)
     }
   }, [defaultService, watchedService, setValue])
+
+  const hasBattery = watchedService.toLowerCase().includes("battery")
+  const hasSolar   = watchedService.toLowerCase().includes("solar")
 
   // Validate current step fields before advancing
   const stepFields: Record<number, (keyof FormData)[]> = {
@@ -215,6 +279,19 @@ function IntakeFormInner() {
       } catch { /* skip if conversion fails */ }
     }
 
+    async function toPhoto(f: File | null) {
+      if (!f) return null
+      try { return { base64: await fileToBase64(f), name: f.name, mime: f.type } } catch { return null }
+    }
+
+    const [swPhoto, bat1, bat2, bat3, roofGnd] = await Promise.all([
+      toPhoto(switchboardPhotoFile),
+      toPhoto(batteryPhoto1File),
+      toPhoto(batteryPhoto2File),
+      toPhoto(batteryPhoto3File),
+      toPhoto(roofGroundPhotoFile),
+    ])
+
     try {
       const res = await fetch("/api/intake", {
         method: "POST",
@@ -229,6 +306,11 @@ function IntakeFormInner() {
           roofPhotoBase64,
           roofPhotoName,
           roofPhotoMime,
+          ...(roofGnd ? { roofGroundPhotoBase64: roofGnd.base64, roofGroundPhotoName: roofGnd.name, roofGroundPhotoMime: roofGnd.mime } : {}),
+          ...(swPhoto ? { switchboardPhotoBase64: swPhoto.base64, switchboardPhotoName: swPhoto.name, switchboardPhotoMime: swPhoto.mime } : {}),
+          ...(bat1    ? { batteryPhoto1Base64: bat1.base64, batteryPhoto1Name: bat1.name, batteryPhoto1Mime: bat1.mime } : {}),
+          ...(bat2    ? { batteryPhoto2Base64: bat2.base64, batteryPhoto2Name: bat2.name, batteryPhoto2Mime: bat2.mime } : {}),
+          ...(bat3    ? { batteryPhoto3Base64: bat3.base64, batteryPhoto3Name: bat3.name, batteryPhoto3Mime: bat3.mime } : {}),
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -546,8 +628,133 @@ function IntakeFormInner() {
                         }}
                       />
                     </div>
+
+                    {hasSolar && (
+                      <PhotoUpload
+                        label="Roof from the ground (optional)"
+                        hint="Stand back from the house and photograph the roof face where panels would go. One shot per roof face. JPG or PNG · Max 5 MB"
+                        file={roofGroundPhotoFile}
+                        setFile={setRoofGroundPhotoFile}
+                        inputRef={roofGroundPhotoRef}
+                      />
+                    )}
                   </div>
                 </div>
+
+                {/* ── Switchboard ─────────────────────────────────────────── */}
+                <PhotoUpload
+                  label="Switchboard — breakers shown (optional)"
+                  hint="Open the switchboard panel door. Photograph all circuit breakers and labels clearly. JPG or PNG · Max 5 MB"
+                  file={switchboardPhotoFile}
+                  setFile={setSwitchboardPhotoFile}
+                  inputRef={switchboardPhotoRef}
+                />
+
+                {/* ── Battery location photos ─────────────────────────────── */}
+                {hasBattery && (
+                  <div className="border-t border-slate-100 pt-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      Proposed battery location <span className="font-normal normal-case text-slate-400">(optional — 3 angles helps us plan before the site visit)</span>
+                    </p>
+
+                    {/* Location parameters accordion */}
+                    <button
+                      type="button"
+                      onClick={() => setBatteryParamsOpen(o => !o)}
+                      className="w-full flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200 mb-4 text-left"
+                    >
+                      <span className="text-sm font-medium text-slate-700">What makes a good battery location?</span>
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${batteryParamsOpen ? "rotate-180" : ""}`} />
+                    </button>
+
+                    {batteryParamsOpen && (
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-4 space-y-4 text-sm text-slate-600">
+                        <div>
+                          <p className="font-semibold text-slate-800 mb-2">Ideal locations</p>
+                          <ul className="space-y-1.5">
+                            {[
+                              "Garage — must have a vehicle impact barrier if a car parks against that wall",
+                              "Outdoor shed or storage room",
+                              "Dedicated battery / utility room",
+                              "Covered veranda or carport wall",
+                            ].map(item => (
+                              <li key={item} className="flex items-start gap-2">
+                                <span className="text-green-500 font-bold mt-0.5 flex-shrink-0">✓</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-800 mb-2">Cannot install in these locations</p>
+                          <ul className="space-y-1.5">
+                            {[
+                              "Any habitable room — bedroom, living room, lounge, kitchen, dining, study, sunroom, home theatre",
+                              "Ceiling spaces or wall cavities",
+                              "Under stairways or access walkways",
+                              "Evacuation routes, corridors, or lobbies",
+                              "Within 600 mm of a door or window that opens into a habitable room",
+                              "Within 600 mm of a hot water system, air conditioner, or unrelated appliance",
+                              "Within 900 mm below any window, vent, or door of a habitable room",
+                              "Near LPG / gas cylinders, gas relief vents, or petrol / chemical storage",
+                            ].map(item => (
+                              <li key={item} className="flex items-start gap-2">
+                                <span className="text-red-400 font-bold mt-0.5 flex-shrink-0">✗</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div>
+                          <p className="font-semibold text-slate-800 mb-2">What to show in your 3 photos</p>
+                          <ul className="space-y-1.5">
+                            {[
+                              "Angle 1 — step well back: full wall from ceiling to floor",
+                              "Angle 2 — right side: include any nearby doors, windows, and appliances",
+                              "Angle 3 — left side or close-up of anything the installer should know about",
+                              "If in a garage, show whether a car parks in front of that wall",
+                            ].map(item => (
+                              <li key={item} className="flex items-start gap-2">
+                                <span className="text-slate-400 mt-0.5 flex-shrink-0">•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <p className="text-xs text-slate-400 pt-1 border-t border-slate-200">
+                          Location rules are drawn from AS/NZS 5139:2019+A1:2025 — the Australian standard for battery energy storage systems.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <PhotoUpload
+                        label="Proposed location — angle 1"
+                        hint="Step back so the full wall is in frame. Include the ceiling, floor, and anything nearby. Max 5 MB"
+                        file={batteryPhoto1File}
+                        setFile={setBatteryPhoto1File}
+                        inputRef={batteryPhoto1Ref}
+                      />
+                      <PhotoUpload
+                        label="Same location — angle 2 (optional)"
+                        hint="A different angle — left or right side of the same wall. Max 5 MB"
+                        file={batteryPhoto2File}
+                        setFile={setBatteryPhoto2File}
+                        inputRef={batteryPhoto2Ref}
+                      />
+                      <PhotoUpload
+                        label="Same location — angle 3 (optional)"
+                        hint="Close-up of anything the installer should know about, or a third angle. Max 5 MB"
+                        file={batteryPhoto3File}
+                        setFile={setBatteryPhoto3File}
+                        inputRef={batteryPhoto3Ref}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label>Electricity bill (optional — strongly recommended)</Label>

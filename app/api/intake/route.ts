@@ -42,6 +42,24 @@ const Schema = z.object({
   roofPhotoBase64: z.string().max(8_000_000).optional(),
   roofPhotoName:   z.string().max(200).optional(),
   roofPhotoMime:   z.string().max(60).optional(),
+  // Optional roof from ground photo
+  roofGroundPhotoBase64: z.string().max(8_000_000).optional(),
+  roofGroundPhotoName:   z.string().max(200).optional(),
+  roofGroundPhotoMime:   z.string().max(60).optional(),
+  // Optional switchboard photo
+  switchboardPhotoBase64: z.string().max(8_000_000).optional(),
+  switchboardPhotoName:   z.string().max(200).optional(),
+  switchboardPhotoMime:   z.string().max(60).optional(),
+  // Optional battery location photos (3 angles)
+  batteryPhoto1Base64: z.string().max(8_000_000).optional(),
+  batteryPhoto1Name:   z.string().max(200).optional(),
+  batteryPhoto1Mime:   z.string().max(60).optional(),
+  batteryPhoto2Base64: z.string().max(8_000_000).optional(),
+  batteryPhoto2Name:   z.string().max(200).optional(),
+  batteryPhoto2Mime:   z.string().max(60).optional(),
+  batteryPhoto3Base64: z.string().max(8_000_000).optional(),
+  batteryPhoto3Name:   z.string().max(200).optional(),
+  batteryPhoto3Mime:   z.string().max(60).optional(),
 })
 
 // Parse suburb/state/postcode from a combined Australian address string
@@ -139,8 +157,13 @@ export async function POST(req: NextRequest) {
       jobNumber: gasJobNumber,
       ...(consentPdf        ? { consentPdfBase64:  Buffer.from(consentPdf).toString("base64") } : {}),
       ...(jobCardPdf        ? { jobCardPdfBase64:  Buffer.from(jobCardPdf).toString("base64") } : {}),
-      ...(d.billBase64      ? { billBase64: d.billBase64, billName: d.billName ?? null, billMime: d.billMime ?? null } : {}),
-      ...(d.roofPhotoBase64 ? { roofPhotoBase64: d.roofPhotoBase64, roofPhotoName: d.roofPhotoName ?? null, roofPhotoMime: d.roofPhotoMime ?? null } : {}),
+      ...(d.billBase64           ? { billBase64: d.billBase64, billName: d.billName ?? null, billMime: d.billMime ?? null } : {}),
+      ...(d.roofPhotoBase64      ? { roofPhotoBase64: d.roofPhotoBase64, roofPhotoName: d.roofPhotoName ?? null, roofPhotoMime: d.roofPhotoMime ?? null } : {}),
+      ...(d.roofGroundPhotoBase64  ? { roofGroundPhotoBase64: d.roofGroundPhotoBase64, roofGroundPhotoName: d.roofGroundPhotoName ?? null, roofGroundPhotoMime: d.roofGroundPhotoMime ?? null } : {}),
+      ...(d.switchboardPhotoBase64 ? { switchboardPhotoBase64: d.switchboardPhotoBase64, switchboardPhotoName: d.switchboardPhotoName ?? null, switchboardPhotoMime: d.switchboardPhotoMime ?? null } : {}),
+      ...(d.batteryPhoto1Base64    ? { batteryPhoto1Base64: d.batteryPhoto1Base64, batteryPhoto1Name: d.batteryPhoto1Name ?? null, batteryPhoto1Mime: d.batteryPhoto1Mime ?? null } : {}),
+      ...(d.batteryPhoto2Base64    ? { batteryPhoto2Base64: d.batteryPhoto2Base64, batteryPhoto2Name: d.batteryPhoto2Name ?? null, batteryPhoto2Mime: d.batteryPhoto2Mime ?? null } : {}),
+      ...(d.batteryPhoto3Base64    ? { batteryPhoto3Base64: d.batteryPhoto3Base64, batteryPhoto3Name: d.batteryPhoto3Name ?? null, batteryPhoto3Mime: d.batteryPhoto3Mime ?? null } : {}),
     }
     try {
       await fetch(process.env.JOBS_GAS_URL, {
@@ -253,6 +276,21 @@ export async function POST(req: NextRequest) {
     ...(d.roofPhotoBase64 && d.roofPhotoName
       ? [{ filename: d.roofPhotoName, content: d.roofPhotoBase64 }]
       : []),
+    ...(d.roofGroundPhotoBase64 && d.roofGroundPhotoName
+      ? [{ filename: d.roofGroundPhotoName, content: d.roofGroundPhotoBase64 }]
+      : []),
+    ...(d.switchboardPhotoBase64 && d.switchboardPhotoName
+      ? [{ filename: d.switchboardPhotoName, content: d.switchboardPhotoBase64 }]
+      : []),
+    ...(d.batteryPhoto1Base64 && d.batteryPhoto1Name
+      ? [{ filename: d.batteryPhoto1Name, content: d.batteryPhoto1Base64 }]
+      : []),
+    ...(d.batteryPhoto2Base64 && d.batteryPhoto2Name
+      ? [{ filename: d.batteryPhoto2Name, content: d.batteryPhoto2Base64 }]
+      : []),
+    ...(d.batteryPhoto3Base64 && d.batteryPhoto3Name
+      ? [{ filename: d.batteryPhoto3Name, content: d.batteryPhoto3Base64 }]
+      : []),
   ]
 
   try {
@@ -288,7 +326,12 @@ export async function POST(req: NextRequest) {
           </table>` : ""}
 
           ${billSection}
-          ${d.roofPhotoBase64 ? `<p><strong>Roof photo:</strong> Attached (${d.roofPhotoName})</p>` : ""}
+          ${d.roofPhotoBase64        ? `<p><strong>Roof photo (aerial):</strong> Attached (${d.roofPhotoName})</p>` : ""}
+          ${d.roofGroundPhotoBase64  ? `<p><strong>Roof photo (ground):</strong> Attached (${d.roofGroundPhotoName})</p>` : ""}
+          ${d.switchboardPhotoBase64 ? `<p><strong>Switchboard photo:</strong> Attached (${d.switchboardPhotoName})</p>` : ""}
+          ${d.batteryPhoto1Base64    ? `<p><strong>Battery location — angle 1:</strong> Attached (${d.batteryPhoto1Name})</p>` : ""}
+          ${d.batteryPhoto2Base64    ? `<p><strong>Battery location — angle 2:</strong> Attached (${d.batteryPhoto2Name})</p>` : ""}
+          ${d.batteryPhoto3Base64    ? `<p><strong>Battery location — angle 3:</strong> Attached (${d.batteryPhoto3Name})</p>` : ""}
 
           ${photoPortalLink ? `
           <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 16px;margin:16px 0;">

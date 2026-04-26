@@ -153,10 +153,24 @@ export async function POST(req: NextRequest) {
             ev:            d.ev            ?? "",
           }),
         })
-          .then(r => r.ok ? r.json() : Promise.reject(r.status))
-          .then(data => { gasJobNumber = data.jobNumber; gasDriveUrl = data.driveUrl })
-          .catch(e => console.error("GAS createJob failed:", e))
-      : Promise.resolve(),
+          .then(async r => {
+            const text = await r.text()
+            console.log("GAS createJob HTTP", r.status, "— response:", text.substring(0, 400))
+            let data: Record<string, unknown>
+            try { data = JSON.parse(text) } catch {
+              console.error("GAS createJob: non-JSON response (check JOBS_GAS_URL env var and GAS deployment)")
+              return
+            }
+            if (data.error) {
+              console.error("GAS createJob returned error:", data.error, data.driveError ?? "")
+              return
+            }
+            gasJobNumber = data.jobNumber as string | undefined
+            gasDriveUrl  = data.driveUrl  as string | undefined
+            if (!gasJobNumber) console.error("GAS createJob: response had no jobNumber:", JSON.stringify(data))
+          })
+          .catch(e => console.error("GAS createJob fetch failed:", e))
+      : (console.error("GAS createJob skipped: JOBS_GAS_URL env var not set"), Promise.resolve()),
   ])
 
   // Save intake docs (PDFs + bill + roof photo) to client's Drive folder — non-fatal

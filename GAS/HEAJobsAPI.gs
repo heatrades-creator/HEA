@@ -5,8 +5,9 @@
  *   Execute as: Me (hea.trades@gmail.com)
  *   Who has access: Anyone
  *
- * Web App URL: https://script.google.com/macros/s/AKfycbwb4kPUkEaa3tYdA9YYDQDt6EDJQaC2EEcc07wlZ-cvDH1XSRUI30mKDWfw59_Ynk8/exec
- * GAS Script ID: 1ZZ7_IxoKYPYHPzH4G8j34OsQzumHJxRE7mXgJqPbA8iLes6tTa-3SvmL
+ * GAS Script ID: 1w0iY9HgLKZBcfQW1tfxpzwutWdikuwvIavk1fvKCwB1AhMmgxW1cTPyM
+ * Web App URL: check Deploy → Manage Deployments in the GAS editor for the live URL.
+ *              Set JOBS_GAS_URL in Vercel to this URL.
  *
  * Sheet columns (Row 1 = headers):
  *   A: Job Number  B: Client Name  C: Phone     D: Email
@@ -63,6 +64,14 @@ function doGet(e) {
 
   if (e.parameter.action === 'getDocuments' && e.parameter.jobNumber) {
     return jsonResponse(getDocumentsForJob_(e.parameter.jobNumber));
+  }
+
+  if (e.parameter.action === 'checkNMI' && e.parameter.jobNumber) {
+    return jsonResponse(checkNMI_(e.parameter.jobNumber));
+  }
+
+  if (e.parameter.action === 'checkEstimation' && e.parameter.jobNumber) {
+    return jsonResponse(checkEstimation_(e.parameter.jobNumber));
   }
 
   if (id) {
@@ -211,6 +220,7 @@ function createJob(sheet, data) {
   // If the client already submitted the intake form, their folder exists — reuse it.
   // If not, create one in the same format: "ClientName - DD-MM-YYYY"
   let driveUrl = '';
+  let driveError = null;
   try {
     const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
     const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
@@ -220,6 +230,7 @@ function createJob(sheet, data) {
     driveUrl = clientFolder.getUrl();
   } catch (e) {
     Logger.log('Drive folder error: ' + e);
+    driveError = String(e);
   }
 
   sheet.appendRow([
@@ -252,6 +263,7 @@ function createJob(sheet, data) {
     address:         data.address         || '',
     status:          data.status          || 'Lead',
     driveUrl,
+    driveError,
     notes:           data.notes           || '',
     createdDate,
     systemSize:      data.systemSize      || '',
@@ -457,6 +469,52 @@ function findOrCreateClientFolder_(clientName, dateStr) {
   // No existing folder — create one in standard format: "ClientName - DD-MM-YYYY"
   const safeName = clientName.trim().replace(/[/\\'"<>|*?:@]/g, '').substring(0, 80);
   return parent.createFolder(safeName + ' - ' + dateStr);
+}
+
+// ---------------------------------------------------------------------------
+// NMI / Estimation file presence checks — used by /dashboard/pipeline
+// ---------------------------------------------------------------------------
+
+function checkNMI_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasNMI: false, fileName: null, fileUrl: null, nmiSubfolderUrl: null };
+
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { hasNMI: false, fileName: null, fileUrl: null, nmiSubfolderUrl: null };
+
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const nmiFolder = getOrCreateDriveFolder_(clientFolder, '00_NMI_Data');
+    const files = nmiFolder.getFiles();
+    if (files.hasNext()) {
+      const file = files.next();
+      return { hasNMI: true, fileName: file.getName(), fileUrl: file.getUrl(), nmiSubfolderUrl: nmiFolder.getUrl() };
+    }
+    return { hasNMI: false, fileName: null, fileUrl: null, nmiSubfolderUrl: nmiFolder.getUrl() };
+  } catch (e) {
+    return { hasNMI: false, fileName: null, fileUrl: null, nmiSubfolderUrl: null, error: String(e) };
+  }
+}
+
+function checkEstimation_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasEstimation: false, fileName: null, fileUrl: null };
+
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { hasEstimation: false, fileName: null, fileUrl: null };
+
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const quotesFolder = getOrCreateDriveFolder_(clientFolder, '01_Quotes');
+    const files = quotesFolder.getFiles();
+    if (files.hasNext()) {
+      const file = files.next();
+      return { hasEstimation: true, fileName: file.getName(), fileUrl: file.getUrl() };
+    }
+    return { hasEstimation: false, fileName: null, fileUrl: null };
+  } catch (e) {
+    return { hasEstimation: false, fileName: null, fileUrl: null, error: String(e) };
+  }
 }
 
 // ---------------------------------------------------------------------------

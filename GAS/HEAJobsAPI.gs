@@ -6,8 +6,9 @@
  *   Who has access: Anyone
  *
  * GAS Script ID: 1w0iY9HgLKZBcfQW1tfxpzwutWdikuwvIavk1fvKCwB1AhMmgxW1cTPyM
- * Web App URL: check Deploy → Manage Deployments in the GAS editor for the live URL.
- *              Set JOBS_GAS_URL in Vercel to this URL.
+ * Web App URL: https://script.google.com/macros/s/AKfycbzUnprjWr7RiY08YcUG71ACfER6ghMumA1TOvaMVdBhTkhI6vLEqNSCBmsYlOrVrNc5/exec
+ * Set JOBS_GAS_URL in Vercel to the Web App URL above.
+ * The deploy-gas.yml workflow auto-updates Vercel if VERCEL_TOKEN + VERCEL_PROJECT_ID secrets are set.
  *
  * Sheet columns (Row 1 = headers):
  *   A: Job Number  B: Client Name  C: Phone     D: Email

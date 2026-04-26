@@ -61,7 +61,7 @@ function fileToBase64(file: File): Promise<string> {
 
 function compressImage(file: File, maxPx = 1280, quality = 0.65): Promise<File> {
   return new Promise((resolve) => {
-    const img = new Image()
+    const img = document.createElement("img") as HTMLImageElement
     const url = URL.createObjectURL(file)
     img.onload = () => {
       URL.revokeObjectURL(url)

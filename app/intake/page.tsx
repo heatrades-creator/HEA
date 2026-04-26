@@ -28,7 +28,7 @@ const Schema = z.object({
   roofOrientation: z.string().optional(),
   shadingIssues:   z.string().optional(),
   phases:          z.string().optional(),
-  nmiConsent:    z.literal(true, { error: "Consent is required to proceed" }),
+  nmiConsent:    z.boolean({ error: "Please select a consent option to proceed" }),
 })
 type FormData = z.infer<typeof Schema>
 
@@ -56,6 +56,27 @@ function fileToBase64(file: File): Promise<string> {
     reader.onload  = () => resolve((reader.result as string).split(",")[1])
     reader.onerror = reject
     reader.readAsDataURL(file)
+  })
+}
+
+function compressImage(file: File, maxPx = 1280, quality = 0.65): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const scale = Math.min(1, maxPx / Math.max(img.width, img.height))
+      const canvas = document.createElement("canvas")
+      canvas.width  = Math.round(img.width  * scale)
+      canvas.height = Math.round(img.height * scale)
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(blob => {
+        if (!blob) { resolve(file); return }
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }))
+      }, "image/jpeg", quality)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
   })
 }
 
@@ -181,8 +202,8 @@ function PhotoUpload({
         className="hidden"
         onChange={e => {
           const f = e.target.files?.[0]
-          if (f && f.size <= 5 * 1024 * 1024) setFile(f)
-          else if (f) alert("File must be under 5 MB")
+          if (f && f.size <= 20 * 1024 * 1024) setFile(f)
+          else if (f) alert("File must be under 20 MB")
         }}
       />
     </div>
@@ -220,7 +241,7 @@ function IntakeFormInner() {
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(Schema),
-    defaultValues: { service: defaultService, nmiConsent: undefined as unknown as true },
+    defaultValues: { service: defaultService, nmiConsent: undefined as unknown as boolean },
   })
 
   const watchedService = watch("service")
@@ -273,15 +294,19 @@ function IntakeFormInner() {
 
     if (roofPhotoFile) {
       try {
-        roofPhotoBase64 = await fileToBase64(roofPhotoFile)
-        roofPhotoName   = roofPhotoFile.name
-        roofPhotoMime   = roofPhotoFile.type
+        const compressed = await compressImage(roofPhotoFile)
+        roofPhotoBase64  = await fileToBase64(compressed)
+        roofPhotoName    = compressed.name
+        roofPhotoMime    = compressed.type
       } catch { /* skip if conversion fails */ }
     }
 
     async function toPhoto(f: File | null) {
       if (!f) return null
-      try { return { base64: await fileToBase64(f), name: f.name, mime: f.type } } catch { return null }
+      try {
+        const compressed = await compressImage(f)
+        return { base64: await fileToBase64(compressed), name: compressed.name, mime: compressed.type }
+      } catch { return null }
     }
 
     const [swPhoto, bat1, bat2, bat3, roofGnd] = await Promise.all([
@@ -298,8 +323,7 @@ function IntakeFormInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...data,
-          nmiConsent:   true,
-          nmiConsentAt: new Date().toISOString(),
+          ...(data.nmiConsent ? { nmiConsentAt: new Date().toISOString() } : {}),
           billBase64,
           billName,
           billMime,
@@ -338,7 +362,7 @@ function IntakeFormInner() {
           <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re in the system, {firstName}!</h1>
           <p className="text-slate-500 mb-8 max-w-sm">
             Jesse will review your details and be in touch to book a call.
-            Check your inbox — your NMI consent form is on its way.
+            {watch("nmiConsent") === true && " Check your inbox — your NMI consent form is on its way."}
           </p>
           <div className="bg-slate-50 rounded-2xl p-6 max-w-sm w-full text-left space-y-3 mb-6">
             <p className="font-semibold text-slate-900 text-sm">What happens next:</p>
@@ -809,28 +833,57 @@ function IntakeFormInner() {
               </div>
 
               <div className="mb-6">
-                <label className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                  watch("nmiConsent") ? "border-slate-900 bg-slate-50" : "border-slate-200"
-                }`}>
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    {...register("nmiConsent")}
-                  />
-                  <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${
-                    watch("nmiConsent") ? "bg-slate-900 border-slate-900" : "border-slate-300"
-                  }`}>
-                    {watch("nmiConsent") && <Check className="w-3 h-3 text-white" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">I authorise HEA to access my NMI data</p>
-                    <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                      I authorise Heffernan Electrical Automation to access my electricity consumption data
-                      via Powercore, for the purpose of designing a solar/battery system for my property.
-                      I can withdraw this consent at any time by contacting HEA in writing.
-                    </p>
-                  </div>
-                </label>
+                <p className="text-sm font-semibold text-slate-900 mb-3">NMI data consent</p>
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setValue("nmiConsent", true, { shouldValidate: true })}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      watch("nmiConsent") === true ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${
+                        watch("nmiConsent") === true ? "border-slate-900 bg-slate-900" : "border-slate-300"
+                      }`}>
+                        {watch("nmiConsent") === true && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">I authorise HEA to access my NMI data</p>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          I authorise Heffernan Electrical Automation to access my electricity consumption
+                          data via Powercore, for the purpose of designing a solar/battery system for my
+                          property. This gives the most accurate system size and payback period.
+                          I can withdraw this consent at any time by contacting HEA in writing.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setValue("nmiConsent", false, { shouldValidate: true })}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      watch("nmiConsent") === false ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${
+                        watch("nmiConsent") === false ? "border-slate-900 bg-slate-900" : "border-slate-300"
+                      }`}>
+                        {watch("nmiConsent") === false && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">I do not give consent</p>
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          I am happy with a generic system sized for my household type, not personalised
+                          to my specific power consumption data. I understand this may affect the
+                          accuracy of the quote.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                </div>
                 <FieldError msg={errors.nmiConsent?.message} />
               </div>
 
@@ -852,7 +905,11 @@ function IntakeFormInner() {
                 )}
               </button>
               <p className="text-xs text-slate-400 text-center mt-3">
-                Your NMI consent form will be emailed to you immediately.
+                {watch("nmiConsent") === true
+                  ? "Your NMI consent form will be emailed to you immediately."
+                  : watch("nmiConsent") === false
+                  ? "We'll size your system based on your household type."
+                  : "Please select a consent option above."}
               </p>
             </div>
           )}

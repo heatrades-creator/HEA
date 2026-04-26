@@ -413,6 +413,14 @@ function saveIntakeDocs_(data) {
     const ext = (data.batteryPhoto3Name.split('.').pop() || 'jpg').toLowerCase();
     saveFile_(photosFolder, clientName + ' - Battery Location Angle 3.' + ext, data.batteryPhoto3Base64, data.batteryPhoto3Mime || 'image/jpeg');
   }
+  if (data.evPhoto1Base64 && data.evPhoto1Name) {
+    const ext = (data.evPhoto1Name.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - EV Charger Location.' + ext, data.evPhoto1Base64, data.evPhoto1Mime || 'image/jpeg');
+  }
+  if (data.evPhoto2Base64 && data.evPhoto2Name) {
+    const ext = (data.evPhoto2Name.split('.').pop() || 'jpg').toLowerCase();
+    saveFile_(photosFolder, clientName + ' - EV Charger Angle 2.' + ext, data.evPhoto2Base64, data.evPhoto2Mime || 'image/jpeg');
+  }
 
   return { success: true, saved };
 }

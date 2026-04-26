@@ -60,6 +60,13 @@ const Schema = z.object({
   batteryPhoto3Base64: z.string().max(8_000_000).optional(),
   batteryPhoto3Name:   z.string().max(200).optional(),
   batteryPhoto3Mime:   z.string().max(60).optional(),
+  // Optional EV charger location photos
+  evPhoto1Base64: z.string().max(8_000_000).optional(),
+  evPhoto1Name:   z.string().max(200).optional(),
+  evPhoto1Mime:   z.string().max(60).optional(),
+  evPhoto2Base64: z.string().max(8_000_000).optional(),
+  evPhoto2Name:   z.string().max(200).optional(),
+  evPhoto2Mime:   z.string().max(60).optional(),
 })
 
 // Parse suburb/state/postcode from a combined Australian address string
@@ -164,6 +171,8 @@ export async function POST(req: NextRequest) {
       ...(d.batteryPhoto1Base64    ? { batteryPhoto1Base64: d.batteryPhoto1Base64, batteryPhoto1Name: d.batteryPhoto1Name ?? null, batteryPhoto1Mime: d.batteryPhoto1Mime ?? null } : {}),
       ...(d.batteryPhoto2Base64    ? { batteryPhoto2Base64: d.batteryPhoto2Base64, batteryPhoto2Name: d.batteryPhoto2Name ?? null, batteryPhoto2Mime: d.batteryPhoto2Mime ?? null } : {}),
       ...(d.batteryPhoto3Base64    ? { batteryPhoto3Base64: d.batteryPhoto3Base64, batteryPhoto3Name: d.batteryPhoto3Name ?? null, batteryPhoto3Mime: d.batteryPhoto3Mime ?? null } : {}),
+      ...(d.evPhoto1Base64         ? { evPhoto1Base64: d.evPhoto1Base64, evPhoto1Name: d.evPhoto1Name ?? null, evPhoto1Mime: d.evPhoto1Mime ?? null } : {}),
+      ...(d.evPhoto2Base64         ? { evPhoto2Base64: d.evPhoto2Base64, evPhoto2Name: d.evPhoto2Name ?? null, evPhoto2Mime: d.evPhoto2Mime ?? null } : {}),
     }
     try {
       await fetch(process.env.JOBS_GAS_URL, {
@@ -291,6 +300,12 @@ export async function POST(req: NextRequest) {
     ...(d.batteryPhoto3Base64 && d.batteryPhoto3Name
       ? [{ filename: d.batteryPhoto3Name, content: d.batteryPhoto3Base64 }]
       : []),
+    ...(d.evPhoto1Base64 && d.evPhoto1Name
+      ? [{ filename: d.evPhoto1Name, content: d.evPhoto1Base64 }]
+      : []),
+    ...(d.evPhoto2Base64 && d.evPhoto2Name
+      ? [{ filename: d.evPhoto2Name, content: d.evPhoto2Base64 }]
+      : []),
   ]
 
   try {
@@ -332,6 +347,8 @@ export async function POST(req: NextRequest) {
           ${d.batteryPhoto1Base64    ? `<p><strong>Battery location — angle 1:</strong> Attached (${d.batteryPhoto1Name})</p>` : ""}
           ${d.batteryPhoto2Base64    ? `<p><strong>Battery location — angle 2:</strong> Attached (${d.batteryPhoto2Name})</p>` : ""}
           ${d.batteryPhoto3Base64    ? `<p><strong>Battery location — angle 3:</strong> Attached (${d.batteryPhoto3Name})</p>` : ""}
+          ${d.evPhoto1Base64         ? `<p><strong>EV charger location:</strong> Attached (${d.evPhoto1Name})</p>` : ""}
+          ${d.evPhoto2Base64         ? `<p><strong>EV charger — angle 2:</strong> Attached (${d.evPhoto2Name})</p>` : ""}
 
           ${photoPortalLink ? `
           <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px 16px;margin:16px 0;">

@@ -215,6 +215,11 @@ function IntakeFormInner() {
   const batteryPhoto2Ref     = useRef<HTMLInputElement>(null)
   const batteryPhoto3Ref     = useRef<HTMLInputElement>(null)
 
+  const [evPhoto1File, setEvPhoto1File] = useState<File | null>(null)
+  const [evPhoto2File, setEvPhoto2File] = useState<File | null>(null)
+  const evPhoto1Ref = useRef<HTMLInputElement>(null)
+  const evPhoto2Ref = useRef<HTMLInputElement>(null)
+
   const {
     register, handleSubmit, watch, setValue, trigger,
     formState: { errors },
@@ -234,6 +239,7 @@ function IntakeFormInner() {
 
   const hasBattery = watchedService.toLowerCase().includes("battery")
   const hasSolar   = watchedService.toLowerCase().includes("solar")
+  const hasEV      = watchedService.toLowerCase().includes("ev") || watchedService.toLowerCase().includes("charger")
 
   // Validate current step fields before advancing
   const stepFields: Record<number, (keyof FormData)[]> = {
@@ -284,12 +290,14 @@ function IntakeFormInner() {
       try { return { base64: await fileToBase64(f), name: f.name, mime: f.type } } catch { return null }
     }
 
-    const [swPhoto, bat1, bat2, bat3, roofGnd] = await Promise.all([
+    const [swPhoto, bat1, bat2, bat3, roofGnd, ev1, ev2] = await Promise.all([
       toPhoto(switchboardPhotoFile),
       toPhoto(batteryPhoto1File),
       toPhoto(batteryPhoto2File),
       toPhoto(batteryPhoto3File),
       toPhoto(roofGroundPhotoFile),
+      toPhoto(evPhoto1File),
+      toPhoto(evPhoto2File),
     ])
 
     try {
@@ -311,6 +319,8 @@ function IntakeFormInner() {
           ...(bat1    ? { batteryPhoto1Base64: bat1.base64, batteryPhoto1Name: bat1.name, batteryPhoto1Mime: bat1.mime } : {}),
           ...(bat2    ? { batteryPhoto2Base64: bat2.base64, batteryPhoto2Name: bat2.name, batteryPhoto2Mime: bat2.mime } : {}),
           ...(bat3    ? { batteryPhoto3Base64: bat3.base64, batteryPhoto3Name: bat3.name, batteryPhoto3Mime: bat3.mime } : {}),
+          ...(ev1     ? { evPhoto1Base64: ev1.base64, evPhoto1Name: ev1.name, evPhoto1Mime: ev1.mime } : {}),
+          ...(ev2     ? { evPhoto2Base64: ev2.base64, evPhoto2Name: ev2.name, evPhoto2Mime: ev2.mime } : {}),
         }),
       })
       if (!res.ok) throw new Error(await res.text())
@@ -590,58 +600,60 @@ function IntakeFormInner() {
                       </div>
                     </div>
 
-                    <div>
-                      <Label>Roof photo (optional — helps plan panel placement)</Label>
-                      <p className="text-xs text-slate-400 mb-3">
-                        Take a photo of your roof or upload one from your gallery. JPG or PNG · Max 5 MB
-                      </p>
-                      {roofPhotoFile ? (
-                        <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
-                          <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-800 truncate">{roofPhotoFile.name}</p>
-                            <p className="text-xs text-slate-400">{(roofPhotoFile.size / 1024 / 1024).toFixed(1)} MB</p>
-                          </div>
-                          <button type="button" onClick={() => { setRoofPhotoFile(null); if (roofPhotoRef.current) roofPhotoRef.current.value = "" }}>
-                            <X className="w-4 h-4 text-slate-400" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => roofPhotoRef.current?.click()}
-                          className="w-full border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-slate-400 transition-colors"
-                        >
-                          <Camera className="w-6 h-6 text-slate-400" />
-                          <p className="text-sm text-slate-500">Tap to photograph your roof</p>
-                        </button>
-                      )}
-                      <input
-                        ref={roofPhotoRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => {
-                          const f = e.target.files?.[0]
-                          if (f && f.size <= 5 * 1024 * 1024) setRoofPhotoFile(f)
-                          else if (f) alert("File must be under 5 MB")
-                        }}
-                      />
-                    </div>
-
+                    {/* Solar: aerial roof photo + ground-level shot */}
                     {hasSolar && (
-                      <PhotoUpload
-                        label="Roof from the ground (optional)"
-                        hint="Stand back from the house and photograph the roof face where panels would go. One shot per roof face. JPG or PNG · Max 5 MB"
-                        file={roofGroundPhotoFile}
-                        setFile={setRoofGroundPhotoFile}
-                        inputRef={roofGroundPhotoRef}
-                      />
+                      <>
+                        <div>
+                          <Label>Roof photo — aerial view (optional)</Label>
+                          <p className="text-xs text-slate-400 mb-3">
+                            Take or upload a photo showing the roof from above or from a distance. JPG or PNG · Max 5 MB
+                          </p>
+                          {roofPhotoFile ? (
+                            <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                              <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-800 truncate">{roofPhotoFile.name}</p>
+                                <p className="text-xs text-slate-400">{(roofPhotoFile.size / 1024 / 1024).toFixed(1)} MB</p>
+                              </div>
+                              <button type="button" onClick={() => { setRoofPhotoFile(null); if (roofPhotoRef.current) roofPhotoRef.current.value = "" }}>
+                                <X className="w-4 h-4 text-slate-400" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => roofPhotoRef.current?.click()}
+                              className="w-full border-2 border-dashed border-slate-200 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-slate-400 transition-colors"
+                            >
+                              <Camera className="w-6 h-6 text-slate-400" />
+                              <p className="text-sm text-slate-500">Tap to photograph your roof</p>
+                            </button>
+                          )}
+                          <input
+                            ref={roofPhotoRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={e => {
+                              const f = e.target.files?.[0]
+                              if (f && f.size <= 5 * 1024 * 1024) setRoofPhotoFile(f)
+                              else if (f) alert("File must be under 5 MB")
+                            }}
+                          />
+                        </div>
+                        <PhotoUpload
+                          label="Roof from the ground (optional)"
+                          hint="Stand back from the house and photograph the roof face where panels would go. One shot per roof face. JPG or PNG · Max 5 MB"
+                          file={roofGroundPhotoFile}
+                          setFile={setRoofGroundPhotoFile}
+                          inputRef={roofGroundPhotoRef}
+                        />
+                      </>
                     )}
                   </div>
                 </div>
 
-                {/* ── Switchboard ─────────────────────────────────────────── */}
+                {/* ── Switchboard — always shown ───────────────────────────── */}
                 <PhotoUpload
                   label="Switchboard — breakers shown (optional)"
                   hint="Open the switchboard panel door. Photograph all circuit breakers and labels clearly. JPG or PNG · Max 5 MB"
@@ -650,7 +662,8 @@ function IntakeFormInner() {
                   inputRef={switchboardPhotoRef}
                 />
 
-                {/* ── Battery location photos ─────────────────────────────── */}
+                {/* ── Battery location photos (battery services only) ──────── */}
+                {hasBattery && (
                 <div className="border-t border-slate-100 pt-5">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
                       Proposed battery location <span className="font-normal normal-case text-slate-400">(optional — 3 angles helps us plan before the site visit)</span>
@@ -753,6 +766,32 @@ function IntakeFormInner() {
                       />
                     </div>
                 </div>
+                )}
+
+                {/* ── EV charger photos (EV services only) ────────────────── */}
+                {hasEV && (
+                  <div className="border-t border-slate-100 pt-5">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
+                      EV charger location <span className="font-normal normal-case text-slate-400">(optional — helps us plan cabling before the site visit)</span>
+                    </p>
+                    <div className="space-y-4">
+                      <PhotoUpload
+                        label="Where you want the charger"
+                        hint="Photo of the wall or area where you'd like the EV charger — garage wall, carport, outside wall, etc. Step back to show the full space. Max 5 MB"
+                        file={evPhoto1File}
+                        setFile={setEvPhoto1File}
+                        inputRef={evPhoto1Ref}
+                      />
+                      <PhotoUpload
+                        label="Second angle (optional)"
+                        hint="Another view of the same area — useful if the space is tight or you want to show what's nearby. Max 5 MB"
+                        file={evPhoto2File}
+                        setFile={setEvPhoto2File}
+                        inputRef={evPhoto2Ref}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <Label>Electricity bill (optional — strongly recommended)</Label>

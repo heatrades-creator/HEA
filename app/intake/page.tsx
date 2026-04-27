@@ -212,7 +212,7 @@ function PhotoUpload({
 
 // ── Success + Calendly redirect screen ───────────────────────────────────────
 function SuccessScreen({ firstName, calendlyUrl, hasConsent }: { firstName: string; calendlyUrl: string; hasConsent: boolean }) {
-  const [countdown, setCountdown] = useState(4)
+  const [countdown, setCountdown] = useState(15)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -885,57 +885,58 @@ function IntakeFormInner() {
               </div>
 
               <div className="mb-6">
-                <p className="text-sm font-semibold text-slate-900 mb-3">NMI data consent</p>
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => setValue("nmiConsent", true, { shouldValidate: true })}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      watch("nmiConsent") === true ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${
-                        watch("nmiConsent") === true ? "border-slate-900 bg-slate-900" : "border-slate-300"
-                      }`}>
-                        {watch("nmiConsent") === true && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">I authorise HEA to access my NMI data</p>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                          I authorise Heffernan Electrical Automation to access my electricity consumption
-                          data via Powercore, for the purpose of designing a solar/battery system for my
-                          property. This gives the most accurate system size and payback period.
-                          I can withdraw this consent at any time by contacting HEA in writing.
-                        </p>
-                      </div>
-                    </div>
-                  </button>
+                <p className="text-sm font-semibold text-slate-900 mb-2">NMI data consent</p>
 
-                  <button
-                    type="button"
-                    onClick={() => setValue("nmiConsent", false, { shouldValidate: true })}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      watch("nmiConsent") === false ? "border-slate-900 bg-slate-50" : "border-slate-200 hover:border-slate-300"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 transition-all ${
-                        watch("nmiConsent") === false ? "border-slate-900 bg-slate-900" : "border-slate-300"
-                      }`}>
-                        {watch("nmiConsent") === false && <div className="w-2 h-2 rounded-full bg-white" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">I do not give consent</p>
-                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                          I am happy with a generic system sized for my household type, not personalised
-                          to my specific power consumption data. I understand this may affect the
-                          accuracy of the quote.
-                        </p>
-                      </div>
-                    </div>
-                  </button>
+                {/* Explanation */}
+                <div className="bg-slate-50 rounded-xl p-4 mb-4 text-sm text-slate-600 leading-relaxed">
+                  <p>
+                    Authorising HEA to access your NMI data via Powercore lets Jesse model your system
+                    on your <strong className="text-slate-800">actual usage</strong> — giving you an accurate
+                    payback period rather than a household-type estimate.
+                  </p>
+                  <p className="text-xs text-slate-400 mt-2">You can withdraw consent at any time by contacting HEA in writing.</p>
                 </div>
+
+                {/* Decline — subtle, at top */}
+                <button
+                  type="button"
+                  onClick={() => setValue("nmiConsent", false, { shouldValidate: true })}
+                  className={`w-full text-center py-3 mb-3 rounded-xl border text-sm transition-all ${
+                    watch("nmiConsent") === false
+                      ? "border-slate-400 bg-slate-100 text-slate-700 font-medium"
+                      : "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-500"
+                  }`}
+                >
+                  {watch("nmiConsent") === false ? "✓ Continuing without consent" : "Continue without consent"}
+                </button>
+
+                {/* Consent — big CTA at bottom, thumb lands here */}
+                <button
+                  type="button"
+                  onClick={() => setValue("nmiConsent", true, { shouldValidate: true })}
+                  className={`w-full p-5 rounded-xl border-2 text-left transition-all ${
+                    watch("nmiConsent") === true
+                      ? "border-green-600 bg-green-50"
+                      : "border-slate-900 bg-slate-900 hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                      watch("nmiConsent") === true ? "border-green-600 bg-green-600" : "border-white"
+                    }`}>
+                      {watch("nmiConsent") === true && <Check className="w-3.5 h-3.5 text-white" />}
+                    </div>
+                    <div>
+                      <p className={`text-base font-bold ${watch("nmiConsent") === true ? "text-green-800" : "text-white"}`}>
+                        I authorise access to my NMI data
+                      </p>
+                      <p className={`text-xs mt-0.5 ${watch("nmiConsent") === true ? "text-green-700" : "text-slate-300"}`}>
+                        Recommended — gives you accurate numbers
+                      </p>
+                    </div>
+                  </div>
+                </button>
+
                 <FieldError msg={errors.nmiConsent?.message} />
               </div>
 

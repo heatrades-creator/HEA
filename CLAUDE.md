@@ -110,7 +110,7 @@ This proxies to GAS `action: 'updateJob'`.
 ### GAS Drive folder structure per client
 Each client gets a folder under the HEA Drive root:
 ```
-ClientName_YYYY-MM-DD/
+ClientName - DD-MM-YYYY/
   00_NMI_Data/      ← PowerCor NMI files only (uploaded manually via portal)
   01_Quotes/        ← Quote PDFs
   02_Proposals/     ← Proposal documents
@@ -248,6 +248,19 @@ For scripts without a hardcoded deployment ID (Jobs API, Intake Form), the workf
 1. `clasp login` on a machine signed in as `hea.trades@gmail.com`
 2. Copy `~/.clasprc.json` → update `CLASPRC_JSON` in GitHub Secrets
 
+### ⚠️ Critical GAS gotchas — do not break these
+
+**`appsscript.json` access level must be `"ANYONE_ANONYMOUS"`** — never `"ANYONE"`.
+`"ANYONE"` requires a Google login and redirects unauthenticated requests to the Google sign-in page (returns HTML, not JSON). `"ANYONE_ANONYMOUS"` is truly public. Every `clasp push` overwrites the GAS UI setting, so `appsscript.json` is the only source of truth.
+
+**`GAS/.claspignore` must exclude `C2/**` and `PhotoPortal/**`** — these are separate GAS projects with their own `.clasp.json`. If either is omitted from `.claspignore`, their files (especially `Code.gs` with its own `doGet`) get pushed into the Jobs API script and override the Jobs API's `doGet`, causing `{"error":"Unknown action:","code":400}` for every request.
+
+**`JOBS_GAS_URL` in Vercel must point to the Jobs API web app** — not any other GAS script. To verify: `GET <JOBS_GAS_URL>` should return a JSON array of job objects. A response of `{"error":"Unknown action:","code":400}` means the URL points to the wrong script. The correct script ID is in `GAS/.clasp.json`.
+
+**Jobs API auto-updates `JOBS_GAS_URL` in Vercel on deploy** — the `deploy-jobs-api` workflow step calls the Vercel API to update the env var after each successful deploy. Requires `VERCEL_TOKEN` as a GitHub secret (add it if missing) and `VERCEL_PROJECT_ID: prj_4wvjTKCHlMjJtCZ5zFTRmZqU9IdK` (already hardcoded in the workflow).
+
+**GAS always returns HTTP 200** — even on errors. Never use `r.ok` to detect GAS failures. Always read the raw response text, attempt JSON parse, and check for an `error` field. See the `createJob` call in `app/api/intake/route.ts` for the correct pattern.
+
 **GAS scripts:**
 | Folder | Purpose | Deployment ID |
 |---|---|---|
@@ -265,8 +278,19 @@ GAS iframe = fixed ~750px CSS viewport on mobile → CSS @media useless → JS `
 | File | Purpose |
 |---|---|
 | `app/intake/page.tsx` | 5-step form, `?service=solar\|battery\|ev` pre-selects step 2 |
-| `app/api/intake/route.ts` | Validates → generates PDFs → emails client + Jesse → notifies Jobs API |
+| `app/api/intake/route.ts` | Validates → fires background work via `after()` → returns 201 immediately |
 | `lib/intake-pdf.ts` | `generateConsentPdf()` + `generateJobCardPdf()` via pdf-lib |
+
+### Intake submission flow
+1. Client submits form → `route.ts` validates with Zod, calls `after(async () => processIntake(d))`, returns `{ success: true }` (201) **immediately**
+2. `processIntake` runs after the response: generates PDFs, calls GAS `createJob`, calls GAS `saveIntakeDocs`, writes Prisma `Lead`, sends emails via Resend
+3. Client-side fetch in `page.tsx` is fire-and-forget — `setSubmitted(true)` is called immediately, no `await`
+4. Success screen auto-redirects to Calendly after 4 seconds (pre-filled `name` + `email` query params)
+
+**Never `await` the GAS or email calls inside the route handler** — all heavy work belongs inside `after()`. Vercel serverless will timeout on large photo payloads if you block the response.
+
+### Image compression (client-side, before base64 upload)
+`compressImage(file, maxPx = 800, quality = 0.45)` in `page.tsx` uses the Canvas API to resize + re-encode before upload. Keep these values low — mobile photos can be 8MB+.
 
 Intake submissions create a Prisma `Lead` record AND notify the GAS Jobs API. Both systems receive the lead.
 
@@ -349,7 +373,7 @@ Env var: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_INSTALLED`
 **Vercel (production):**
 `RESEND_API_KEY` · `EMAIL_FROM` · `EMAIL_ALERT_TO` (HEA.Trades@gmail.com) · `DATABASE_URL` · `NEXTAUTH_SECRET` · `NEXTAUTH_URL` · `JOBS_GAS_URL` · `NEXT_PUBLIC_SANITY_PROJECT_ID` · `NEXT_PUBLIC_SANITY_DATASET` · `SANITY_API_TOKEN` · `HUBSPOT_ACCESS_TOKEN` · `HUBSPOT_STAGE_INSTALLED`
 
-**GitHub Secrets:** `CLASPRC_JSON`
+**GitHub Secrets:** `CLASPRC_JSON` · `VERCEL_TOKEN` (needed for auto-updating `JOBS_GAS_URL` after GAS deploy)
 
 ---
 
@@ -385,6 +409,11 @@ Env var: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_INSTALLED`
 | Vercel build: `_achieved` TS errors | Archived files included in compilation | `exclude: ["_achieved"]` in tsconfig |
 | Vercel build: pricing page `any` type | Missing explicit `PricingPkg[]` annotation | Add type annotation to SOLAR_PACKAGES / BATTERY_PACKAGES |
 | Footer/Nav TS error: Logo_transparent.png | Image import path mismatch | Pre-existing, do not re-investigate |
+| GAS returning `{"error":"Unknown action:"}` | `C2/**` not excluded in `GAS/.claspignore` — C2's `doGet` overrode Jobs API's `doGet` | Uncomment `C2/**` in `.claspignore` |
+| GAS requiring Google login | `appsscript.json` had `"access": "ANYONE"` — reset on every deploy | Change to `"ANYONE_ANONYMOUS"` in `appsscript.json` |
+| Drive folders not created, jobs not in dashboard | `JOBS_GAS_URL` in Vercel pointed to wrong GAS script (C2) | Update `JOBS_GAS_URL` to Jobs API web app URL from GAS console |
+| Intake form timeout on large photo uploads | All processing awaited before returning 201; Vercel serverless timeout | Use `after()` from `next/server`; client fetch is fire-and-forget |
+| GAS errors swallowed silently | `r.ok` always true (GAS returns HTTP 200 even on error); `.catch` only fires on network error | Read raw `.text()` first, then parse JSON, check `data.error` field |
 
 ---
 
@@ -395,6 +424,8 @@ app/intake/               ← Public intake form (mobile-first, Next.js)
 app/api/intake/           ← Intake API: PDFs + emails + GAS notification
 app/api/leads/            ← Simpler lead capture (no PDFs)
 app/api/admin/            ← Admin-only API routes (Prisma, NextAuth protected)
+app/api/intake/           ← Intake API: PDFs + emails + GAS notification (uses after())
+app/api/debug/gas/        ← Session-protected GAS diagnostics (URL, HTTP status, job count)
 app/api/dashboard/        ← Dashboard API routes (GAS proxy, session protected)
   pipeline/
     check-nmi/            ← Proxies GAS checkNMI action

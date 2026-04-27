@@ -210,6 +210,57 @@ function PhotoUpload({
   )
 }
 
+// ── Success + Calendly redirect screen ───────────────────────────────────────
+function SuccessScreen({ firstName, calendlyUrl, hasConsent }: { firstName: string; calendlyUrl: string; hasConsent: boolean }) {
+  const [countdown, setCountdown] = useState(4)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          window.location.href = calendlyUrl
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [calendlyUrl])
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="border-b border-slate-100 px-5 py-4 flex items-center gap-3">
+        <Image src="/Logo_transparent.png" alt="HEA Group" height={36} style={{ height: 36, width: "auto" }} />
+      </header>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
+          <Check className="w-8 h-8 text-green-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re in the system, {firstName}!</h1>
+        <p className="text-slate-500 mb-2 max-w-sm">
+          While we take a moment to process your details, book your free consultation with one of our system designers.
+          {hasConsent && " Your NMI consent form will arrive by email shortly."}
+        </p>
+        <p className="text-sm text-slate-400 mb-8">
+          {countdown > 0 ? (
+            <>Redirecting you to book your appointment in <span className="font-semibold text-slate-600">{countdown}</span>…</>
+          ) : (
+            <>Redirecting…</>
+          )}
+        </p>
+        <a
+          href={calendlyUrl}
+          className="inline-flex items-center gap-2 bg-[#ffd100] text-[#111827] font-bold px-6 py-3 rounded-xl text-base shadow hover:bg-yellow-400 transition-colors mb-6 w-full max-w-sm justify-center"
+        >
+          📅 Book your free consultation now
+        </a>
+        <a href="https://hea-group.com.au" className="text-sm text-slate-400 underline">Back to hea-group.com.au</a>
+      </div>
+    </div>
+  )
+}
+
 // ── Main form (inner — needs useSearchParams) ─────────────────────────────────
 function IntakeFormInner() {
   const params = useSearchParams()
@@ -326,7 +377,8 @@ function IntakeFormInner() {
     ])
 
     try {
-      const res = await fetch("/api/intake", {
+      // Fire and forget — don't block on the upload, server uses after() anyway
+      fetch("/api/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -346,8 +398,9 @@ function IntakeFormInner() {
           ...(ev1     ? { evPhoto1Base64: ev1.base64, evPhoto1Name: ev1.name, evPhoto1Mime: ev1.mime } : {}),
           ...(ev2     ? { evPhoto2Base64: ev2.base64, evPhoto2Name: ev2.name, evPhoto2Mime: ev2.mime } : {}),
         }),
-      })
-      if (!res.ok) throw new Error(await res.text())
+      }).catch(err => console.error("Intake submission error:", err))
+
+      // Show success immediately — no waiting for upload
       setSubmitted(true)
     } catch (err) {
       setSubmitError("Something went wrong. Please call us on 0481 267 812.")
@@ -360,47 +413,8 @@ function IntakeFormInner() {
   // ── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
     const firstName = watch("name").split(" ")[0]
-    return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="border-b border-slate-100 px-5 py-4 flex items-center gap-3">
-          <Image src="/Logo_transparent.png" alt="HEA Group" height={36} style={{ height: 36, width: "auto" }} />
-        </header>
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6">
-            <Check className="w-8 h-8 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re in the system, {firstName}!</h1>
-          <p className="text-slate-500 mb-8 max-w-sm">
-            Jesse will review your details and be in touch to book a call.
-            {" "}Your confirmation email will land in the next 5 minutes
-            {watch("nmiConsent") === true && " with your NMI consent form attached"}.
-          </p>
-          <div className="bg-slate-50 rounded-2xl p-6 max-w-sm w-full text-left space-y-3 mb-6">
-            <p className="font-semibold text-slate-900 text-sm">What happens next:</p>
-            {["Jesse reviews your electricity data", "You get your exact payback period", "Walk-through of applicable rebates", "No obligation — just clear answers"].map(item => (
-              <div key={item} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-slate-600">{item}</p>
-              </div>
-            ))}
-          </div>
-          {/* Book a call — Calendly pre-filled with client name + email */}
-          <div className="max-w-sm w-full mb-6 text-center">
-            <p className="text-sm font-semibold text-slate-700 mb-3">Skip the wait — book your consultation now:</p>
-            <a
-              href={`https://calendly.com/hea-trades/free-solar-consultation-hea?name=${encodeURIComponent(watch("name"))}&email=${encodeURIComponent(watch("email"))}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#ffd100] text-[#111827] font-bold px-6 py-3 rounded-xl text-base shadow hover:bg-yellow-400 transition-colors w-full justify-center"
-            >
-              📅 Book a free call with Jesse
-            </a>
-            <p className="text-xs text-slate-400 mt-2">Choose a time that suits you — opens in a new tab</p>
-          </div>
-          <a href="https://hea-group.com.au" className="text-sm text-slate-400 underline">Back to hea-group.com.au</a>
-        </div>
-      </div>
-    )
+    const calendlyUrl = `https://calendly.com/hea-trades/free-solar-consultation-hea?name=${encodeURIComponent(watch("name"))}&email=${encodeURIComponent(watch("email"))}`
+    return <SuccessScreen firstName={firstName} calendlyUrl={calendlyUrl} hasConsent={watch("nmiConsent") === true} />
   }
 
   // ── Form layout ──────────────────────────────────────────────────────────────

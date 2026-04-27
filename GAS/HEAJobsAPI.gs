@@ -362,8 +362,10 @@ function jsonResponse(data) {
 // ---------------------------------------------------------------------------
 
 // Saves intake docs (consent PDF, job card PDF, electricity bill, photos) to the
-// client's existing Drive folder. PDFs and bill go to the root; all photos go to
-// the "Photos" subfolder so they stay separate from documents.
+// client's existing Drive folder, each in its own dedicated subfolder:
+//   00_NMI_Data/  ← NMI consent PDF + electricity bill
+//   Intake/       ← Job card PDF
+//   Photos/       ← All photo uploads
 function saveIntakeDocs_(data) {
   if (!data.jobNumber) throw new Error('jobNumber required');
 
@@ -377,7 +379,9 @@ function saveIntakeDocs_(data) {
   const clientName = (job.clientName || data.jobNumber).trim();
   const saved = [];
 
-  // All photo uploads land in the Photos subfolder
+  // Dedicated subfolders for each document type
+  const nmiFolder    = getOrCreateDriveFolder_(folder, '00_NMI_Data');
+  const intakeFolder = getOrCreateDriveFolder_(folder, 'Intake');
   const photosFolder = getOrCreateDriveFolder_(folder, 'Photos');
 
   function saveFile_(targetFolder, fileName, base64, mimeType) {
@@ -389,16 +393,18 @@ function saveIntakeDocs_(data) {
     saved.push(fileName);
   }
 
-  // PDFs and bill → root client folder
+  // NMI consent PDF + electricity bill → 00_NMI_Data
   if (data.consentPdfBase64) {
-    saveFile_(folder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
-  }
-  if (data.jobCardPdfBase64) {
-    saveFile_(folder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
+    saveFile_(nmiFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
   }
   if (data.billBase64 && data.billName) {
     const ext = (data.billName.split('.').pop() || 'pdf').toLowerCase();
-    saveFile_(folder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+    saveFile_(nmiFolder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+  }
+
+  // Job card PDF → Intake subfolder
+  if (data.jobCardPdfBase64) {
+    saveFile_(intakeFolder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
   }
 
   // All photos → Photos subfolder

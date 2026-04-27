@@ -133,7 +133,7 @@ function doPost(e) {
 
   if (action === 'saveIntakeDocs') {
     try {
-      return jsonResponse(saveIntakeDocs_(body));
+      return jsonResponse(withDriveRetry_(function() { return saveIntakeDocs_(body); }));
     } catch (err) {
       console.error('saveIntakeDocs_ error:', err);
       return jsonResponse({ error: err.message }, 500);

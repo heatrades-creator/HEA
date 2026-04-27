@@ -227,10 +227,15 @@ function createJob(sheet, data) {
     const clientFolder = withDriveRetry_(function() {
       return findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
     });
-    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
-      withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
-    });
+    // Capture the URL immediately — subfolder creation is non-fatal
     driveUrl = clientFolder.getUrl();
+    try {
+      ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
+        withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
+      });
+    } catch (subErr) {
+      Logger.log('Subfolder creation error (non-fatal): ' + subErr);
+    }
   } catch (e) {
     Logger.log('Drive folder error: ' + e);
     driveError = String(e);

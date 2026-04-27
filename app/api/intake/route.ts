@@ -205,13 +205,21 @@ async function processIntake(d: ReturnType<typeof Schema.parse>) {
       ...(d.evPhoto2Base64         ? { evPhoto2Base64: d.evPhoto2Base64, evPhoto2Name: d.evPhoto2Name ?? null, evPhoto2Mime: d.evPhoto2Mime ?? null } : {}),
     }
     try {
-      await fetch(process.env.JOBS_GAS_URL, {
+      const docsRes  = await fetch(process.env.JOBS_GAS_URL, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(docsPayload),
       })
+      const docsText = await docsRes.text()
+      try {
+        const docsData = JSON.parse(docsText)
+        if (docsData.error) console.error("saveIntakeDocs GAS error for", gasJobNumber, "—", docsData.error)
+        else console.log("saveIntakeDocs ok for", gasJobNumber, "— saved:", docsData.saved)
+      } catch {
+        console.error("saveIntakeDocs non-JSON response for", gasJobNumber, ":", docsText.substring(0, 200))
+      }
     } catch (e) {
-      console.error("saveIntakeDocs failed:", e)
+      console.error("saveIntakeDocs network error:", e)
     }
   }
 

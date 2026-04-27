@@ -224,9 +224,11 @@ function createJob(sheet, data) {
   let driveError = null;
   try {
     const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
-    const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
+    const clientFolder = withDriveRetry_(function() {
+      return findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
+    });
     ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
-      getOrCreateDriveFolder_(clientFolder, sub);
+      withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
     });
     driveUrl = clientFolder.getUrl();
   } catch (e) {
@@ -375,13 +377,15 @@ function saveIntakeDocs_(data) {
 
   let driveUrl = job.driveUrl;
 
-  // Drive folder missing — createJob may have failed its Drive step due to quota or timeout.
-  // Recover by creating the folder now and patching the job record.
+  // Drive folder missing — createJob may have failed its Drive step due to a transient error.
+  // Recover by creating the folder now (with retry) and patching the job record.
   if (!driveUrl) {
     const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
-    const clientFolder = findOrCreateClientFolder_(job.clientName || data.jobNumber, safeDate);
+    const clientFolder = withDriveRetry_(function() {
+      return findOrCreateClientFolder_(job.clientName || data.jobNumber, safeDate);
+    });
     ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
-      getOrCreateDriveFolder_(clientFolder, sub);
+      withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
     });
     driveUrl = clientFolder.getUrl();
     updateJob(sheet, { jobNumber: data.jobNumber, driveUrl: driveUrl });
@@ -466,6 +470,22 @@ function safeString_(input) {
 function getOrCreateDriveFolder_(parent, name) {
   const iter = parent.getFoldersByName(name);
   return iter.hasNext() ? iter.next() : parent.createFolder(name);
+}
+
+// Retries a Drive operation up to 3 times with increasing delays.
+// "Service error: Drive" is a transient Google error — a short wait fixes it.
+function withDriveRetry_(fn) {
+  var delays = [1500, 3000];
+  var lastErr;
+  for (var attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return fn();
+    } catch (e) {
+      lastErr = e;
+      if (attempt < delays.length) Utilities.sleep(delays[attempt]);
+    }
+  }
+  throw lastErr;
 }
 
 // Finds an existing client folder (created by the intake form) or creates a new one.

@@ -394,7 +394,20 @@ function saveIntakeDocs_(data) {
   const match = driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
   if (!match) throw new Error('Cannot parse folder ID from driveUrl: ' + driveUrl);
 
-  const folder = DriveApp.getFolderById(match[1]);
+  // Navigate from the known parent folder rather than calling getFolderById directly
+  // on the client folder. getFolderById(CLIENTS_FOLDER_ID) consistently works in
+  // createJob; direct getFolderById on child folders consistently returns
+  // "Service error: Drive" regardless of folder age.
+  const clientFolderId = match[1];
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const folderIter = parent.getFolders();
+  let folder = null;
+  while (folderIter.hasNext()) {
+    const f = folderIter.next();
+    if (f.getId() === clientFolderId) { folder = f; break; }
+  }
+  if (!folder) throw new Error('Client folder ' + clientFolderId + ' not found in parent — may not be a direct child');
+
   const clientName = (job.clientName || data.jobNumber).trim();
   const saved = [];
 

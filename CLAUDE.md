@@ -111,11 +111,13 @@ This proxies to GAS `action: 'updateJob'`.
 Each client gets a folder under the HEA Drive root:
 ```
 ClientName_YYYY-MM-DD/
-  00_NMI_Data/      ← PowerCor NMI files land here
+  00_NMI_Data/      ← PowerCor NMI files only (uploaded manually via portal)
   01_Quotes/        ← Quote PDFs
   02_Proposals/     ← Proposal documents
   03_Signed/        ← Signed estimation/contract
   04_Installed/     ← Post-install photos
+  05_Photos/        ← Intake form photo uploads (roof, switchboard, battery, EV)
+  06_Jobfiles/      ← Intake form documents (NMI consent PDF, job card PDF, electricity bill)
 ```
 `driveUrl` on the job points to the root client folder.
 

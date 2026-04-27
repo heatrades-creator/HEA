@@ -225,7 +225,7 @@ function createJob(sheet, data) {
   try {
     const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
     const clientFolder = findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
-    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed'].forEach(function(sub) {
+    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
       getOrCreateDriveFolder_(clientFolder, sub);
     });
     driveUrl = clientFolder.getUrl();
@@ -362,10 +362,10 @@ function jsonResponse(data) {
 // ---------------------------------------------------------------------------
 
 // Saves intake docs (consent PDF, job card PDF, electricity bill, photos) to the
-// client's existing Drive folder, each in its own dedicated subfolder:
-//   00_NMI_Data/  ← NMI consent PDF + electricity bill
-//   Intake/       ← Job card PDF
-//   Photos/       ← All photo uploads
+// client's existing Drive folder:
+//   00_NMI_Data/  ← PowerCor NMI files only (uploaded manually via portal)
+//   05_Photos/    ← All photo uploads from intake form
+//   06_Jobfiles/  ← All intake form documents (consent PDF, job card PDF, electricity bill)
 function saveIntakeDocs_(data) {
   if (!data.jobNumber) throw new Error('jobNumber required');
 
@@ -379,10 +379,8 @@ function saveIntakeDocs_(data) {
   const clientName = (job.clientName || data.jobNumber).trim();
   const saved = [];
 
-  // Dedicated subfolders for each document type
-  const nmiFolder    = getOrCreateDriveFolder_(folder, '00_NMI_Data');
-  const intakeFolder = getOrCreateDriveFolder_(folder, 'Intake');
-  const photosFolder = getOrCreateDriveFolder_(folder, 'Photos');
+  const photosFolder   = getOrCreateDriveFolder_(folder, '05_Photos');
+  const jobfilesFolder = getOrCreateDriveFolder_(folder, '06_Jobfiles');
 
   function saveFile_(targetFolder, fileName, base64, mimeType) {
     const existing = targetFolder.getFilesByName(fileName);
@@ -393,21 +391,19 @@ function saveIntakeDocs_(data) {
     saved.push(fileName);
   }
 
-  // NMI consent PDF + electricity bill → 00_NMI_Data
+  // All intake form documents → 06_Jobfiles
   if (data.consentPdfBase64) {
-    saveFile_(nmiFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+    saveFile_(jobfilesFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+  }
+  if (data.jobCardPdfBase64) {
+    saveFile_(jobfilesFolder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
   }
   if (data.billBase64 && data.billName) {
     const ext = (data.billName.split('.').pop() || 'pdf').toLowerCase();
-    saveFile_(nmiFolder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+    saveFile_(jobfilesFolder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
   }
 
-  // Job card PDF → Intake subfolder
-  if (data.jobCardPdfBase64) {
-    saveFile_(intakeFolder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
-  }
-
-  // All photos → Photos subfolder
+  // All photos → 05_Photos
   if (data.roofPhotoBase64 && data.roofPhotoName) {
     const ext = (data.roofPhotoName.split('.').pop() || 'jpg').toLowerCase();
     saveFile_(photosFolder, clientName + ' - Roof Photo.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');

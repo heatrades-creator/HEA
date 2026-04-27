@@ -369,11 +369,26 @@ function jsonResponse(data) {
 function saveIntakeDocs_(data) {
   if (!data.jobNumber) throw new Error('jobNumber required');
 
-  const job = findJobByNumber(getSheet(), data.jobNumber);
-  if (!job || !job.driveUrl) throw new Error('Job not found or has no Drive folder: ' + data.jobNumber);
+  const sheet = getSheet();
+  const job = findJobByNumber(sheet, data.jobNumber);
+  if (!job) throw new Error('Job not found: ' + data.jobNumber);
 
-  const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
-  if (!match) throw new Error('Cannot parse folder ID from driveUrl: ' + job.driveUrl);
+  let driveUrl = job.driveUrl;
+
+  // Drive folder missing — createJob may have failed its Drive step due to quota or timeout.
+  // Recover by creating the folder now and patching the job record.
+  if (!driveUrl) {
+    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+    const clientFolder = findOrCreateClientFolder_(job.clientName || data.jobNumber, safeDate);
+    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
+      getOrCreateDriveFolder_(clientFolder, sub);
+    });
+    driveUrl = clientFolder.getUrl();
+    updateJob(sheet, { jobNumber: data.jobNumber, driveUrl: driveUrl });
+  }
+
+  const match = driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) throw new Error('Cannot parse folder ID from driveUrl: ' + driveUrl);
 
   const folder = DriveApp.getFolderById(match[1]);
   const clientName = (job.clientName || data.jobNumber).trim();

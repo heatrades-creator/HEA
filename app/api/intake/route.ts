@@ -176,6 +176,9 @@ async function processIntake(d: ReturnType<typeof Schema.parse>) {
               console.error("GAS createJob returned error:", data.error, data.driveError ?? "")
               return
             }
+            if (data.driveError) {
+              console.error("GAS createJob: Drive folder creation failed for", data.jobNumber, "—", data.driveError, "— saveIntakeDocs will self-heal")
+            }
             gasJobNumber = data.jobNumber as string | undefined
             gasDriveUrl  = data.driveUrl  as string | undefined
             if (!gasJobNumber) console.error("GAS createJob: response had no jobNumber:", JSON.stringify(data))

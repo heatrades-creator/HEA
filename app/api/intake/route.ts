@@ -187,7 +187,10 @@ async function processIntake(d: ReturnType<typeof Schema.parse>) {
       : (console.error("GAS createJob skipped: JOBS_GAS_URL env var not set"), Promise.resolve()),
   ])
 
-  // Save intake docs (PDFs + bill + roof photo) to client's Drive folder — non-fatal
+  // Save intake docs (PDFs + bill + photos) to client's Drive folder — non-fatal
+  // Root cause: Drive has a propagation delay — a folder created in one GAS execution
+  // is not immediately accessible by ID from the next. Wait 15s before first attempt,
+  // then retry twice more at 10s intervals from here (no GAS deployment dependency).
   if (gasJobNumber && process.env.JOBS_GAS_URL) {
     const docsPayload: Record<string, string | null> = {
       action:   "saveIntakeDocs",
@@ -204,22 +207,34 @@ async function processIntake(d: ReturnType<typeof Schema.parse>) {
       ...(d.evPhoto1Base64         ? { evPhoto1Base64: d.evPhoto1Base64, evPhoto1Name: d.evPhoto1Name ?? null, evPhoto1Mime: d.evPhoto1Mime ?? null } : {}),
       ...(d.evPhoto2Base64         ? { evPhoto2Base64: d.evPhoto2Base64, evPhoto2Name: d.evPhoto2Name ?? null, evPhoto2Mime: d.evPhoto2Mime ?? null } : {}),
     }
-    try {
-      const docsRes  = await fetch(process.env.JOBS_GAS_URL, {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(docsPayload),
-      })
-      const docsText = await docsRes.text()
+    const stringifiedDocs = JSON.stringify(docsPayload)
+
+    await new Promise(r => setTimeout(r, 15_000))
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 10_000))
       try {
-        const docsData = JSON.parse(docsText)
-        if (docsData.error) console.error("saveIntakeDocs GAS error for", gasJobNumber, "—", docsData.error)
-        else console.log("saveIntakeDocs ok for", gasJobNumber, "— saved:", docsData.saved)
-      } catch {
-        console.error("saveIntakeDocs non-JSON response for", gasJobNumber, ":", docsText.substring(0, 200))
+        const docsRes  = await fetch(process.env.JOBS_GAS_URL, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    stringifiedDocs,
+        })
+        const docsText = await docsRes.text()
+        try {
+          const docsData = JSON.parse(docsText)
+          if (docsData.error) {
+            console.error(`saveIntakeDocs attempt ${attempt + 1} GAS error for ${gasJobNumber}:`, docsData.error)
+          } else {
+            console.log(`saveIntakeDocs ok for ${gasJobNumber} (attempt ${attempt + 1}) — saved:`, docsData.saved)
+            break
+          }
+        } catch {
+          console.error(`saveIntakeDocs attempt ${attempt + 1} non-JSON for ${gasJobNumber}:`, docsText.substring(0, 200))
+          break
+        }
+      } catch (e) {
+        console.error(`saveIntakeDocs attempt ${attempt + 1} network error:`, e)
       }
-    } catch (e) {
-      console.error("saveIntakeDocs network error:", e)
     }
   }
 

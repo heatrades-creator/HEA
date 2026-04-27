@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { z } from "zod"
 import { Resend } from "resend"
 import { generateConsentPdf, generateJobCardPdf, type IntakeData } from "@/lib/intake-pdf"
@@ -96,6 +96,17 @@ export async function POST(req: NextRequest) {
   }
 
   const d = parsed.data
+
+  // Return immediately — all PDFs, GAS calls, emails, and DB writes run after response
+  after(async () => {
+    await processIntake(d)
+  })
+
+  return NextResponse.json({ success: true }, { status: 201 })
+}
+
+// All heavy work lives here — runs after the 201 is sent to the browser
+async function processIntake(d: ReturnType<typeof Schema.parse>) {
   const timestamp = melbourneTimestamp()
 
   const intakeData: IntakeData = {
@@ -443,8 +454,5 @@ export async function POST(req: NextRequest) {
 
   } catch (dbErr) {
     console.error("Intake lead DB save failed:", dbErr)
-    // non-fatal — emails already sent
   }
-
-  return NextResponse.json({ success: true }, { status: 201 })
 }

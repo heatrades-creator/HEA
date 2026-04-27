@@ -59,7 +59,7 @@ function fileToBase64(file: File): Promise<string> {
   })
 }
 
-function compressImage(file: File, maxPx = 1280, quality = 0.65): Promise<File> {
+function compressImage(file: File, maxPx = 800, quality = 0.45): Promise<File> {
   return new Promise((resolve) => {
     const img = document.createElement("img") as HTMLImageElement
     const url = URL.createObjectURL(file)
@@ -372,7 +372,8 @@ function IntakeFormInner() {
           <h1 className="text-2xl font-bold text-slate-900 mb-2">You&apos;re in the system, {firstName}!</h1>
           <p className="text-slate-500 mb-8 max-w-sm">
             Jesse will review your details and be in touch to book a call.
-            {watch("nmiConsent") === true && " Check your inbox — your NMI consent form is on its way."}
+            {" "}Your confirmation email will land in the next 5 minutes
+            {watch("nmiConsent") === true && " with your NMI consent form attached"}.
           </p>
           <div className="bg-slate-50 rounded-2xl p-6 max-w-sm w-full text-left space-y-3 mb-6">
             <p className="font-semibold text-slate-900 text-sm">What happens next:</p>

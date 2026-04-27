@@ -416,6 +416,7 @@ function saveIntakeDocs_(data) {
   const clientName = (job.clientName || data.jobNumber).trim();
   const saved = [];
 
+  const nmiFolder      = getOrCreateDriveFolder_(folder, '00_NMI_Data');
   const photosFolder   = getOrCreateDriveFolder_(folder, '05_Photos');
   const jobfilesFolder = getOrCreateDriveFolder_(folder, '06_Jobfiles');
 
@@ -428,10 +429,12 @@ function saveIntakeDocs_(data) {
     saved.push(fileName);
   }
 
-  // All intake form documents → 06_Jobfiles
+  // NMI consent PDF → 00_NMI_Data (AI-accessible, separate from general job docs)
   if (data.consentPdfBase64) {
-    saveFile_(jobfilesFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+    saveFile_(nmiFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
   }
+
+  // Remaining intake docs → 06_Jobfiles
   if (data.jobCardPdfBase64) {
     saveFile_(jobfilesFolder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
   }

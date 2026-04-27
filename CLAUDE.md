@@ -117,7 +117,7 @@ ClientName - DD-MM-YYYY/
   03_Signed/        ← Signed estimation/contract
   04_Installed/     ← Post-install photos
   05_Photos/        ← Intake form photo uploads (roof, switchboard, battery, EV)
-  06_Jobfiles/      ← Intake form documents (NMI consent PDF, job card PDF, electricity bill)
+  06_Jobfiles/      ← Intake form documents (job card PDF, electricity bill)
 ```
 `driveUrl` on the job points to the root client folder.
 

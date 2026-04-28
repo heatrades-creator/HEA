@@ -42,6 +42,11 @@ const COL = {
   HOT_WATER:        17, // Q
   GAS_APPLIANCES:   18, // R
   EV:               19, // S
+  WIFI_SSID:        20, // T
+  WIFI_PASSWORD:    21, // U
+  EPS_CIRCUIT_1:    22, // V
+  EPS_CIRCUIT_2:    23, // W
+  EPS_CIRCUIT_3:    24, // X
 };
 
 // ---------------------------------------------------------------------------
@@ -205,9 +210,18 @@ function getSheet() {
       'System Size (kW)', 'Battery Size (kWh)', 'Quote Value ($)',
       'Est. Annual Bill ($)', 'Finance Required',
       'Occupants', 'Home Daytime', 'Hot Water', 'Gas Appliances', 'EV',
+      'WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3',
     ]);
     sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 19).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 24).setFontWeight('bold');
+  } else {
+    // Migration: add new column headers if they don't exist yet
+    const lastCol = sheet.getLastColumn();
+    const newHeaders = ['WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3'];
+    newHeaders.forEach(function(header, i) {
+      const col = 20 + i;
+      if (lastCol < col) sheet.getRange(1, col).setValue(header);
+    });
   }
 
   return sheet;
@@ -273,6 +287,11 @@ function createJob(sheet, data) {
     data.hotWater        || '',
     data.gasAppliances   || '',
     data.ev              || '',
+    data.wifiSsid        || '',
+    data.wifiPassword    || '',
+    data.epsCircuit1     || '',
+    data.epsCircuit2     || '',
+    data.epsCircuit3     || '',
   ]);
 
   return {
@@ -296,6 +315,11 @@ function createJob(sheet, data) {
     hotWater:        data.hotWater        || '',
     gasAppliances:   data.gasAppliances   || '',
     ev:              data.ev              || '',
+    wifiSsid:        data.wifiSsid        || '',
+    wifiPassword:    data.wifiPassword    || '',
+    epsCircuit1:     data.epsCircuit1     || '',
+    epsCircuit2:     data.epsCircuit2     || '',
+    epsCircuit3:     data.epsCircuit3     || '',
   };
 }
 
@@ -316,14 +340,19 @@ function updateJob(sheet, data) {
   if (data.hotWater        !== undefined) sheet.getRange(row, COL.HOT_WATER).setValue(data.hotWater);
   if (data.gasAppliances   !== undefined) sheet.getRange(row, COL.GAS_APPLIANCES).setValue(data.gasAppliances);
   if (data.ev              !== undefined) sheet.getRange(row, COL.EV).setValue(data.ev);
+  if (data.wifiSsid        !== undefined) sheet.getRange(row, COL.WIFI_SSID).setValue(data.wifiSsid);
+  if (data.wifiPassword    !== undefined) sheet.getRange(row, COL.WIFI_PASSWORD).setValue(data.wifiPassword);
+  if (data.epsCircuit1     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_1).setValue(data.epsCircuit1);
+  if (data.epsCircuit2     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_2).setValue(data.epsCircuit2);
+  if (data.epsCircuit3     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_3).setValue(data.epsCircuit3);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
 }
 
 function findJobByNumber(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return null;
-  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
 }
 
 function findRowByJobNumber(sheet, jobNumber) {
@@ -339,7 +368,7 @@ function findRowByJobNumber(sheet, jobNumber) {
 function getAllJobs(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
   return values
     .filter(row => row[0])
     .map(rowToJob)
@@ -367,6 +396,11 @@ function rowToJob(row) {
     hotWater:        String(row[16] || ''),
     gasAppliances:   String(row[17] || ''),
     ev:              String(row[18] || ''),
+    wifiSsid:        String(row[19] || ''),
+    wifiPassword:    String(row[20] || ''),
+    epsCircuit1:     String(row[21] || ''),
+    epsCircuit2:     String(row[22] || ''),
+    epsCircuit3:     String(row[23] || ''),
   };
 }
 

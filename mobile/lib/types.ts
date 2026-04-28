@@ -18,6 +18,11 @@ export interface GASJob {
   hotWater: string
   gasAppliances: string
   ev: string
+  wifiSsid: string
+  wifiPassword: string
+  epsCircuit1: string
+  epsCircuit2: string
+  epsCircuit3: string
 }
 
 export interface InstallerProfile {

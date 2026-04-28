@@ -78,10 +78,51 @@ const statements = [
     "value" TEXT NOT NULL
   )`,
 
+  // ── Installer ─────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "Installer" (
+    "id"        TEXT     NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "name"      TEXT     NOT NULL,
+    "pinHash"   TEXT     NOT NULL,
+    "role"      TEXT     NOT NULL DEFAULT 'installer',
+    "active"    INTEGER  NOT NULL DEFAULT 1
+  )`,
+
+  // ── JobComment ────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "JobComment" (
+    "id"          TEXT     NOT NULL PRIMARY KEY,
+    "createdAt"   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt"   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "jobNumber"   TEXT     NOT NULL,
+    "body"        TEXT     NOT NULL,
+    "installerId" TEXT,
+    "staffEmail"  TEXT,
+    "parentId"    TEXT,
+    FOREIGN KEY ("installerId") REFERENCES "Installer"("id"),
+    FOREIGN KEY ("parentId")    REFERENCES "JobComment"("id")
+  )`,
+
+  // ── Contact ───────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "Contact" (
+    "id"        TEXT     NOT NULL PRIMARY KEY,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "name"      TEXT     NOT NULL,
+    "company"   TEXT,
+    "phone"     TEXT,
+    "email"     TEXT,
+    "category"  TEXT     NOT NULL DEFAULT 'other',
+    "notes"     TEXT,
+    "active"    INTEGER  NOT NULL DEFAULT 1
+  )`,
+
   // ── Indexes ───────────────────────────────────────────────────────────────
   `CREATE INDEX IF NOT EXISTS "Lead_email_idx"    ON "Lead"("email")`,
   `CREATE INDEX IF NOT EXISTS "Lead_status_idx"   ON "Lead"("status")`,
   `CREATE INDEX IF NOT EXISTS "AuditEntry_leadId_idx" ON "AuditEntry"("leadId")`,
+  `CREATE INDEX IF NOT EXISTS "JobComment_jobNumber_idx"   ON "JobComment"("jobNumber")`,
+  `CREATE INDEX IF NOT EXISTS "JobComment_installerId_idx" ON "JobComment"("installerId")`,
 ]
 
 // Columns added after initial schema — safe to run on existing databases

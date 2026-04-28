@@ -147,6 +147,46 @@ model SystemConfig {
   key   String @unique
   value String
 }
+
+// ─── INSTALLER APP ────────────────────────────────────────────────────────────
+
+model Installer {
+  id        String       @id @default(cuid())
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  name      String
+  pinHash   String
+  role      String       @default("installer")
+  active    Boolean      @default(true)
+  comments  JobComment[]
+}
+
+model JobComment {
+  id          String       @id @default(cuid())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  jobNumber   String
+  body        String
+  installerId String?
+  installer   Installer?   @relation(fields: [installerId], references: [id])
+  staffEmail  String?
+  parentId    String?
+  parent      JobComment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     JobComment[] @relation("CommentReplies")
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  company   String?
+  phone     String?
+  email     String?
+  category  String   @default("other")
+  notes     String?
+  active    Boolean  @default(true)
+}
 // Keys used:
 // "ada_widget_enabled"           "true" | "false"
 // "ada_auto_creates_projects"    "true" | "false" | "unknown"  ← MUST confirm with OpenSolar

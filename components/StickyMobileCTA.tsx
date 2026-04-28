@@ -14,8 +14,8 @@ const StickyMobileCTA = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Don't show on the intake form — it blocks the Continue button
-  if (pathname === "/intake") return null;
+  // Don't show on intake (blocks Continue button) or embed pages (they're iframed)
+  if (pathname === "/intake" || pathname.startsWith("/embed")) return null;
 
   return (
     <div

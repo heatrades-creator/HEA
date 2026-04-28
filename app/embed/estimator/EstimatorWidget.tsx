@@ -1,0 +1,241 @@
+"use client";
+import React, { useState } from "react";
+import { ChevronRight } from "lucide-react";
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ReferenceLine, ResponsiveContainer,
+} from "recharts";
+
+type BillRange = "under_300" | "300_600" | "600_plus";
+type HomeSize = "small" | "medium" | "large";
+
+interface EstimatorInputs {
+  bill: BillRange | null;
+  homeSize: HomeSize | null;
+  ev: boolean | null;
+  battery: boolean | null;
+}
+
+interface EstimateOutput {
+  systemKw: number;
+  priceMin: number;
+  priceMax: number;
+  savingsMin: number;
+  savingsMax: number;
+  paybackYears: string;
+}
+
+function computeEstimate(inputs: EstimatorInputs): EstimateOutput {
+  let systemKw = 6.6;
+  let priceMin = 8000;
+  let priceMax = 12000;
+  let savingsMin = 1200;
+  let savingsMax = 2000;
+
+  if (inputs.bill === "600_plus") { systemKw = 10; priceMin = 11000; priceMax = 16000; savingsMin = 2000; savingsMax = 3500; }
+  if (inputs.bill === "under_300") { systemKw = 5; priceMin = 6500; priceMax = 10000; savingsMin = 800; savingsMax = 1400; }
+  if (inputs.homeSize === "large") { systemKw += 1.5; priceMin += 1500; priceMax += 2500; savingsMin += 300; savingsMax += 600; }
+  if (inputs.homeSize === "small") { systemKw = Math.max(systemKw - 1, 3.3); priceMin -= 500; savingsMin -= 200; }
+  if (inputs.ev) { systemKw += 1.5; priceMin += 1000; priceMax += 1500; savingsMin += 500; savingsMax += 900; }
+  if (inputs.battery) { priceMin += 8000; priceMax += 14000; savingsMin += 800; savingsMax += 1500; }
+
+  systemKw = Math.round(systemKw * 10) / 10;
+  const midSavings = (savingsMin + savingsMax) / 2;
+  const midPrice = (priceMin + priceMax) / 2;
+  const paybackRaw = midPrice / midSavings;
+  const paybackYears = paybackRaw < 10 ? `~${Math.round(paybackRaw * 2) / 2} years` : "Under 10 years";
+
+  return { systemKw, priceMin, priceMax, savingsMin, savingsMax, paybackYears };
+}
+
+function fmt(n: number) { return n.toLocaleString("en-AU"); }
+
+function generatePaybackData(cost: number, annualSavings: number) {
+  return Array.from({ length: 16 }, (_, year) => ({
+    year,
+    cumSavings: Math.round(year * annualSavings),
+    cost,
+  }));
+}
+
+interface TooltipProps { active?: boolean; payload?: Array<{ value: number }>; label?: number; }
+
+function PaybackTooltip({ active, payload, label }: TooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 shadow-md text-xs">
+      <p className="font-semibold text-slate-700 mb-0.5">Year {label}</p>
+      <p className="text-yellow-600">${payload[0].value.toLocaleString("en-AU")} cumulative savings</p>
+    </div>
+  );
+}
+
+function BtnGroup<T extends string | boolean>({
+  legend, options, value, onSelect,
+}: {
+  legend: string;
+  options: { label: string; value: T }[];
+  value: T | null;
+  onSelect: (v: T) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="text-sm font-semibold text-slate-700 mb-2">{legend}</legend>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => (
+          <button
+            key={String(opt.value)}
+            type="button"
+            onClick={() => onSelect(opt.value)}
+            className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-yellow-400
+              ${value === opt.value
+                ? "border-yellow-400 bg-yellow-50 text-slate-900"
+                : "border-slate-200 text-slate-600 hover:border-yellow-300 hover:bg-yellow-50/50"
+              }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+interface EstimatorWidgetProps {
+  ctaUrl: string;
+  ctaLabel: string;
+}
+
+export default function EstimatorWidget({ ctaUrl, ctaLabel }: EstimatorWidgetProps) {
+  const [inputs, setInputs] = useState<EstimatorInputs>({
+    bill: null, homeSize: null, ev: null, battery: null,
+  });
+
+  const ready = inputs.bill !== null && inputs.homeSize !== null && inputs.ev !== null && inputs.battery !== null;
+  const estimate = ready ? computeEstimate(inputs) : null;
+
+  return (
+    <div className="bg-slate-50 rounded-2xl border border-slate-200 p-6 sm:p-8 font-sans">
+      <div className="mb-2">
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">Interactive Tool</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Estimate Your System</h2>
+        <p className="text-slate-500 text-sm mt-1">
+          Select your situation below for an indicative system size and price range.
+        </p>
+      </div>
+
+      <div className="mt-6 space-y-6">
+        <BtnGroup
+          legend="Monthly electricity bill"
+          options={[
+            { label: "Under $300", value: "under_300" as BillRange },
+            { label: "$300 – $600", value: "300_600" as BillRange },
+            { label: "Over $600", value: "600_plus" as BillRange },
+          ]}
+          value={inputs.bill}
+          onSelect={(v) => setInputs((i) => ({ ...i, bill: v }))}
+        />
+        <BtnGroup
+          legend="Home size"
+          options={[
+            { label: "Small (1–2 bed)", value: "small" as HomeSize },
+            { label: "Medium (3 bed)", value: "medium" as HomeSize },
+            { label: "Large (4+ bed)", value: "large" as HomeSize },
+          ]}
+          value={inputs.homeSize}
+          onSelect={(v) => setInputs((i) => ({ ...i, homeSize: v }))}
+        />
+        <BtnGroup
+          legend="EV or planning to get one?"
+          options={[
+            { label: "Yes", value: true },
+            { label: "No", value: false },
+          ]}
+          value={inputs.ev}
+          onSelect={(v) => setInputs((i) => ({ ...i, ev: v }))}
+        />
+        <BtnGroup
+          legend="Interested in battery storage?"
+          options={[
+            { label: "Yes", value: true },
+            { label: "Not right now", value: false },
+          ]}
+          value={inputs.battery}
+          onSelect={(v) => setInputs((i) => ({ ...i, battery: v }))}
+        />
+      </div>
+
+      {estimate && (() => {
+        const midPrice = Math.round((estimate.priceMin + estimate.priceMax) / 2);
+        const midSavings = Math.round((estimate.savingsMin + estimate.savingsMax) / 2);
+        const paybackData = generatePaybackData(midPrice, midSavings);
+        return (
+          <div className="mt-8 bg-white rounded-2xl border-2 border-yellow-400 p-6 shadow-sm">
+            <p className="text-xs font-bold uppercase tracking-wider text-yellow-600 mb-4">Indicative Estimate</p>
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <p className="text-xs text-slate-400 mb-1">System Size</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">~{estimate.systemKw} kW</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Est. Payback</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">{estimate.paybackYears}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Price Range</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">${fmt(estimate.priceMin)}–${fmt(estimate.priceMax)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 mb-1">Est. Annual Savings</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900">${fmt(estimate.savingsMin)}–${fmt(estimate.savingsMax)}</p>
+              </div>
+            </div>
+
+            <div className="mb-6 pt-4 border-t border-slate-100">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">15-Year Savings Projection</p>
+              <ResponsiveContainer width="100%" height={190}>
+                <AreaChart data={paybackData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="savingsGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#fde047" stopOpacity={0.75} />
+                      <stop offset="95%" stopColor="#fde047" stopOpacity={0.04} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis dataKey="year" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `Yr ${v}`} interval={2} />
+                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} tickFormatter={(v: number) => `$${(v / 1000).toFixed(0)}k`} width={36} />
+                  <Tooltip content={<PaybackTooltip />} />
+                  <ReferenceLine y={midPrice} stroke="#94a3b8" strokeDasharray="5 4" label={{ value: "System cost", position: "insideTopRight", fontSize: 9, fill: "#94a3b8", dy: -6 }} />
+                  <Area type="monotone" dataKey="cumSavings" stroke="#eab308" strokeWidth={2.5} fill="url(#savingsGrad)" dot={false} activeDot={{ r: 4, fill: "#eab308", strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-slate-400 text-center mt-1">
+                Savings line crosses the dashed cost threshold at your payback point — {estimate.paybackYears}.
+              </p>
+            </div>
+
+            <p className="text-xs text-slate-400 italic mb-5">
+              * Indicative only. Actual quote is based on a site assessment and your usage data. Prices may vary.
+            </p>
+
+            <a
+              href={ctaUrl}
+              target="_parent"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-yellow-400 text-slate-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 hover:shadow-lg transition-all duration-200 text-sm"
+            >
+              {ctaLabel}
+              <ChevronRight className="w-4 h-4" />
+            </a>
+          </div>
+        );
+      })()}
+
+      {!ready && (
+        <div className="mt-8 bg-white rounded-2xl border border-dashed border-slate-300 p-6 text-center">
+          <p className="text-slate-400 text-sm">Select all options above to see your indicative estimate.</p>
+        </div>
+      )}
+    </div>
+  );
+}

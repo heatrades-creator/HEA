@@ -7,23 +7,22 @@ import { getToken } from '@/lib/auth'
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
-  const [authed, setAuthed] = useState(false)
   const router = useRouter()
   const segments = useSegments()
 
   useEffect(() => {
-    getToken().then(token => {
-      setAuthed(!!token)
-      setReady(true)
-    })
+    getToken().then(() => setReady(true))
   }, [])
 
+  // Re-read token on every navigation change so login state is always fresh
   useEffect(() => {
     if (!ready) return
-    const inAuth = segments[0] === '(auth)'
-    if (!authed && !inAuth) router.replace('/(auth)/login')
-    if (authed && inAuth) router.replace('/(tabs)/jobs')
-  }, [ready, authed, segments])
+    getToken().then(token => {
+      const inAuth = segments[0] === '(auth)'
+      if (!token && !inAuth) router.replace('/(auth)/login')
+      if (token && inAuth) router.replace('/(tabs)/jobs')
+    })
+  }, [ready, segments])
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#111827' }}>

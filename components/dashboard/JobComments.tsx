@@ -7,17 +7,20 @@ interface CommentAuthor {
   name: string
 }
 
-interface Comment {
+interface CommentBase {
   id: string
   createdAt: string
   body: string
   installerId: string | null
   staffEmail: string | null
   installer: CommentAuthor | null
-  replies: Array<Comment & { replies?: never }>
 }
 
-function authorLabel(c: Comment): string {
+interface Comment extends CommentBase {
+  replies: CommentBase[]
+}
+
+function authorLabel(c: CommentBase): string {
   if (c.installer) return c.installer.name
   if (c.staffEmail) return 'HEA Office'
   return 'Staff'

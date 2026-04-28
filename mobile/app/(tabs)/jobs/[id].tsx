@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Linking, ActivityIndicator, TextInput, Alert,
+  Linking, ActivityIndicator, TextInput, Alert, Clipboard,
 } from 'react-native'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -65,7 +65,17 @@ export default function JobDetailScreen() {
         </View>
       </View>
       <Text style={styles.clientName}>{job.clientName}</Text>
-      <Text style={styles.address}>{job.address}</Text>
+
+      {/* Address + Maps */}
+      <TouchableOpacity
+        style={styles.addressRow}
+        onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="navigate-outline" size={15} color="#ffd100" />
+        <Text style={styles.addressText}>{job.address}</Text>
+        <Text style={styles.mapsLink}>Maps ↗</Text>
+      </TouchableOpacity>
 
       {/* Contact */}
       <TouchableOpacity style={styles.contactRow} onPress={() => Linking.openURL(`tel:${job.phone}`)}>
@@ -94,6 +104,36 @@ export default function JobDetailScreen() {
           </View>
         ) : null}
       </View>
+
+      {/* Site Info: WiFi + EPS */}
+      {(job.wifiSsid || job.epsCircuit1) ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Site Info</Text>
+          <View style={styles.infoGrid}>
+            {job.wifiSsid ? (
+              <TouchableOpacity
+                style={styles.infoCard}
+                onPress={() => { Clipboard.setString(job.wifiPassword || job.wifiSsid); Alert.alert('Copied', 'WiFi password copied'); }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="wifi-outline" size={18} color="#ffd100" style={{ marginBottom: 6 }} />
+                <Text style={styles.infoLabel}>WiFi</Text>
+                <Text style={styles.infoValue}>{job.wifiSsid}</Text>
+                {job.wifiPassword ? <Text style={styles.infoSub}>Tap to copy password</Text> : null}
+              </TouchableOpacity>
+            ) : null}
+            {(job.epsCircuit1 || job.epsCircuit2 || job.epsCircuit3) ? (
+              <View style={styles.infoCard}>
+                <Ionicons name="battery-charging-outline" size={18} color="#ffd100" style={{ marginBottom: 6 }} />
+                <Text style={styles.infoLabel}>EPS Circuits</Text>
+                {job.epsCircuit1 ? <Text style={styles.infoValue}>{job.epsCircuit1}</Text> : null}
+                {job.epsCircuit2 ? <Text style={styles.infoValue}>{job.epsCircuit2}</Text> : null}
+                {job.epsCircuit3 ? <Text style={styles.infoValue}>{job.epsCircuit3}</Text> : null}
+              </View>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
 
       {/* Notes (BOM / site details) */}
       <View style={styles.section}>
@@ -170,8 +210,10 @@ const styles = StyleSheet.create({
   jobNumber: { fontSize: 14, fontWeight: '700', color: '#ffd100' },
   statusChip: { backgroundColor: '#d9770622', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   statusText: { color: '#ffd100', fontSize: 11, fontWeight: '600' },
-  clientName: { fontSize: 26, fontWeight: '800', color: '#fff', marginBottom: 4 },
-  address: { fontSize: 14, color: '#9ca3af', marginBottom: 16 },
+  clientName: { fontSize: 26, fontWeight: '800', color: '#fff', marginBottom: 8 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
+  addressText: { flex: 1, fontSize: 14, color: '#9ca3af' },
+  mapsLink: { fontSize: 12, color: '#ffd100', fontWeight: '700' },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   contactText: { fontSize: 15, color: '#ffd100', fontWeight: '600' },
   specRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
@@ -186,6 +228,14 @@ const styles = StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: '#6b7280',
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10,
   },
+  infoGrid: { flexDirection: 'row', gap: 10 },
+  infoCard: {
+    flex: 1, backgroundColor: '#1f2937', borderRadius: 12,
+    padding: 14, borderWidth: 1, borderColor: '#374151',
+  },
+  infoLabel: { fontSize: 10, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 },
+  infoValue: { fontSize: 13, color: '#d1d5db', fontWeight: '600', marginBottom: 2 },
+  infoSub: { fontSize: 11, color: '#6b7280', marginTop: 4 },
   notesBox: { backgroundColor: '#1f2937', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#374151' },
   notesText: { fontSize: 14, color: '#d1d5db', lineHeight: 22, fontFamily: 'monospace' },
   driveBtn: {

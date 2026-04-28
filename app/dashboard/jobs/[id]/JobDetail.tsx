@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import JobDocuments from '@/components/dashboard/JobDocuments';
+import { JobComments } from '@/components/dashboard/JobComments';
 
 const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
 
@@ -277,6 +278,9 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
             />
           </div>
         </div>
+
+        {/* Field notes from installers */}
+        <JobComments jobNumber={job.jobNumber} />
 
         {/* Document generation */}
         <JobDocuments jobNumber={job.jobNumber} />

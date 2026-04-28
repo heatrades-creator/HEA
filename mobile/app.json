@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "HEA Installer",
+    "slug": "hea-installer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "heainstaller",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes."
+        }
+      ]
+    ],
+    "android": {
+      "package": "au.com.heagroup.installer",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffd100"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "au.com.heagroup.installer",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to scan job site QR codes to clock in."
+      }
+    },
+    "extra": {
+      "router": { "origin": false }
+    }
+  }
+}

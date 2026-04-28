@@ -75,6 +75,10 @@ function doGet(e) {
     return jsonResponse(checkEstimation_(e.parameter.jobNumber));
   }
 
+  if (e.parameter.action === 'getPhotos' && e.parameter.jobNumber) {
+    return jsonResponse(getPhotos_(e.parameter.jobNumber));
+  }
+
   if (id) {
     const job = findJobByNumber(sheet, id);
     if (!job) return jsonResponse({ error: 'Not found' }, 404);
@@ -136,6 +140,14 @@ function doPost(e) {
       return jsonResponse(withDriveRetry_(function() { return saveIntakeDocs_(body); }));
     } catch (err) {
       console.error('saveIntakeDocs_ error:', err);
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'logTimeEntry') {
+    try {
+      return jsonResponse(logTimeEntry_(body));
+    } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }
   }
@@ -818,6 +830,55 @@ function extractTemplatePlaceholders() {
     Logger.log(key + '  →  found on: ' + [...new Set(found[key])].join(', '));
   });
   Logger.log('=== END ===');
+}
+
+// ---------------------------------------------------------------------------
+// Installer app — photo listing
+// ---------------------------------------------------------------------------
+
+function getPhotos_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { photos: [] };
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { photos: [] };
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const photosFolder = getOrCreateDriveFolder_(clientFolder, '05_Photos');
+    const files = photosFolder.getFiles();
+    const photos = [];
+    while (files.hasNext()) {
+      const f = files.next();
+      photos.push({ name: f.getName(), url: f.getUrl(), id: f.getId() });
+    }
+    return { photos: photos };
+  } catch (e) {
+    return { photos: [], error: String(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Installer app — timesheet logging
+// ---------------------------------------------------------------------------
+
+function logTimeEntry_(data) {
+  // data: { jobNumber, installerName, type: 'clock_in'|'clock_out', timestamp }
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Timesheets');
+  if (!sheet) {
+    sheet = ss.insertSheet('Timesheets');
+    sheet.appendRow(['Job Number', 'Installer Name', 'Type', 'Timestamp', 'Logged At']);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
+  }
+  var loggedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm:ss');
+  sheet.appendRow([
+    data.jobNumber      || '',
+    data.installerName  || '',
+    data.type           || '',
+    data.timestamp      || loggedAt,
+    loggedAt,
+  ]);
+  return { success: true };
 }
 
 // ---------------------------------------------------------------------------

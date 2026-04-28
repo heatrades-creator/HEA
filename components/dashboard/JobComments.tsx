@@ -7,17 +7,20 @@ interface CommentAuthor {
   name: string
 }
 
-interface Comment {
+interface CommentBase {
   id: string
   createdAt: string
   body: string
   installerId: string | null
   staffEmail: string | null
   installer: CommentAuthor | null
-  replies: Array<Comment & { replies?: never }>
 }
 
-function authorLabel(c: Comment): string {
+interface Comment extends CommentBase {
+  replies: CommentBase[]
+}
+
+function authorLabel(c: CommentBase): string {
   if (c.installer) return c.installer.name
   if (c.staffEmail) return 'HEA Office'
   return 'Staff'
@@ -95,7 +98,6 @@ export function JobComments({ jobNumber }: { jobNumber: string }) {
               </div>
               <p className="text-sm text-[#374151] mt-2 leading-relaxed">{comment.body}</p>
 
-              {/* Replies */}
               {comment.replies.length > 0 && (
                 <div className="mt-3 ml-4 space-y-2 border-l-2 border-[#e5e9f0] pl-3">
                   {comment.replies.map(reply => (
@@ -113,7 +115,6 @@ export function JobComments({ jobNumber }: { jobNumber: string }) {
                 </div>
               )}
 
-              {/* Reply input */}
               {replyTo === comment.id ? (
                 <div className="mt-3 flex gap-2">
                   <input

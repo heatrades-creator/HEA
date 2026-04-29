@@ -21,10 +21,12 @@ export default function RootLayout() {
     if (!ready) return
     getToken().then(token => {
       const inAuth = segments[0] === '(auth)'
+      const inTabs = segments[0] === '(tabs)'
       if (!token && !inAuth) router.replace('/(auth)/login')
       if (token && inAuth) router.replace('/(tabs)/jobs')
-      // Register push notifications once authed
-      if (token && !inAuth) setupNotifications().catch(() => {})
+      // Authenticated but at the root (e.g. fresh install / update) — go to tabs
+      if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
+      if (token && inTabs) setupNotifications().catch(() => {})
     })
   }, [ready, segments])
 

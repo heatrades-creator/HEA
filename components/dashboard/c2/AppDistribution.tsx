@@ -49,15 +49,30 @@ export function AppDistribution() {
     setErrorMsg('')
     setProgress(0)
     try {
-      // Step 1: upload file directly to Vercel Blob CDN
-      const blob = await upload(`hea-installer-v${version.trim()}.apk`, file, {
+      const pathname = `hea-installer-v${version.trim()}.apk`
+
+      // Step 1: get a short-lived client upload token from the server
+      const tokenRes = await fetch('/api/dashboard/installer/apk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathname }),
+      })
+      if (!tokenRes.ok) {
+        const data = await tokenRes.json().catch(() => ({}))
+        throw new Error(data.error ?? `Token request failed (${tokenRes.status})`)
+      }
+      const { clientToken } = await tokenRes.json()
+
+      // Step 2: upload directly to Vercel Blob CDN using the token.
+      // Using `token:` instead of `handleUploadUrl:` means upload() resolves as soon as
+      // the file lands in Blob — no server callback webhook, no hanging at 100%.
+      const blob = await upload(pathname, file, {
         access: 'public',
-        handleUploadUrl: '/api/dashboard/installer/apk',
-        clientPayload: version.trim(),
+        token: clientToken,
         onUploadProgress: (p) => setProgress(Math.round(p.percentage)),
       })
 
-      // Step 2: save the resulting URL + version to DB via PUT
+      // Step 3: save the resulting URL + version to DB via PUT
       const saveRes = await fetch('/api/dashboard/installer/apk', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

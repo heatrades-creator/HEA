@@ -18,7 +18,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes."
+          "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes and take site photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HEA Installer to access your photos to upload site receipts and photos."
         }
       ],
       [

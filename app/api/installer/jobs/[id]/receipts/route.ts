@@ -3,25 +3,6 @@ import { getInstallerFromRequest } from '@/lib/installer-auth'
 
 export const maxDuration = 30
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const installer = getInstallerFromRequest(req)
-  if (!installer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const gasUrl = process.env.JOBS_GAS_URL
-  if (!gasUrl) return NextResponse.json({ error: 'GAS not configured' }, { status: 503 })
-
-  const { id } = await params
-  const res = await fetch(`${gasUrl}?action=getPhotos&jobNumber=${encodeURIComponent(id)}`, { cache: 'no-store' })
-  const text = await res.text()
-  let data
-  try {
-    data = JSON.parse(text)
-  } catch {
-    return NextResponse.json({ error: 'GAS parse error' }, { status: 502 })
-  }
-  return NextResponse.json(data)
-}
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const installer = getInstallerFromRequest(req)
   if (!installer) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -39,7 +20,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      action: 'uploadJobPhoto',
+      action: 'uploadJobReceipt',
       jobNumber: id,
       filename: body.filename,
       base64: body.base64,

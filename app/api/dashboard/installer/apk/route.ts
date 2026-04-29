@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       token: rwToken,
       pathname,
       maximumSizeInBytes: 150 * 1024 * 1024,
-      validUntil: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+      validUntil: Date.now() + 60 * 60 * 1000, // 1 hour in ms
     })
     return NextResponse.json({ clientToken })
   } catch (error) {

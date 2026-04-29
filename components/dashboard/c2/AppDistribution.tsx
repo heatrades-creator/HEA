@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { upload } from '@vercel/blob/client'
 
 interface ApkEntry {
   version: string
@@ -51,7 +50,9 @@ export function AppDistribution() {
     try {
       const pathname = `hea-installer-v${version.trim()}.apk`
 
-      // Step 1: get a short-lived client upload token from the server
+      // Step 1: get a short-lived client upload token from the server.
+      // The token is generated without onUploadCompleted, so the Blob CDN
+      // returns the file URL immediately after upload — no server webhook needed.
       const tokenRes = await fetch('/api/dashboard/installer/apk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -63,20 +64,37 @@ export function AppDistribution() {
       }
       const { clientToken } = await tokenRes.json()
 
-      // Step 2: upload directly to Vercel Blob CDN using the token.
-      // Using `token:` instead of `handleUploadUrl:` means upload() resolves as soon as
-      // the file lands in Blob — no server callback webhook, no hanging at 100%.
-      const blob = await upload(pathname, file, {
-        access: 'public',
-        token: clientToken,
-        onUploadProgress: (p) => setProgress(Math.round(p.percentage)),
+      // Step 2: upload directly to Vercel Blob CDN using XHR (gives us progress events).
+      // PUT to blob.vercel-storage.com with the client token — the CDN resolves this
+      // immediately once the bytes are received, with no server-to-server callback.
+      const blobUrl = await new Promise<string>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('PUT', `https://blob.vercel-storage.com/${pathname}`)
+        xhr.setRequestHeader('Authorization', `Bearer ${clientToken}`)
+        xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream')
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) setProgress(Math.round(e.loaded / e.total * 100))
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              resolve((JSON.parse(xhr.responseText) as { url: string }).url)
+            } catch {
+              reject(new Error(`Unexpected Blob CDN response: ${xhr.responseText}`))
+            }
+          } else {
+            reject(new Error(`Blob CDN upload failed (${xhr.status}): ${xhr.responseText}`))
+          }
+        }
+        xhr.onerror = () => reject(new Error('Network error during upload'))
+        xhr.send(file)
       })
 
       // Step 3: save the resulting URL + version to DB via PUT
       const saveRes = await fetch('/api/dashboard/installer/apk', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: blob.url, version: version.trim() }),
+        body: JSON.stringify({ url: blobUrl, version: version.trim() }),
       })
       if (!saveRes.ok) {
         const data = await saveRes.json().catch(() => ({}))

@@ -3,19 +3,34 @@
 import { useEffect, useRef, useState } from 'react'
 import { upload } from '@vercel/blob/client'
 
+interface ApkEntry {
+  version: string
+  url: string
+  uploadedAt: string
+}
+
 interface ApkInfo {
   url: string | null
   version: string | null
   uploadedAt: string | null
+  history: ApkEntry[]
+}
+
+function fmt(iso: string) {
+  return new Date(iso).toLocaleString('en-AU', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 }
 
 export function AppDistribution() {
-  const [info, setInfo] = useState<ApkInfo>({ url: null, version: null, uploadedAt: null })
+  const [info, setInfo] = useState<ApkInfo>({ url: null, version: null, uploadedAt: null, history: [] })
   const [showForm, setShowForm] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [version, setVersion] = useState('')
-  const [error, setError] = useState('')
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   async function load() {
@@ -29,7 +44,8 @@ export function AppDistribution() {
     const file = fileRef.current?.files?.[0]
     if (!file || !version.trim()) return
     setUploading(true)
-    setError('')
+    setStatus('idle')
+    setErrorMsg('')
     setProgress(0)
     try {
       await upload(`hea-installer-v${version.trim()}.apk`, file, {
@@ -39,17 +55,22 @@ export function AppDistribution() {
         onUploadProgress: (p) => setProgress(Math.round(p.percentage)),
       })
       await load()
+      setStatus('success')
       setShowForm(false)
       setVersion('')
       if (fileRef.current) fileRef.current.value = ''
-    } catch {
-      setError('Upload failed. Make sure Vercel Blob is configured — see CLAUDE.md for setup.')
+    } catch (e) {
+      setStatus('error')
+      setErrorMsg(e instanceof Error ? e.message : 'Upload failed')
     }
     setUploading(false)
   }
 
+  const hasFile = !!fileRef.current?.files?.length
+
   return (
     <div className="bg-white rounded-xl border border-[#e5e9f0] overflow-hidden mt-6">
+      {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-[#111827]">App Distribution</p>
@@ -60,98 +81,141 @@ export function AppDistribution() {
             </a>
           </p>
         </div>
-        <button
-          onClick={() => { setShowForm(v => !v); setError('') }}
-          className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#111827] text-white hover:bg-[#2d2d2d] transition-colors"
-        >
-          Upload New APK
-        </button>
-      </div>
-
-      <div className="px-5 py-4">
-        {info.url ? (
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-[#111827]">
-                Version {info.version ?? '—'} — live
-              </p>
-              <p className="text-xs text-gray-400 mt-0.5">
-                Uploaded{' '}
-                {info.uploadedAt
-                  ? new Date(info.uploadedAt).toLocaleDateString('en-AU', {
-                      day: 'numeric', month: 'short', year: 'numeric',
-                    })
-                  : '—'}
-              </p>
-            </div>
-            <a
-              href={info.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-gray-400 hover:text-[#ffd100] transition-colors"
-            >
-              Direct APK ↗
-            </a>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-400">
-            No APK uploaded yet. Upload one to activate the employee download page.
-          </p>
+        {!showForm && (
+          <button
+            onClick={() => { setShowForm(true); setStatus('idle') }}
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-[#111827] text-white hover:bg-[#2d2d2d] transition-colors"
+          >
+            Upload New APK
+          </button>
         )}
       </div>
 
+      {/* Success banner */}
+      {status === 'success' && (
+        <div className="px-5 py-3 bg-green-50 border-b border-green-200 flex items-center justify-between">
+          <p className="text-sm text-green-800 font-medium">✓ Upload successful — download page is now live</p>
+          <button onClick={() => setStatus('idle')} className="text-green-600 text-xs hover:underline">Dismiss</button>
+        </div>
+      )}
+
+      {/* Error banner */}
+      {status === 'error' && (
+        <div className="px-5 py-3 bg-red-50 border-b border-red-200 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-red-800 font-medium">Upload failed</p>
+            <p className="text-xs text-red-600 mt-0.5">{errorMsg || 'Check that Vercel Blob is connected in your Vercel project settings.'}</p>
+          </div>
+          <button onClick={() => setStatus('idle')} className="text-red-500 text-xs hover:underline ml-4 shrink-0">Dismiss</button>
+        </div>
+      )}
+
+      {/* Upload form */}
       {showForm && (
-        <div className="px-5 pb-5 border-t border-[#e5e9f0] pt-4 space-y-3">
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              Version number
-            </label>
-            <input
-              type="text"
-              value={version}
-              onChange={e => setVersion(e.target.value)}
-              placeholder="1.0.0"
-              className="w-36 border border-[#e5e9f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ffd100]"
-            />
+        <div className="px-5 py-4 border-b border-[#e5e9f0] bg-[#fafafa] space-y-3">
+          <div className="flex gap-4 flex-wrap">
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">Version number</label>
+              <input
+                type="text"
+                value={version}
+                onChange={e => setVersion(e.target.value)}
+                placeholder="1.0.0"
+                disabled={uploading}
+                className="w-32 border border-[#e5e9f0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#ffd100] disabled:opacity-50"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 mb-1">APK file</label>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".apk,application/vnd.android.package-archive,application/octet-stream"
+                disabled={uploading}
+                onChange={() => setStatus('idle')}
+                className="text-sm text-gray-600 disabled:opacity-50"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1">
-              APK file
-            </label>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".apk,application/vnd.android.package-archive,application/octet-stream"
-              className="text-sm text-gray-600"
-            />
-          </div>
+
           {uploading && (
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                <div
-                  className="bg-[#ffd100] h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <div className="flex-1 bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-[#ffd100] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+                <span className="text-xs text-gray-500 w-10 text-right">{progress}%</span>
               </div>
-              <span className="text-xs text-gray-500 w-10 text-right">{progress}%</span>
+              <p className="text-xs text-gray-400">Uploading — do not close this tab…</p>
             </div>
           )}
-          {error && <p className="text-xs text-red-500">{error}</p>}
+
           <div className="flex gap-2">
             <button
-              onClick={() => { setShowForm(false); setError('') }}
-              className="px-4 py-2 text-sm rounded-lg border border-[#e5e9f0] text-gray-600 hover:bg-gray-50"
+              onClick={() => { setShowForm(false); setStatus('idle') }}
+              disabled={uploading}
+              className="px-4 py-2 text-sm rounded-lg border border-[#e5e9f0] text-gray-600 hover:bg-gray-50 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleUploadFile}
-              disabled={uploading || !version.trim() || !fileRef.current?.files?.length}
-              className="px-4 py-2 text-sm font-semibold rounded-lg bg-[#ffd100] text-[#111827] hover:bg-yellow-300 disabled:opacity-50"
+              disabled={uploading || !version.trim()}
+              className="px-5 py-2 text-sm font-semibold rounded-lg bg-[#ffd100] text-[#111827] hover:bg-yellow-300 disabled:opacity-50 transition-colors"
             >
               {uploading ? `Uploading ${progress}%…` : 'Upload'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Version history */}
+      {info.history.length > 0 ? (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#e5e9f0]">
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Version</th>
+              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Uploaded</th>
+              <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Status</th>
+              <th className="px-5 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#e5e9f0]">
+            {info.history.map((entry, i) => (
+              <tr key={entry.uploadedAt} className="hover:bg-gray-50 transition-colors">
+                <td className="px-5 py-3 font-mono font-semibold text-[#111827]">v{entry.version}</td>
+                <td className="px-5 py-3 text-gray-500 text-xs">{fmt(entry.uploadedAt)}</td>
+                <td className="px-5 py-3 text-right">
+                  {i === 0 ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                      Live
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                      Superseded
+                    </span>
+                  )}
+                </td>
+                <td className="px-5 py-3 text-right">
+                  <a
+                    href={entry.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-gray-400 hover:text-[#ffd100] transition-colors"
+                  >
+                    Download ↗
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="px-5 py-6 text-center text-sm text-gray-400">
+          No APK uploaded yet. Upload one to activate the employee download page.
         </div>
       )}
     </div>

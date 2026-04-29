@@ -10,6 +10,7 @@ interface ApkEntry {
 }
 
 interface ApkInfo {
+  blobConfigured: boolean
   url: string | null
   version: string | null
   uploadedAt: string | null
@@ -24,7 +25,7 @@ function fmt(iso: string) {
 }
 
 export function AppDistribution() {
-  const [info, setInfo] = useState<ApkInfo>({ url: null, version: null, uploadedAt: null, history: [] })
+  const [info, setInfo] = useState<ApkInfo>({ blobConfigured: true, url: null, version: null, uploadedAt: null, history: [] })
   const [showForm, setShowForm] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -48,20 +49,35 @@ export function AppDistribution() {
     setErrorMsg('')
     setProgress(0)
     try {
-      await upload(`hea-installer-v${version.trim()}.apk`, file, {
+      // Step 1: upload file directly to Vercel Blob CDN
+      const blob = await upload(`hea-installer-v${version.trim()}.apk`, file, {
         access: 'public',
         handleUploadUrl: '/api/dashboard/installer/apk',
         clientPayload: version.trim(),
         onUploadProgress: (p) => setProgress(Math.round(p.percentage)),
       })
+
+      // Step 2: save the resulting URL + version to DB via PUT
+      const saveRes = await fetch('/api/dashboard/installer/apk', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: blob.url, version: version.trim() }),
+      })
+      if (!saveRes.ok) {
+        const data = await saveRes.json().catch(() => ({}))
+        throw new Error(`Saved to Blob but DB write failed: ${data.error ?? saveRes.status}`)
+      }
+
       await load()
       setStatus('success')
       setShowForm(false)
       setVersion('')
       if (fileRef.current) fileRef.current.value = ''
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.error('APK upload failed:', e)
       setStatus('error')
-      setErrorMsg(e instanceof Error ? e.message : 'Upload failed')
+      setErrorMsg(msg)
     }
     setUploading(false)
   }
@@ -90,6 +106,16 @@ export function AppDistribution() {
           </button>
         )}
       </div>
+
+      {/* Blob not configured warning */}
+      {!info.blobConfigured && (
+        <div className="px-5 py-3 bg-amber-50 border-b border-amber-200">
+          <p className="text-sm text-amber-800 font-medium">⚠️ Vercel Blob not connected</p>
+          <p className="text-xs text-amber-700 mt-0.5">
+            Go to your Vercel project → Storage → connect the <strong>hea-storage</strong> Blob store to this project, then redeploy.
+          </p>
+        </div>
+      )}
 
       {/* Success banner */}
       {status === 'success' && (

@@ -78,3 +78,10 @@ export async function fetchContacts(): Promise<Contact[]> {
   if (!res.ok) return []
   return res.json()
 }
+
+export async function registerPushToken(token: string): Promise<void> {
+  await authFetch('/api/installer/push-token', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}

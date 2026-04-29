@@ -161,6 +161,8 @@ const migrations = [
   // Pipeline — Stage 3 (Post-Install)
   `ALTER TABLE "Lead" ADD COLUMN "googleReviewReceivedAt" DATETIME`,
   `ALTER TABLE "Lead" ADD COLUMN "thankYouSentAt"     DATETIME`,
+  // Installer push notifications
+  `ALTER TABLE "Installer" ADD COLUMN "pushToken" TEXT`,
 ]
 
 async function main() {

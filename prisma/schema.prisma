@@ -158,6 +158,7 @@ model Installer {
   pinHash   String
   role      String       @default("installer")
   active    Boolean      @default(true)
+  pushToken String?
   comments  JobComment[]
 }
 

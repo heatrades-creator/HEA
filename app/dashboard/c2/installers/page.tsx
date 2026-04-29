@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { InstallerTable } from '@/components/dashboard/c2/InstallerTable'
 import { AppDistribution } from '@/components/dashboard/c2/AppDistribution'
+import { NotifyInstallers } from '@/components/dashboard/c2/NotifyInstallers'
 
 export default async function InstallersPage() {
   const session = await getServerSession(authOptions)
@@ -15,6 +16,7 @@ export default async function InstallersPage() {
       </div>
       <InstallerTable />
       <AppDistribution />
+      <NotifyInstallers />
     </div>
   )
 }

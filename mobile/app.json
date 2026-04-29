@@ -20,6 +20,14 @@
         {
           "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffd100",
+          "sounds": []
+        }
       ]
     ],
     "android": {
@@ -35,8 +43,18 @@
         "NSCameraUsageDescription": "Used to scan job site QR codes to clock in."
       }
     },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/REPLACE_WITH_EAS_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "extra": {
-      "router": { "origin": false }
+      "router": { "origin": false },
+      "eas": {
+        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+      }
     }
   }
 }

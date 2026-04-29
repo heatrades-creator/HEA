@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { fetchJob, fetchComments, postComment } from '@/lib/api'
 import type { GASJob, Comment } from '@/lib/types'
 
@@ -37,12 +38,15 @@ export default function JobDetailScreen() {
   async function submitComment() {
     if (!commentText.trim() || !id) return
     setSending(true)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     try {
       const c = await postComment(id, commentText.trim())
       setComments(prev => [...prev, c])
       setCommentText('')
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     } catch {
       Alert.alert('Error', 'Failed to post note. Try again.')
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
     }
     setSending(false)
   }
@@ -113,7 +117,11 @@ export default function JobDetailScreen() {
             {job.wifiSsid ? (
               <TouchableOpacity
                 style={styles.infoCard}
-                onPress={() => { Clipboard.setString(job.wifiPassword || job.wifiSsid); Alert.alert('Copied', 'WiFi password copied'); }}
+                onPress={() => {
+                  Clipboard.setString(job.wifiPassword || job.wifiSsid)
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                  Alert.alert('Copied', 'WiFi password copied')
+                }}
                 activeOpacity={0.7}
               >
                 <Ionicons name="wifi-outline" size={18} color="#ffd100" style={{ marginBottom: 6 }} />
@@ -145,7 +153,7 @@ export default function JobDetailScreen() {
 
       {/* Drive photos */}
       {job.driveUrl ? (
-        <TouchableOpacity style={styles.driveBtn} onPress={() => Linking.openURL(job.driveUrl)}>
+        <TouchableOpacity style={styles.driveBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL(job.driveUrl) }}>
           <Ionicons name="images-outline" size={18} color="#111827" />
           <Text style={styles.driveBtnText}>View Photos in Drive</Text>
         </TouchableOpacity>

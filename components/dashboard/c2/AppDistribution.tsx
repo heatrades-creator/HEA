@@ -122,7 +122,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution</p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v5</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">

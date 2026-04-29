@@ -1,4 +1,4 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
+import { generateClientTokenFromReadWriteToken } from '@vercel/blob/client'
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
@@ -26,27 +26,29 @@ export async function GET() {
   })
 }
 
-// POST — Vercel Blob client-side upload token handshake
+// POST — generate a short-lived client upload token; resolves without any server callback
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
-  const body = (await req.json()) as HandleUploadBody
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rwToken = process.env.BLOB_READ_WRITE_TOKEN
+  if (!rwToken) return NextResponse.json({ error: 'Blob not configured' }, { status: 503 })
 
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request: req,
-      onBeforeGenerateToken: async () => {
-        if (!session) throw new Error('Not authenticated')
-        // No content type restriction — Windows reports .apk as various MIME types
-        return { maximumSizeInBytes: 150 * 1024 * 1024 }
-      },
-      // No-op: DB save is handled by the client calling PUT after upload completes
-      onUploadCompleted: async () => {},
+    const { pathname } = (await req.json()) as { pathname: string }
+    if (!pathname) return NextResponse.json({ error: 'pathname required' }, { status: 400 })
+
+    // No onUploadCompleted → client upload() resolves as soon as the file hits Blob CDN,
+    // no server-to-server webhook needed (which was causing the infinite 100% hang).
+    const clientToken = await generateClientTokenFromReadWriteToken({
+      token: rwToken,
+      pathname,
+      maximumSizeInBytes: 150 * 1024 * 1024,
     })
-    return NextResponse.json(jsonResponse)
+    return NextResponse.json({ clientToken })
   } catch (error) {
     const msg = (error as Error).message
-    console.error('APK upload token error:', msg)
+    console.error('APK token generation error:', msg)
     return NextResponse.json({ error: msg }, { status: 400 })
   }
 }

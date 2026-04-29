@@ -27,7 +27,13 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffd100"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "bundleIdentifier": "au.com.heagroup.installer",
@@ -36,7 +42,18 @@
       }
     },
     "extra": {
-      "router": { "origin": false }
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
     }
   }
 }

@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'

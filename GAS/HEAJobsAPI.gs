@@ -191,6 +191,30 @@ function doPost(e) {
     }
   }
 
+  if (action === 'uploadJobPhoto') {
+    try {
+      return jsonResponse(uploadToJobFolder_(body, '05_Photos'));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'uploadJobReceipt') {
+    try {
+      return jsonResponse(uploadToJobFolder_(body, '07_Receipts'));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'uploadGeneralReceipt') {
+    try {
+      return jsonResponse(uploadGeneralReceipt_(body));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
   return jsonResponse({ error: 'Unknown action' }, 400);
 }
 
@@ -948,4 +972,69 @@ function sendTelegramAlert_(message) {
   } catch (e) {
     Logger.log('Telegram error: ' + e);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Installer app — photo and receipt uploads
+// ---------------------------------------------------------------------------
+
+// Uploads a base64-encoded image to a subfolder within the job's client Drive folder.
+// Used for both job site photos (05_Photos) and job receipts (07_Receipts).
+function uploadToJobFolder_(data, subfolderName) {
+  if (!data.jobNumber || !data.base64 || !data.filename) {
+    throw new Error('jobNumber, filename, and base64 are required');
+  }
+
+  const job = findJobByNumber(getSheet(), data.jobNumber);
+  if (!job) throw new Error('Job not found: ' + data.jobNumber);
+  if (!job.driveUrl) throw new Error('No Drive folder on this job');
+
+  const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) throw new Error('Cannot parse folder ID from driveUrl');
+
+  // Navigate from the known parent rather than getFolderById on child folders
+  // (child getFolderById causes "Service error: Drive" — same workaround as saveIntakeDocs_)
+  const clientFolderId = match[1];
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const folderIter = parent.getFolders();
+  var clientFolder = null;
+  while (folderIter.hasNext()) {
+    var f = folderIter.next();
+    if (f.getId() === clientFolderId) { clientFolder = f; break; }
+  }
+  if (!clientFolder) throw new Error('Client folder not found in parent');
+
+  const targetFolder = getOrCreateDriveFolder_(clientFolder, subfolderName);
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(data.base64),
+    data.mimeType || 'image/jpeg',
+    data.filename
+  );
+  const file = targetFolder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { success: true, fileUrl: file.getUrl(), fileName: file.getName() };
+}
+
+// Uploads a receipt image to the shared Staff Receipts folder, organised by month.
+// Not job-specific — used for fuel, supplies, and other general expenses.
+function uploadGeneralReceipt_(data) {
+  if (!data.base64 || !data.filename) throw new Error('filename and base64 are required');
+
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const staffReceiptsFolder = getOrCreateDriveFolder_(parent, '--- Staff Receipts ---');
+
+  // Organise by month so the folder stays manageable
+  const monthStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+  const monthFolder = getOrCreateDriveFolder_(staffReceiptsFolder, monthStr);
+
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(data.base64),
+    data.mimeType || 'image/jpeg',
+    data.filename
+  );
+  const file = monthFolder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { success: true, fileUrl: file.getUrl(), fileName: file.getName() };
 }

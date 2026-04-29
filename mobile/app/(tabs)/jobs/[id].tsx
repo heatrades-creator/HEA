@@ -6,7 +6,8 @@ import {
 import { useLocalSearchParams, useNavigation } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { fetchJob, fetchComments, postComment } from '@/lib/api'
+import * as ImagePicker from 'expo-image-picker'
+import { fetchJob, fetchComments, postComment, uploadJobPhoto, uploadJobReceipt } from '@/lib/api'
 import type { GASJob, Comment } from '@/lib/types'
 
 function timeAgo(iso: string): string {
@@ -25,6 +26,7 @@ export default function JobDetailScreen() {
   const [loading, setLoading] = useState(true)
   const [commentText, setCommentText] = useState('')
   const [sending, setSending] = useState(false)
+  const [uploading, setUploading] = useState<'photo' | 'receipt' | null>(null)
 
   useEffect(() => {
     Promise.all([fetchJob(id), fetchComments(id)]).then(([j, c]) => {
@@ -34,6 +36,53 @@ export default function JobDetailScreen() {
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [id])
+
+  async function pickAndUpload(type: 'photo' | 'receipt') {
+    Alert.alert(
+      type === 'photo' ? 'Site Photo' : 'Job Receipt',
+      'Choose source',
+      [
+        {
+          text: 'Camera', onPress: async () => {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync()
+            if (status !== 'granted') { Alert.alert('Permission needed', 'Camera access is required.'); return }
+            const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, base64: true })
+            if (!result.canceled) await doUpload(type, result.assets[0])
+          },
+        },
+        {
+          text: 'Photo Library', onPress: async () => {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+            if (status !== 'granted') { Alert.alert('Permission needed', 'Photo library access is required.'); return }
+            const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, base64: true })
+            if (!result.canceled) await doUpload(type, result.assets[0])
+          },
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    )
+  }
+
+  async function doUpload(type: 'photo' | 'receipt', asset: ImagePicker.ImagePickerAsset) {
+    if (!asset.base64) { Alert.alert('Error', 'Could not read image data.'); return }
+    setUploading(type)
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    try {
+      const ext = (asset.mimeType ?? 'image/jpeg').split('/')[1] ?? 'jpg'
+      const filename = `${type}-${Date.now()}.${ext}`
+      if (type === 'photo') {
+        await uploadJobPhoto(id, filename, asset.base64, asset.mimeType ?? 'image/jpeg')
+      } else {
+        await uploadJobReceipt(id, filename, asset.base64, asset.mimeType ?? 'image/jpeg')
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      Alert.alert('Uploaded', type === 'photo' ? 'Photo saved to job folder in Drive.' : 'Receipt saved to job folder in Drive.')
+    } catch (e) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.')
+    }
+    setUploading(null)
+  }
 
   async function submitComment() {
     if (!commentText.trim() || !id) return
@@ -151,11 +200,38 @@ export default function JobDetailScreen() {
         </View>
       </View>
 
-      {/* Drive photos */}
+      {/* Upload actions */}
+      <View style={styles.uploadRow}>
+        <TouchableOpacity
+          style={[styles.uploadBtn, uploading === 'photo' && styles.uploadBtnDisabled]}
+          onPress={() => pickAndUpload('photo')}
+          disabled={uploading !== null}
+          activeOpacity={0.7}
+        >
+          {uploading === 'photo'
+            ? <ActivityIndicator size="small" color="#111827" />
+            : <Ionicons name="camera-outline" size={18} color="#111827" />}
+          <Text style={styles.uploadBtnText}>{uploading === 'photo' ? 'Uploading…' : 'Site Photo'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.uploadBtn, styles.uploadBtnReceipt, uploading === 'receipt' && styles.uploadBtnDisabled]}
+          onPress={() => pickAndUpload('receipt')}
+          disabled={uploading !== null}
+          activeOpacity={0.7}
+        >
+          {uploading === 'receipt'
+            ? <ActivityIndicator size="small" color="#ffd100" />
+            : <Ionicons name="receipt-outline" size={18} color="#ffd100" />}
+          <Text style={[styles.uploadBtnText, { color: '#ffd100' }]}>{uploading === 'receipt' ? 'Uploading…' : 'Job Receipt'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* View Drive folder */}
       {job.driveUrl ? (
         <TouchableOpacity style={styles.driveBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL(job.driveUrl) }}>
-          <Ionicons name="images-outline" size={18} color="#111827" />
-          <Text style={styles.driveBtnText}>View Photos in Drive</Text>
+          <Ionicons name="folder-outline" size={18} color="#6b7280" />
+          <Text style={styles.driveBtnAlt}>View all files in Drive ↗</Text>
         </TouchableOpacity>
       ) : null}
 
@@ -246,11 +322,19 @@ const styles = StyleSheet.create({
   infoSub: { fontSize: 11, color: '#6b7280', marginTop: 4 },
   notesBox: { backgroundColor: '#1f2937', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#374151' },
   notesText: { fontSize: 14, color: '#d1d5db', lineHeight: 22, fontFamily: 'monospace' },
+  uploadRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  uploadBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 14, gap: 8,
+  },
+  uploadBtnReceipt: { backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#ffd100' },
+  uploadBtnDisabled: { opacity: 0.5 },
+  uploadBtnText: { fontSize: 14, fontWeight: '700', color: '#111827' },
   driveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 14,
-    gap: 8, marginBottom: 24,
+    gap: 6, marginBottom: 24, paddingVertical: 8,
   },
+  driveBtnAlt: { fontSize: 13, color: '#6b7280' },
   driveBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
   emptyNotes: { fontSize: 14, color: '#6b7280', fontStyle: 'italic' },
   commentCard: { backgroundColor: '#1f2937', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#374151' },

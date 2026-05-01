@@ -38,6 +38,13 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
     job.financeRequired === true || job.financeRequired === 'TRUE' || job.financeRequired === 'true'
   );
 
+  // Site info fields (shown in installer app)
+  const [wifiSsid, setWifiSsid]       = useState(job.wifiSsid ?? '');
+  const [wifiPassword, setWifiPassword] = useState(job.wifiPassword ?? '');
+  const [epsCircuit1, setEpsCircuit1]   = useState(job.epsCircuit1 ?? '');
+  const [epsCircuit2, setEpsCircuit2]   = useState(job.epsCircuit2 ?? '');
+  const [epsCircuit3, setEpsCircuit3]   = useState(job.epsCircuit3 ?? '');
+
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
 
@@ -56,6 +63,11 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
           totalPrice,
           annualBill,
           financeRequired,
+          wifiSsid,
+          wifiPassword,
+          epsCircuit1,
+          epsCircuit2,
+          epsCircuit3,
         }),
       });
       setSaved(true);
@@ -189,6 +201,24 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
             </div>
             <span className="text-[#374151] text-xs uppercase tracking-wider">Finance Required</span>
           </label>
+        </div>
+
+        {/* ── Site Info (shown in installer app) ── */}
+        <div>
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-[#374151] text-xs uppercase tracking-wider">Site Info</p>
+            <div className="flex-1 h-px bg-[#eef0f5]" />
+            <p className="text-[#9ca3af] text-xs">Visible in installer app</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <TextInput label="WiFi Network (SSID)" value={wifiSsid} onChange={setWifiSsid} placeholder="e.g. SmithHouseWifi" />
+            <TextInput label="WiFi Password" value={wifiPassword} onChange={setWifiPassword} placeholder="e.g. hunter2" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <TextInput label="EPS Circuit 1" value={epsCircuit1} onChange={setEpsCircuit1} placeholder="e.g. Fridge" />
+            <TextInput label="EPS Circuit 2" value={epsCircuit2} onChange={setEpsCircuit2} placeholder="e.g. Lights" />
+            <TextInput label="EPS Circuit 3" value={epsCircuit3} onChange={setEpsCircuit3} placeholder="e.g. Hot water" />
+          </div>
         </div>
 
         {/* Drive URL */}

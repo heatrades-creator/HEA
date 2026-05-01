@@ -2,6 +2,8 @@ import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
 import { authOptions } from '@/lib/auth'
 import { InstallerTable } from '@/components/dashboard/c2/InstallerTable'
+import { AppDistribution } from '@/components/dashboard/c2/AppDistribution'
+import { NotifyInstallers } from '@/components/dashboard/c2/NotifyInstallers'
 
 export default async function InstallersPage() {
   const session = await getServerSession(authOptions)
@@ -13,6 +15,8 @@ export default async function InstallersPage() {
         <p className="text-sm text-gray-500 mt-1">Manage installer app access. PIN is used to log in on the mobile app.</p>
       </div>
       <InstallerTable />
+      <AppDistribution />
+      <NotifyInstallers />
     </div>
   )
 }

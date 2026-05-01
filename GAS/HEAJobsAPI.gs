@@ -42,6 +42,11 @@ const COL = {
   HOT_WATER:        17, // Q
   GAS_APPLIANCES:   18, // R
   EV:               19, // S
+  WIFI_SSID:        20, // T
+  WIFI_PASSWORD:    21, // U
+  EPS_CIRCUIT_1:    22, // V
+  EPS_CIRCUIT_2:    23, // W
+  EPS_CIRCUIT_3:    24, // X
 };
 
 // ---------------------------------------------------------------------------
@@ -186,6 +191,30 @@ function doPost(e) {
     }
   }
 
+  if (action === 'uploadJobPhoto') {
+    try {
+      return jsonResponse(uploadToJobFolder_(body, '05_Photos'));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'uploadJobReceipt') {
+    try {
+      return jsonResponse(uploadToJobFolder_(body, '07_Receipts'));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'uploadGeneralReceipt') {
+    try {
+      return jsonResponse(uploadGeneralReceipt_(body));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
   return jsonResponse({ error: 'Unknown action' }, 400);
 }
 
@@ -205,9 +234,18 @@ function getSheet() {
       'System Size (kW)', 'Battery Size (kWh)', 'Quote Value ($)',
       'Est. Annual Bill ($)', 'Finance Required',
       'Occupants', 'Home Daytime', 'Hot Water', 'Gas Appliances', 'EV',
+      'WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3',
     ]);
     sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 19).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 24).setFontWeight('bold');
+  } else {
+    // Migration: add new column headers if they don't exist yet
+    const lastCol = sheet.getLastColumn();
+    const newHeaders = ['WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3'];
+    newHeaders.forEach(function(header, i) {
+      const col = 20 + i;
+      if (lastCol < col) sheet.getRange(1, col).setValue(header);
+    });
   }
 
   return sheet;
@@ -273,6 +311,11 @@ function createJob(sheet, data) {
     data.hotWater        || '',
     data.gasAppliances   || '',
     data.ev              || '',
+    data.wifiSsid        || '',
+    data.wifiPassword    || '',
+    data.epsCircuit1     || '',
+    data.epsCircuit2     || '',
+    data.epsCircuit3     || '',
   ]);
 
   return {
@@ -296,6 +339,11 @@ function createJob(sheet, data) {
     hotWater:        data.hotWater        || '',
     gasAppliances:   data.gasAppliances   || '',
     ev:              data.ev              || '',
+    wifiSsid:        data.wifiSsid        || '',
+    wifiPassword:    data.wifiPassword    || '',
+    epsCircuit1:     data.epsCircuit1     || '',
+    epsCircuit2:     data.epsCircuit2     || '',
+    epsCircuit3:     data.epsCircuit3     || '',
   };
 }
 
@@ -316,14 +364,19 @@ function updateJob(sheet, data) {
   if (data.hotWater        !== undefined) sheet.getRange(row, COL.HOT_WATER).setValue(data.hotWater);
   if (data.gasAppliances   !== undefined) sheet.getRange(row, COL.GAS_APPLIANCES).setValue(data.gasAppliances);
   if (data.ev              !== undefined) sheet.getRange(row, COL.EV).setValue(data.ev);
+  if (data.wifiSsid        !== undefined) sheet.getRange(row, COL.WIFI_SSID).setValue(data.wifiSsid);
+  if (data.wifiPassword    !== undefined) sheet.getRange(row, COL.WIFI_PASSWORD).setValue(data.wifiPassword);
+  if (data.epsCircuit1     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_1).setValue(data.epsCircuit1);
+  if (data.epsCircuit2     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_2).setValue(data.epsCircuit2);
+  if (data.epsCircuit3     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_3).setValue(data.epsCircuit3);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
 }
 
 function findJobByNumber(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return null;
-  return rowToJob(sheet.getRange(row, 1, 1, 19).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
 }
 
 function findRowByJobNumber(sheet, jobNumber) {
@@ -339,7 +392,7 @@ function findRowByJobNumber(sheet, jobNumber) {
 function getAllJobs(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 19).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
   return values
     .filter(row => row[0])
     .map(rowToJob)
@@ -367,6 +420,11 @@ function rowToJob(row) {
     hotWater:        String(row[16] || ''),
     gasAppliances:   String(row[17] || ''),
     ev:              String(row[18] || ''),
+    wifiSsid:        String(row[19] || ''),
+    wifiPassword:    String(row[20] || ''),
+    epsCircuit1:     String(row[21] || ''),
+    epsCircuit2:     String(row[22] || ''),
+    epsCircuit3:     String(row[23] || ''),
   };
 }
 
@@ -914,4 +972,69 @@ function sendTelegramAlert_(message) {
   } catch (e) {
     Logger.log('Telegram error: ' + e);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Installer app — photo and receipt uploads
+// ---------------------------------------------------------------------------
+
+// Uploads a base64-encoded image to a subfolder within the job's client Drive folder.
+// Used for both job site photos (05_Photos) and job receipts (07_Receipts).
+function uploadToJobFolder_(data, subfolderName) {
+  if (!data.jobNumber || !data.base64 || !data.filename) {
+    throw new Error('jobNumber, filename, and base64 are required');
+  }
+
+  const job = findJobByNumber(getSheet(), data.jobNumber);
+  if (!job) throw new Error('Job not found: ' + data.jobNumber);
+  if (!job.driveUrl) throw new Error('No Drive folder on this job');
+
+  const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!match) throw new Error('Cannot parse folder ID from driveUrl');
+
+  // Navigate from the known parent rather than getFolderById on child folders
+  // (child getFolderById causes "Service error: Drive" — same workaround as saveIntakeDocs_)
+  const clientFolderId = match[1];
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const folderIter = parent.getFolders();
+  var clientFolder = null;
+  while (folderIter.hasNext()) {
+    var f = folderIter.next();
+    if (f.getId() === clientFolderId) { clientFolder = f; break; }
+  }
+  if (!clientFolder) throw new Error('Client folder not found in parent');
+
+  const targetFolder = getOrCreateDriveFolder_(clientFolder, subfolderName);
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(data.base64),
+    data.mimeType || 'image/jpeg',
+    data.filename
+  );
+  const file = targetFolder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { success: true, fileUrl: file.getUrl(), fileName: file.getName() };
+}
+
+// Uploads a receipt image to the shared Staff Receipts folder, organised by month.
+// Not job-specific — used for fuel, supplies, and other general expenses.
+function uploadGeneralReceipt_(data) {
+  if (!data.base64 || !data.filename) throw new Error('filename and base64 are required');
+
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const staffReceiptsFolder = getOrCreateDriveFolder_(parent, '--- Staff Receipts ---');
+
+  // Organise by month so the folder stays manageable
+  const monthStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
+  const monthFolder = getOrCreateDriveFolder_(staffReceiptsFolder, monthStr);
+
+  const blob = Utilities.newBlob(
+    Utilities.base64Decode(data.base64),
+    data.mimeType || 'image/jpeg',
+    data.filename
+  );
+  const file = monthFolder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+  return { success: true, fileUrl: file.getUrl(), fileName: file.getName() };
 }

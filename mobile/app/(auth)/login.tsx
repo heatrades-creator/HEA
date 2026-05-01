@@ -11,6 +11,7 @@ export default function LoginScreen() {
   const [name, setName] = useState('')
   const [pin, setPin] = useState(['', '', '', ''])
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(true)
   const pinRefs = [
     useRef<TextInput>(null),
     useRef<TextInput>(null),
@@ -34,7 +35,7 @@ export default function LoginScreen() {
     setLoading(true)
     try {
       const { token, installer } = await loginInstaller(name.trim(), fullPin)
-      await saveAuth(token, installer)
+      await saveAuth(token, installer, rememberMe)
       router.replace('/(tabs)/jobs')
     } catch {
       Alert.alert('Login Failed', 'Incorrect name or PIN. Try again.')
@@ -91,6 +92,17 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
+            style={styles.rememberRow}
+            onPress={() => setRememberMe(v => !v)}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+              {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.rememberLabel}>Remember me</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={[styles.btn, (!name.trim() || !pinFull || loading) && styles.btnDisabled]}
             onPress={handleLogin}
             disabled={!name.trim() || !pinFull || loading}
@@ -133,6 +145,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   pinCellFilled: { borderColor: '#ffd100' },
+  rememberRow: {
+    flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 10,
+  },
+  checkbox: {
+    width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#374151',
+    backgroundColor: '#111827', alignItems: 'center', justifyContent: 'center',
+  },
+  checkboxChecked: { backgroundColor: '#ffd100', borderColor: '#ffd100' },
+  checkmark: { fontSize: 13, fontWeight: '800', color: '#111827' },
+  rememberLabel: { fontSize: 14, color: '#9ca3af' },
   btn: {
     backgroundColor: '#ffd100', borderRadius: 14,
     paddingVertical: 14, alignItems: 'center',

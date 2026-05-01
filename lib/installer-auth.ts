@@ -14,7 +14,7 @@ export function signInstallerToken(installer: { id: string; name: string; role: 
   return jwt.sign(
     { sub: installer.id, name: installer.name, role: installer.role },
     SECRET,
-    { expiresIn: '30d' }
+    { expiresIn: '365d' }
   )
 }
 

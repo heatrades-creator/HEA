@@ -2,7 +2,7 @@
   "expo": {
     "name": "HEA Installer",
     "slug": "hea-installer",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "heainstaller",
     "userInterfaceStyle": "dark",
@@ -18,7 +18,21 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes."
+          "cameraPermission": "Allow HEA Installer to access your camera to scan job QR codes and take site photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HEA Installer to access your photos to upload site receipts and photos."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffd100",
+          "sounds": []
         }
       ]
     ],
@@ -27,13 +41,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffd100"
-      },
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ]
+      }
     },
     "ios": {
       "bundleIdentifier": "au.com.heagroup.installer",
@@ -41,19 +49,18 @@
         "NSCameraUsageDescription": "Used to scan job site QR codes to clock in."
       }
     },
-    "extra": {
-      "router": {
-        "origin": false
-      },
-      "eas": {
-        "projectId": "2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
-      }
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "updates": {
-      "url": "https://u.expo.dev/2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
+    "extra": {
+      "router": { "origin": false },
+      "eas": {
+        "projectId": "2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
+      }
     }
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getInstallerFromRequest } from '@/lib/installer-auth'
 import { prisma } from '@/lib/db'
+import { sendExpoPush } from '@/lib/expo-push'
 
 export async function GET(req: NextRequest) {
   const payload = getInstallerFromRequest(req)
@@ -44,5 +45,23 @@ export async function POST(req: NextRequest) {
     data: { jobNumber, body: text.trim(), installerId: payload.sub },
     include: { installer: { select: { id: true, name: true } } },
   })
+
+  // Notify all other active installers with push tokens — fire and forget
+  prisma.installer.findMany({
+    where: { active: true, pushToken: { not: null }, NOT: { id: payload.sub } },
+    select: { pushToken: true },
+  }).then(others => {
+    const tokens = others.map(o => o.pushToken).filter(Boolean) as string[]
+    if (tokens.length > 0) {
+      sendExpoPush(tokens.map(to => ({
+        to,
+        title: `${payload.name} — ${jobNumber}`,
+        body: text.trim().slice(0, 120),
+        data: { jobNumber },
+        sound: 'default' as const,
+      })))
+    }
+  }).catch(() => {})
+
   return NextResponse.json(comment, { status: 201 })
 }

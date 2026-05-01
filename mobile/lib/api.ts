@@ -78,3 +78,61 @@ export async function fetchContacts(): Promise<Contact[]> {
   if (!res.ok) return []
   return res.json()
 }
+
+export async function registerPushToken(token: string): Promise<void> {
+  await authFetch('/api/installer/push-token', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  })
+}
+
+export async function uploadJobPhoto(
+  jobNumber: string,
+  filename: string,
+  base64: string,
+  mimeType: string,
+): Promise<{ fileUrl: string; fileName: string }> {
+  const res = await authFetch(`/api/installer/jobs/${encodeURIComponent(jobNumber)}/photos`, {
+    method: 'POST',
+    body: JSON.stringify({ filename, base64, mimeType }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Photo upload failed')
+  }
+  return res.json()
+}
+
+export async function uploadJobReceipt(
+  jobNumber: string,
+  filename: string,
+  base64: string,
+  mimeType: string,
+): Promise<{ fileUrl: string; fileName: string }> {
+  const res = await authFetch(`/api/installer/jobs/${encodeURIComponent(jobNumber)}/receipts`, {
+    method: 'POST',
+    body: JSON.stringify({ filename, base64, mimeType }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Receipt upload failed')
+  }
+  return res.json()
+}
+
+export async function uploadGeneralReceipt(
+  filename: string,
+  base64: string,
+  mimeType: string,
+  description?: string,
+): Promise<{ fileUrl: string; fileName: string }> {
+  const res = await authFetch('/api/installer/receipts', {
+    method: 'POST',
+    body: JSON.stringify({ filename, base64, mimeType, description }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Receipt upload failed')
+  }
+  return res.json()
+}

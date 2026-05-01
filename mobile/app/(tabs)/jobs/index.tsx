@@ -5,7 +5,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { fetchJobs } from '@/lib/api'
+import { fetchJobs, SessionExpiredError } from '@/lib/api'
 import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.1'
@@ -42,11 +42,15 @@ export default function JobsScreen() {
       const data = await fetchJobs()
       setJobs(data)
     } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        router.replace('/(auth)/login')
+        return
+      }
       setError(e instanceof Error ? e.message : 'Unknown error')
     }
     setLoading(false)
     setRefreshing(false)
-  }, [])
+  }, [router])
 
   // Check server version on mount — show banner if behind
   useEffect(() => {

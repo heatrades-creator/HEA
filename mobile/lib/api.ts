@@ -1,7 +1,11 @@
-import { getToken } from './auth'
+import { getToken, clearAuth } from './auth'
 import type { GASJob, Comment, Contact, JobClaim } from './types'
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://hea-group.com.au'
+
+export class SessionExpiredError extends Error {
+  constructor() { super('Session expired') }
+}
 
 async function authFetch(path: string, init: RequestInit = {}): Promise<Response> {
   const token = await getToken()
@@ -10,7 +14,12 @@ async function authFetch(path: string, init: RequestInit = {}): Promise<Response
     ...(init.headers as Record<string, string>),
   }
   if (token) headers['Authorization'] = `Bearer ${token}`
-  return fetch(`${BASE}${path}`, { ...init, headers })
+  const res = await fetch(`${BASE}${path}`, { ...init, headers })
+  if (res.status === 401) {
+    await clearAuth()
+    throw new SessionExpiredError()
+  }
+  return res
 }
 
 export async function loginInstaller(name: string, pin: string) {
@@ -25,10 +34,7 @@ export async function loginInstaller(name: string, pin: string) {
 
 export async function fetchJobs(): Promise<GASJob[]> {
   const res = await authFetch('/api/installer/jobs')
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(`${res.status} – ${body.slice(0, 80) || 'no response body'}`)
-  }
+  if (!res.ok) throw new Error(`${res.status}`)
   return res.json()
 }
 

@@ -49,29 +49,17 @@ export function AppDistribution() {
     try {
       const pathname = `hea-installer-v${version.trim()}.apk`
 
-      // Step 1: get a short-lived client upload token from the server.
-      // The token is generated without onUploadCompleted, so the Blob CDN
-      // returns the file URL immediately after upload — no server webhook needed.
-      const tokenRes = await fetch('/api/dashboard/installer/apk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pathname }),
-      })
-      if (!tokenRes.ok) {
-        const data = await tokenRes.json().catch(() => ({}))
-        throw new Error(data.error ?? `Token request failed (${tokenRes.status})`)
-      }
-      const { clientToken } = await tokenRes.json()
-
-      // Step 2: upload directly to Vercel Blob CDN using the SDK with the pre-generated
-      // client token. clientPayload bypasses the handleUpload webhook entirely.
+      // Step 1: upload to Vercel Blob CDN via the SDK.
+      // handleUploadUrl points to our POST handler which generates the token.
+      // onUploadCompleted on the server is empty so upload() resolves immediately
+      // once the CDN accepts the file — no server-side blocking, no timeout risk.
       const blob = await upload(pathname, file, {
         access: 'public',
-        clientPayload: clientToken,
+        handleUploadUrl: '/api/dashboard/installer/apk',
       })
       const blobUrl = blob.url
 
-      // Step 3: save the resulting URL + version to DB via PUT
+      // Step 2: save the resulting URL + version to DB via PUT
       const saveRes = await fetch('/api/dashboard/installer/apk', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -103,7 +91,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v6</span></p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v7</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">

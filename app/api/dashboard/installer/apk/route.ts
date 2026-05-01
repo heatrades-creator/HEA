@@ -1,4 +1,4 @@
-import { generateClientTokenFromReadWriteToken } from '@vercel/blob/client'
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
@@ -26,31 +26,29 @@ export async function GET() {
   })
 }
 
-// POST — generate a short-lived client upload token; resolves without any server callback
+// POST — handles both token generation and upload-completed events from Vercel Blob CDN.
+// onUploadCompleted is intentionally empty — DB save happens via PUT from the client
+// after upload() resolves, avoiding any serverless timeout risk.
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const rwToken = process.env.BLOB_READ_WRITE_TOKEN
-  if (!rwToken) return NextResponse.json({ error: 'Blob not configured' }, { status: 503 })
+  const body = await req.json() as HandleUploadBody
 
   try {
-    const { pathname } = (await req.json()) as { pathname: string }
-    if (!pathname) return NextResponse.json({ error: 'pathname required' }, { status: 400 })
-
-    // No onUploadCompleted → client upload() resolves as soon as the file hits Blob CDN,
-    // no server-to-server webhook needed (which was causing the infinite 100% hang).
-    const clientToken = await generateClientTokenFromReadWriteToken({
-      token: rwToken,
-      pathname,
-      maximumSizeInBytes: 150 * 1024 * 1024,
-      validUntil: Date.now() + 60 * 60 * 1000, // 1 hour in ms
+    const jsonResponse = await handleUpload({
+      body,
+      request: req,
+      onBeforeGenerateToken: async () => ({
+        maximumSizeInBytes: 150 * 1024 * 1024,
+      }),
+      onUploadCompleted: async () => {
+        // intentionally empty — client calls PUT to save URL after upload resolves
+      },
     })
-    return NextResponse.json({ clientToken })
-  } catch (error) {
-    const msg = (error as Error).message
-    console.error('APK token generation error:', msg)
-    return NextResponse.json({ error: msg }, { status: 400 })
+    return NextResponse.json(jsonResponse)
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 })
   }
 }
 

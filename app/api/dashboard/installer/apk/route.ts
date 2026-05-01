@@ -26,29 +26,31 @@ export async function GET() {
   })
 }
 
-// POST — handles both token generation and upload-completed events from Vercel Blob CDN.
-// onUploadCompleted is intentionally empty — DB save happens via PUT from the client
-// after upload() resolves, avoiding any serverless timeout risk.
+// POST handles two request types from two different callers:
+// 1. blob.generate-client-token  — from the browser (has session cookie)
+// 2. blob.upload-completed       — from Vercel Blob CDN server-to-server (NO session cookie)
+// Auth must be inside onBeforeGenerateToken only. A top-level session guard
+// would 401 the CDN callback and leave upload() hanging forever.
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const body = await req.json() as HandleUploadBody
 
   try {
     const jsonResponse = await handleUpload({
       body,
       request: req,
-      onBeforeGenerateToken: async () => ({
-        maximumSizeInBytes: 150 * 1024 * 1024,
-      }),
+      onBeforeGenerateToken: async () => {
+        const session = await getServerSession(authOptions)
+        if (!session) throw new Error('Unauthorized')
+        return { maximumSizeInBytes: 150 * 1024 * 1024 }
+      },
       onUploadCompleted: async () => {
-        // intentionally empty — client calls PUT to save URL after upload resolves
+        // intentionally empty — client calls PUT to save URL after upload() resolves
       },
     })
     return NextResponse.json(jsonResponse)
   } catch (e) {
-    return NextResponse.json({ error: (e as Error).message }, { status: 400 })
+    const msg = (e as Error).message
+    return NextResponse.json({ error: msg }, { status: msg === 'Unauthorized' ? 401 : 400 })
   }
 }
 

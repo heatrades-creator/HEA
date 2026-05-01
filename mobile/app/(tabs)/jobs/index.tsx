@@ -22,6 +22,8 @@ function formatInstallDate(dateStr: string): string {
   return dateStr
 }
 
+const VERSION = 'v2'
+
 export default function JobsScreen() {
   const [jobs, setJobs] = useState<GASJob[]>([])
   const [loading, setLoading] = useState(true)
@@ -68,6 +70,7 @@ export default function JobsScreen() {
         <Text style={styles.title}>Active Jobs</Text>
         <View style={styles.subtitleRow}>
           <Text style={styles.subtitle}>{jobs.length} job{jobs.length !== 1 ? 's' : ''}</Text>
+          <Text style={styles.version}>{VERSION}</Text>
           {claimed > 0 && (
             <View style={styles.claimedPill}>
               <Text style={styles.claimedPillText}>{claimed} claimed</Text>
@@ -226,4 +229,5 @@ const styles = StyleSheet.create({
   claimText: { fontSize: 12, color: '#34d399', fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 60 },
   emptyText: { color: '#6b7280', fontSize: 15 },
+  version: { fontSize: 10, color: '#374151', fontWeight: '600' },
 })

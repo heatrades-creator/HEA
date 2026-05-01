@@ -1,5 +1,5 @@
 import { getToken } from './auth'
-import type { GASJob, Comment, Contact } from './types'
+import type { GASJob, Comment, Contact, JobClaim } from './types'
 
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://hea-group.com.au'
 
@@ -40,6 +40,28 @@ export async function fetchPhotos(jobNumber: string): Promise<Array<{ name: stri
   if (!res.ok) return []
   const data = await res.json()
   return data.photos ?? []
+}
+
+export async function claimJob(jobNumber: string, installDate: string): Promise<JobClaim & { installer: { id: string; name: string } }> {
+  const res = await authFetch(`/api/installer/jobs/${encodeURIComponent(jobNumber)}/claim`, {
+    method: 'POST',
+    body: JSON.stringify({ installDate }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Claim failed')
+  }
+  return res.json()
+}
+
+export async function unclaimJob(jobNumber: string): Promise<void> {
+  const res = await authFetch(`/api/installer/jobs/${encodeURIComponent(jobNumber)}/claim`, {
+    method: 'DELETE',
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Unclaim failed')
+  }
 }
 
 export async function clockIn(jobNumber: string): Promise<void> {

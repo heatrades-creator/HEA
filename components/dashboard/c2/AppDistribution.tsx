@@ -65,7 +65,6 @@ export function AppDistribution() {
 
       // Step 2: upload directly to Vercel Blob CDN using the SDK with the pre-generated
       // client token. clientPayload bypasses the handleUpload webhook entirely.
-      setProgress(50) // indeterminate — SDK doesn't expose upload progress
       const blob = await upload(pathname, file, {
         access: 'public',
         clientPayload: clientToken,

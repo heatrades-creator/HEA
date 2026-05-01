@@ -4,6 +4,7 @@ import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { View, ActivityIndicator } from 'react-native'
 import * as Notifications from 'expo-notifications'
+import * as Updates from 'expo-updates'
 import { getToken } from '@/lib/auth'
 import { setupNotifications } from '@/lib/notifications'
 
@@ -13,7 +14,24 @@ export default function RootLayout() {
   const segments = useSegments()
 
   useEffect(() => {
-    getToken().then(() => setReady(true))
+    async function init() {
+      // Check for OTA update first, then mark ready
+      if (!__DEV__) {
+        try {
+          const update = await Updates.checkForUpdateAsync()
+          if (update.isAvailable) {
+            await Updates.fetchUpdateAsync()
+            await Updates.reloadAsync()
+            return // reloadAsync restarts the app — nothing below runs
+          }
+        } catch {
+          // No network or update server unavailable — continue with cached bundle
+        }
+      }
+      await getToken()
+      setReady(true)
+    }
+    init()
   }, [])
 
   // Re-read token on every navigation change so login state is always fresh

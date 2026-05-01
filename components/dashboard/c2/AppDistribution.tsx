@@ -70,7 +70,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v9</span></p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v10</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">
@@ -161,26 +161,26 @@ export function AppDistribution() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#e5e9f0]">
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Version</th>
-              <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Saved</th>
-              <th className="px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Status</th>
-              <th className="px-5 py-3" />
+              <th className="text-left px-3 sm:px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Version</th>
+              <th className="hidden sm:table-cell text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Saved</th>
+              <th className="px-3 sm:px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide text-center sm:text-right">Status</th>
+              <th className="px-3 sm:px-5 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[#e5e9f0]">
             {info.history.map((entry, i) => (
               <tr key={entry.uploadedAt} className="hover:bg-gray-50 transition-colors">
-                <td className="px-5 py-3 font-mono font-semibold text-[#111827]">v{entry.version}</td>
-                <td className="px-5 py-3 text-gray-500 text-xs">{fmt(entry.uploadedAt)}</td>
-                <td className="px-5 py-3 text-right">
+                <td className="px-3 sm:px-5 py-3 font-mono font-semibold text-[#111827]">v{entry.version}</td>
+                <td className="hidden sm:table-cell px-5 py-3 text-gray-500 text-xs">{fmt(entry.uploadedAt)}</td>
+                <td className="px-3 sm:px-5 py-3 text-center sm:text-right">
                   {i === 0 ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Live</span>
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Superseded</span>
                   )}
                 </td>
-                <td className="px-5 py-3 text-right">
-                  <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-[#ffd100] transition-colors">
+                <td className="px-3 sm:px-5 py-3 text-right">
+                  <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-[#ffd100] transition-colors whitespace-nowrap">
                     Download ↗
                   </a>
                 </td>

@@ -1,12 +1,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   View, Text, SectionList, TouchableOpacity, StyleSheet,
-  RefreshControl, TextInput,
+  RefreshControl, TextInput, Linking, Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { fetchJobs } from '@/lib/api'
 import type { GASJob } from '@/lib/types'
+
+const VERSION = 'v2.1'
+const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://hea-group.com.au'
+const DOWNLOAD_URL = `${BASE}/installer-app`
 
 function extractPostcode(address: string): string {
   const matches = address.match(/\b\d{4}\b/g)
@@ -22,14 +26,13 @@ function formatInstallDate(dateStr: string): string {
   return dateStr
 }
 
-const VERSION = 'v2.1'
-
 export default function JobsScreen() {
   const [jobs, setJobs] = useState<GASJob[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [updateAvailable, setUpdateAvailable] = useState(false)
   const router = useRouter()
 
   const load = useCallback(async (quiet = false) => {
@@ -45,6 +48,16 @@ export default function JobsScreen() {
     setRefreshing(false)
   }, [])
 
+  // Check server version on mount — show banner if behind
+  useEffect(() => {
+    fetch(`${BASE}/api/installer/version`)
+      .then(r => r.json())
+      .then((data: { version: string }) => {
+        if (data.version !== VERSION.replace('v', '')) setUpdateAvailable(true)
+      })
+      .catch(() => {})
+  }, [])
+
   useEffect(() => { load() }, [])
 
   const filtered = jobs.filter(j =>
@@ -54,7 +67,6 @@ export default function JobsScreen() {
     j.address.toLowerCase().includes(search.toLowerCase())
   )
 
-  // Group by postcode, sort sections ascending
   const grouped: Record<string, GASJob[]> = {}
   for (const job of filtered) {
     const pc = extractPostcode(job.address)
@@ -70,8 +82,39 @@ export default function JobsScreen() {
 
   return (
     <View style={styles.root}>
+      {/* Update available banner */}
+      {updateAvailable && (
+        <TouchableOpacity
+          style={styles.updateBanner}
+          onPress={() => {
+            Alert.alert(
+              'Update Available',
+              'A new version of the app is ready. Download and reinstall to get the latest features.',
+              [
+                { text: 'Later', style: 'cancel' },
+                { text: 'Download Now', onPress: () => Linking.openURL(DOWNLOAD_URL) },
+              ]
+            )
+          }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="arrow-down-circle-outline" size={16} color="#111827" />
+          <Text style={styles.updateBannerText}>App update available — tap to download</Text>
+        </TouchableOpacity>
+      )}
+
       <View style={styles.header}>
-        <Text style={styles.title}>Active Jobs</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Active Jobs</Text>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => { setRefreshing(true); load(true) }}
+            disabled={loading || refreshing}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="refresh-outline" size={20} color={loading || refreshing ? '#374151' : '#ffd100'} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.subtitleRow}>
           <Text style={styles.subtitle}>{jobs.length} job{jobs.length !== 1 ? 's' : ''}</Text>
           <Text style={styles.version}>{VERSION}</Text>
@@ -109,7 +152,15 @@ export default function JobsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>{loading ? 'Loading…' : error ? `Error: ${error}` : 'No active jobs'}</Text>
+            <Text style={styles.emptyText}>
+              {loading ? 'Loading…' : error ? `Error: ${error}` : 'No active jobs'}
+            </Text>
+            {!loading && (
+              <TouchableOpacity style={styles.retryBtn} onPress={() => load()} activeOpacity={0.7}>
+                <Ionicons name="refresh-outline" size={16} color="#ffd100" />
+                <Text style={styles.retryText}>Tap to retry</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
         renderSectionHeader={({ section }) => (
@@ -151,6 +202,9 @@ export default function JobsScreen() {
               <View style={styles.cardFooter}>
                 {item.systemSize ? <Text style={styles.spec}>{item.systemSize} kW</Text> : null}
                 {item.batterySize ? <Text style={styles.spec}>{item.batterySize} kWh battery</Text> : null}
+                <View style={styles.statusTag}>
+                  <Text style={styles.statusTagText}>{item.status}</Text>
+                </View>
               </View>
 
               {isClaimed && item.claim ? (
@@ -173,17 +227,25 @@ export default function JobsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#111827' },
+  updateBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#ffd100', paddingHorizontal: 16, paddingVertical: 10,
+  },
+  updateBannerText: { fontSize: 13, fontWeight: '700', color: '#111827', flex: 1 },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  refreshBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#1f2937', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: '#374151',
+  },
   subtitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   subtitle: { fontSize: 13, color: '#6b7280' },
-  claimedPill: {
-    backgroundColor: '#05603a', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2,
-  },
+  version: { fontSize: 10, color: '#374151', fontWeight: '600' },
+  claimedPill: { backgroundColor: '#05603a', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
   claimedPillText: { fontSize: 11, color: '#34d399', fontWeight: '600' },
-  availablePill: {
-    backgroundColor: '#78350f', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2,
-  },
+  availablePill: { backgroundColor: '#78350f', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
   availablePillText: { fontSize: 11, color: '#ffd100', fontWeight: '600' },
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
@@ -193,26 +255,18 @@ const styles = StyleSheet.create({
   },
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff', paddingVertical: 10 },
-  sectionHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginBottom: 10, marginTop: 8,
-  },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 8 },
   sectionLine: { flex: 1, height: 1, backgroundColor: '#1f2937' },
   sectionPill: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#1f2937', borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 4,
+    backgroundColor: '#1f2937', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
   },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: '#ffd100' },
   sectionCount: {
     fontSize: 11, color: '#6b7280', fontWeight: '600',
-    backgroundColor: '#374151', borderRadius: 10, paddingHorizontal: 5, paddingVertical: 1,
-    overflow: 'hidden',
+    backgroundColor: '#374151', borderRadius: 10, paddingHorizontal: 5, paddingVertical: 1, overflow: 'hidden',
   },
-  card: {
-    backgroundColor: '#1f2937', borderRadius: 16,
-    padding: 16, borderWidth: 1, borderColor: '#374151',
-  },
+  card: { backgroundColor: '#1f2937', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#374151' },
   cardClaimed: { borderColor: '#065f46' },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   jobNumBadge: { backgroundColor: '#111827', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
@@ -223,15 +277,18 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 11, fontWeight: '600' },
   clientName: { fontSize: 18, fontWeight: '700', color: '#fff', marginBottom: 4 },
   address: { fontSize: 13, color: '#9ca3af', marginBottom: 10 },
-  cardFooter: { flexDirection: 'row', gap: 12 },
+  cardFooter: { flexDirection: 'row', gap: 10, alignItems: 'center', flexWrap: 'wrap' },
   spec: { fontSize: 12, color: '#ffd100', fontWeight: '600' },
+  statusTag: { marginLeft: 'auto', backgroundColor: '#111827', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  statusTagText: { fontSize: 11, color: '#6b7280', fontWeight: '600' },
   claimBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    marginTop: 10, paddingTop: 10,
-    borderTopWidth: 1, borderTopColor: '#065f46',
+    marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#065f46',
   },
   claimText: { fontSize: 12, color: '#34d399', fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 60 },
+  empty: { alignItems: 'center', paddingTop: 60, gap: 16 },
   emptyText: { color: '#6b7280', fontSize: 15 },
   version: { fontSize: 10, color: '#374151', fontWeight: '600' },
+  retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#1f2937', borderRadius: 10, borderWidth: 1, borderColor: '#374151' },
+  retryText: { fontSize: 14, color: '#ffd100', fontWeight: '600' },
 })

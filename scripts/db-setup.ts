@@ -103,6 +103,17 @@ const statements = [
     FOREIGN KEY ("parentId")    REFERENCES "JobComment"("id")
   )`,
 
+  // ── JobClaim ──────────────────────────────────────────────────────────────
+  `CREATE TABLE IF NOT EXISTS "JobClaim" (
+    "id"          TEXT     NOT NULL PRIMARY KEY,
+    "createdAt"   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt"   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "jobNumber"   TEXT     NOT NULL UNIQUE,
+    "installerId" TEXT     NOT NULL,
+    "installDate" TEXT     NOT NULL,
+    FOREIGN KEY ("installerId") REFERENCES "Installer"("id")
+  )`,
+
   // ── Contact ───────────────────────────────────────────────────────────────
   `CREATE TABLE IF NOT EXISTS "Contact" (
     "id"        TEXT     NOT NULL PRIMARY KEY,
@@ -123,6 +134,7 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS "AuditEntry_leadId_idx" ON "AuditEntry"("leadId")`,
   `CREATE INDEX IF NOT EXISTS "JobComment_jobNumber_idx"   ON "JobComment"("jobNumber")`,
   `CREATE INDEX IF NOT EXISTS "JobComment_installerId_idx" ON "JobComment"("installerId")`,
+  `CREATE INDEX IF NOT EXISTS "JobClaim_installerId_idx"  ON "JobClaim"("installerId")`,
 ]
 
 // Columns added after initial schema — safe to run on existing databases

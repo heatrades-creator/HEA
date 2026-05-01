@@ -1,3 +1,10 @@
+export interface JobClaim {
+  installerId: string
+  installerName: string
+  installDate: string
+  claimedAt: string
+}
+
 export interface GASJob {
   jobNumber: string
   clientName: string
@@ -23,6 +30,7 @@ export interface GASJob {
   epsCircuit1: string
   epsCircuit2: string
   epsCircuit3: string
+  claim: JobClaim | null
 }
 
 export interface InstallerProfile {

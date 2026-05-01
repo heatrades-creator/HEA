@@ -25,7 +25,10 @@ export async function loginInstaller(name: string, pin: string) {
 
 export async function fetchJobs(): Promise<GASJob[]> {
   const res = await authFetch('/api/installer/jobs')
-  if (!res.ok) throw new Error('Failed to load jobs')
+  if (!res.ok) {
+    const body = await res.text().catch(() => '')
+    throw new Error(`${res.status} – ${body.slice(0, 80) || 'no response body'}`)
+  }
   return res.json()
 }
 

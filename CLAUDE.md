@@ -15,6 +15,39 @@ Signs you are about to make a mistake:
 
 ---
 
+## Jesse's Engineering Philosophy — Automate Everything
+
+**Jesse is an engineer, not a software engineer. He solves problems once.**
+
+This shapes every implementation decision:
+
+- **No manual steps, ever.** If something needs to happen after a deploy, it must be automated into the deploy. Document it in code, not in a README.
+- **One-time setup only.** Any configuration, credential, or migration that needs to happen more than once is a design failure. Fix the automation instead of repeating the step.
+- **Solve it at the root.** Don't add workarounds or retries around a broken process — fix the process.
+- **If it can be triggered by a git push, it should be.** GAS deploys, DB migrations, OTA updates — all automated on `git push main`.
+
+### What this means in practice
+
+**DB migrations run automatically on every Vercel deploy** — `scripts/db-setup.ts` is wired into the `build` script in `package.json`:
+```
+"build": "prisma generate && tsx scripts/db-setup.ts && next build --turbopack"
+```
+Every `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE` in that script runs on deploy. **Never tell Jesse to run a migration manually.** If you add a new table or column, add it to `scripts/db-setup.ts` and it deploys itself.
+
+**GAS scripts deploy automatically on push to `main`** — never instruct Jesse to open the Apps Script editor, click Deploy, or run clasp manually. The GitHub Action handles it.
+
+**OTA app updates deploy automatically** — JS/UI changes to `mobile/` push via `eas-update.yml` on merge to `main`. Installers get the update silently on next launch.
+
+**New APK builds are the only manual step** — required only when native dependencies change. Everything else is automatic.
+
+### Signs you are about to make a mistake
+- Writing "run this command after deploying" in any instruction
+- Telling Jesse to copy-paste values from one dashboard to another more than once
+- Creating a setup step that isn't gated behind a push to `main`
+- Documenting a workaround instead of automating the fix
+
+---
+
 ## Stack
 
 | Layer | Tech | Deploy trigger |

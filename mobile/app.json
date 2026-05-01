@@ -2,7 +2,7 @@
   "expo": {
     "name": "HEA Installer",
     "slug": "hea-installer",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "scheme": "heainstaller",
     "userInterfaceStyle": "dark",
@@ -53,9 +53,7 @@
       "fallbackToCacheTimeout": 0,
       "url": "https://u.expo.dev/2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1",
     "extra": {
       "router": { "origin": false },
       "eas": {

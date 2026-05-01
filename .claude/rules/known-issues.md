@@ -12,3 +12,4 @@
 | Drive folders not created, jobs not in dashboard | `JOBS_GAS_URL` in Vercel pointed to wrong GAS script (C2) | Update `JOBS_GAS_URL` to Jobs API web app URL from GAS console |
 | Intake form timeout on large photo uploads | All processing awaited before returning 201; Vercel serverless timeout | Use `after()` from `next/server`; client fetch is fire-and-forget |
 | GAS errors swallowed silently | `r.ok` always true (GAS returns HTTP 200 even on error) | Read raw `.text()`, parse JSON, check `data.error` field |
+| OTA updates never delivered | `runtimeVersion: { policy: "appVersion" }` — OTA only reaches APKs built with the exact same version string. Any version bump silently breaks OTA. | Fixed to `"runtimeVersion": "1"` (static string). Never change back to a policy. Requires one APK rebuild after changing. |

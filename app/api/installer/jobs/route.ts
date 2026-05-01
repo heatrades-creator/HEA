@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getInstallerFromRequest } from '@/lib/installer-auth'
 import { prisma } from '@/lib/db'
 
-const ACTIVE_STATUSES = new Set(['Booked', 'In Progress'])
+const HIDDEN_STATUSES = new Set(['Complete'])
 
 export async function GET(req: NextRequest) {
   const installer = getInstallerFromRequest(req)
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   const claimMap = new Map<string, ClaimWithInstaller>(claims.map(c => [c.jobNumber, c]))
 
   const active = jobs
-    .filter((j: { status: string }) => ACTIVE_STATUSES.has(j.status))
+    .filter((j: { status: string }) => !HIDDEN_STATUSES.has(j.status))
     .map((j: { jobNumber: string }) => {
       const claim = claimMap.get(j.jobNumber)
       return {

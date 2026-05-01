@@ -22,7 +22,7 @@ function formatInstallDate(dateStr: string): string {
   return dateStr
 }
 
-const VERSION = 'v2'
+const VERSION = 'v2.1'
 
 export default function JobsScreen() {
   const [jobs, setJobs] = useState<GASJob[]>([])

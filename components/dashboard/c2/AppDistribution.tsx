@@ -1,5 +1,6 @@
 'use client'
 
+import { upload } from '@vercel/blob/client'
 import { useEffect, useRef, useState } from 'react'
 
 interface ApkEntry {
@@ -27,7 +28,6 @@ export function AppDistribution() {
   const [info, setInfo] = useState<ApkInfo>({ blobConfigured: true, url: null, version: null, uploadedAt: null, history: [] })
   const [showForm, setShowForm] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [version, setVersion] = useState('')
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -46,7 +46,6 @@ export function AppDistribution() {
     setUploading(true)
     setStatus('idle')
     setErrorMsg('')
-    setProgress(0)
     try {
       const pathname = `hea-installer-v${version.trim()}.apk`
 
@@ -64,31 +63,14 @@ export function AppDistribution() {
       }
       const { clientToken } = await tokenRes.json()
 
-      // Step 2: upload directly to Vercel Blob CDN using XHR (gives us progress events).
-      // PUT to blob.vercel-storage.com with the client token — the CDN resolves this
-      // immediately once the bytes are received, with no server-to-server callback.
-      const blobUrl = await new Promise<string>((resolve, reject) => {
-        const xhr = new XMLHttpRequest()
-        xhr.open('PUT', `https://blob.vercel-storage.com/${pathname}`)
-        xhr.setRequestHeader('Authorization', `Bearer ${clientToken}`)
-        xhr.setRequestHeader('x-content-type', file.type || 'application/octet-stream')
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) setProgress(Math.round(e.loaded / e.total * 100))
-        }
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              resolve((JSON.parse(xhr.responseText) as { url: string }).url)
-            } catch {
-              reject(new Error(`Unexpected Blob CDN response: ${xhr.responseText}`))
-            }
-          } else {
-            reject(new Error(`Blob CDN upload failed (${xhr.status}): ${xhr.responseText}`))
-          }
-        }
-        xhr.onerror = () => reject(new Error('Network error during upload'))
-        xhr.send(file)
+      // Step 2: upload directly to Vercel Blob CDN using the SDK with the pre-generated
+      // client token. clientPayload bypasses the handleUpload webhook entirely.
+      setProgress(50) // indeterminate — SDK doesn't expose upload progress
+      const blob = await upload(pathname, file, {
+        access: 'public',
+        clientPayload: clientToken,
       })
+      const blobUrl = blob.url
 
       // Step 3: save the resulting URL + version to DB via PUT
       const saveRes = await fetch('/api/dashboard/installer/apk', {
@@ -122,7 +104,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v5</span></p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v6</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">
@@ -199,14 +181,8 @@ export function AppDistribution() {
 
           {uploading && (
             <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="flex-1 bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-[#ffd100] h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500 w-10 text-right">{progress}%</span>
+              <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden mb-1">
+                <div className="bg-[#ffd100] h-2 rounded-full animate-pulse w-1/2" />
               </div>
               <p className="text-xs text-gray-400">Uploading — do not close this tab…</p>
             </div>
@@ -225,7 +201,7 @@ export function AppDistribution() {
               disabled={uploading || !version.trim()}
               className="px-5 py-2 text-sm font-semibold rounded-lg bg-[#ffd100] text-[#111827] hover:bg-yellow-300 disabled:opacity-50 transition-colors"
             >
-              {uploading ? `Uploading ${progress}%…` : 'Upload'}
+              {uploading ? 'Uploading…' : 'Upload'}
             </button>
           </div>
         </div>

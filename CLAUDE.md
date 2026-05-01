@@ -50,7 +50,7 @@ There are two separate protected dashboards. They serve different users and use 
   - `/dashboard/pipeline` — Sales pipeline (3 stages, GAS-backed)
   - `/dashboard/documents` — Proposal documents
   - `/dashboard/templates` — Document templates
-  - `/dashboard/c2/` — Command section (people, recruitment, onboarding, units, tasks)
+  - `/dashboard/c2/` — Command section (people, recruitment, onboarding, units, tasks, installers)
   - `/dashboard/settings` — User settings
 
 **When adding a new page Alexis uses → add it to `/dashboard`, add a nav item to both `DashboardNav.tsx` and `DashboardMobileNav.tsx`.**
@@ -374,6 +374,100 @@ Env var: `HUBSPOT_ACCESS_TOKEN`, `HUBSPOT_STAGE_INSTALLED`
 `RESEND_API_KEY` · `EMAIL_FROM` · `EMAIL_ALERT_TO` (HEA.Trades@gmail.com) · `DATABASE_URL` · `NEXTAUTH_SECRET` · `NEXTAUTH_URL` · `JOBS_GAS_URL` · `NEXT_PUBLIC_SANITY_PROJECT_ID` · `NEXT_PUBLIC_SANITY_DATASET` · `SANITY_API_TOKEN` · `HUBSPOT_ACCESS_TOKEN` · `HUBSPOT_STAGE_INSTALLED`
 
 **GitHub Secrets:** `CLASPRC_JSON` · `VERCEL_TOKEN` (needed for auto-updating `JOBS_GAS_URL` after GAS deploy)
+
+---
+
+## Installers Page (`/dashboard/c2/installers`)
+
+The installers page is made up of three independent **blocks** (card sections). Each block is its own component. When making changes to a block, increment its version number in the block header.
+
+### Blocks and their components
+
+| Block | Component | Version | Purpose |
+|---|---|---|---|
+| Installers | `InstallerTable.tsx` | — | List of installer accounts, activate/deactivate, + New Installer modal |
+| App Distribution | `AppDistribution.tsx` | `v9` (hardcoded in header) | APK version history, publish new EAS build URL, link to download page |
+| Push Notification | `NotifyInstallers.tsx` | — | Send instant push alert to all active installer devices |
+
+### Block versioning rule
+
+The **App Distribution** block has a version stamp (`v9`) hardcoded in its header:
+```tsx
+// components/dashboard/c2/AppDistribution.tsx
+<span className="text-xs font-normal text-gray-400 ml-1">v9</span>
+```
+**Every time this component is modified, increment this number.** This lets Jesse know which version of the block is deployed without checking git.
+
+If other blocks gain significant new features in the future, add a version stamp to their headers using the same pattern.
+
+### Installer roles
+
+Two roles exist: `installer` (field worker) and `lead` (lead installer). Set at creation, stored in Prisma `Installer` model. Role controls what the mobile app shows.
+
+### App Distribution flow
+
+1. Run `eas build --platform android --profile preview` on Windows
+2. Copy the EAS artifact URL (e.g. `https://expo.dev/artifacts/eas/….apk`)
+3. In the App Distribution block → **+ New Version** → paste URL + version number → Save & Publish
+4. The download page at `hea-group.com.au/installer-app` updates immediately
+
+### OTA (Over-The-Air) updates — no APK redownload needed
+
+For JS/UI-only changes (no new native dependencies):
+- Push code changes to `mobile/` on `main`
+- GitHub Action `eas-update.yml` fires automatically → runs `eas update --branch preview`
+- On next app open, installers silently receive the update — no action required from them
+
+**When a new APK IS required** (native dependency added, `app.json` plugin changed, or `expo` version bumped):
+1. Build with `eas build --platform android --profile preview`
+2. Publish the new URL via the App Distribution block
+3. Notify installers to reinstall via the Push Notification block
+
+**EXPO_TOKEN** is stored as a GitHub repo secret (robot user token from `@heatrades-creator` on expo.dev — not a personal token).
+
+---
+
+## Mobile App (`mobile/`)
+
+React Native + Expo app for installers. Located in `mobile/` at the repo root.
+
+| File | Purpose |
+|---|---|
+| `mobile/app.json` | Expo config — app name, version, OTA update URL, EAS project ID |
+| `mobile/eas.json` | EAS build + update channel config (`preview` / `production`) |
+| `mobile/app/_layout.tsx` | Root layout — auth redirect, OTA update check on launch, push notification tap handler |
+| `mobile/app/(auth)/login.tsx` | PIN login screen |
+| `mobile/app/(tabs)/jobs/` | Job list + job detail screens |
+| `mobile/app/(tabs)/receipts.tsx` | Receipts tab |
+| `mobile/app/(tabs)/clock.tsx` | Time tracking |
+| `mobile/app/(tabs)/contacts.tsx` | Contacts |
+| `mobile/app/(tabs)/card.tsx` | Digital business card |
+| `mobile/lib/api.ts` | API client — all calls to `/api/installer/*` |
+| `mobile/lib/auth.ts` | Token storage (SecureStore) |
+| `mobile/lib/notifications.ts` | Expo push token registration |
+
+### API routes the mobile app calls
+
+All under `/api/installer/` — session auth via PIN token, not NextAuth.
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/installer/auth` | POST | PIN login → returns session token |
+| `/api/installer/jobs` | GET | Installer's assigned job list |
+| `/api/installer/jobs/[id]` | GET | Job detail |
+| `/api/installer/jobs/[id]/photos` | POST | Upload site photo |
+| `/api/installer/jobs/[id]/receipts` | POST | Upload receipt |
+| `/api/installer/timesheets` | POST | Clock in/out |
+| `/api/installer/contacts` | GET | Contact list |
+| `/api/installer/push-token` | POST | Register Expo push token |
+
+### OTA update check (automatic on every launch)
+
+`_layout.tsx` calls `Updates.checkForUpdateAsync()` before showing any UI. If an update is available it fetches and reloads — the installer sees nothing but a slightly longer spinner. Skipped in dev (`__DEV__`).
+
+### Runtime version policy
+
+`app.json` uses `"policy": "appVersion"` — the runtime version equals the `expo.version` field. OTA updates only apply to apps built with the same version. If you bump `expo.version` for a native build, OTA updates for the old version stop being delivered automatically.
 
 ---
 

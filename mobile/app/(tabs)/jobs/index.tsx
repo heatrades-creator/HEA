@@ -29,14 +29,18 @@ export default function JobsScreen() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [search, setSearch] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true)
+    setError(null)
     try {
       const data = await fetchJobs()
       setJobs(data)
-    } catch {}
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Unknown error')
+    }
     setLoading(false)
     setRefreshing(false)
   }, [])
@@ -105,7 +109,7 @@ export default function JobsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>{loading ? 'Loading…' : 'No active jobs'}</Text>
+            <Text style={styles.emptyText}>{loading ? 'Loading…' : error ? `Error: ${error}` : 'No active jobs'}</Text>
           </View>
         }
         renderSectionHeader={({ section }) => (

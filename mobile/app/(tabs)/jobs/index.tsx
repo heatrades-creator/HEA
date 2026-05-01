@@ -60,6 +60,12 @@ export default function JobsScreen() {
 
   useEffect(() => { load() }, [])
 
+  // Auto-refresh every 30 s so the list stays live without manual pull
+  useEffect(() => {
+    const id = setInterval(() => load(true), 30_000)
+    return () => clearInterval(id)
+  }, [load])
+
   const filtered = jobs.filter(j =>
     !search ||
     j.clientName.toLowerCase().includes(search.toLowerCase()) ||

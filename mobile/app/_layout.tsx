@@ -1,15 +1,14 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { View, ActivityIndicator } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as Updates from 'expo-updates'
-import { getToken } from '@/lib/auth'
+import { getToken, getTokenSync } from '@/lib/auth'
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
-  const everLoggedIn = useRef(false)
   const router = useRouter()
   const segments = useSegments()
 
@@ -35,22 +34,18 @@ export default function RootLayout() {
     init()
   }, [])
 
-  // everLoggedIn: once the user reaches tabs, never redirect to login from this
-  // guard — session expiry is handled explicitly in jobs/index.tsx instead.
+  // Synchronous auth guard — reads global.__heaToken directly (warmed by init()
+  // before setReady(true)), so there is no async race between segment changes and
+  // token reads. This prevents spurious login redirects during navigation transitions.
   useEffect(() => {
     if (!ready) return
-    // Read token asynchronously so the callback fires after the current
-    // navigation has settled, avoiding spurious redirects from mid-transition
-    // segment states (e.g. [] between (auth) → (tabs) during login).
-    getToken().then(token => {
-      const inAuth = segments[0] === '(auth)'
-      const inTabs = segments[0] === '(tabs)'
-      if (inTabs) everLoggedIn.current = true
-      if (!token && !inAuth && !everLoggedIn.current) router.replace('/(auth)/login')
-      if (token && inAuth) router.replace('/(tabs)/jobs')
-      // Authenticated but at root (fresh install / app update) — go to tabs
-      if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
-    })
+    const token = getTokenSync()
+    const inAuth = segments[0] === '(auth)'
+    const inTabs = segments[0] === '(tabs)'
+    if (!token && !inAuth) router.replace('/(auth)/login')
+    if (token && inAuth) router.replace('/(tabs)/jobs')
+    // Authenticated but at root (fresh install / app update) — go to tabs
+    if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
   }, [ready, segments])
 
   // Navigate to job when user taps a notification

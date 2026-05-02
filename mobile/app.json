@@ -54,6 +54,7 @@
       "url": "https://u.expo.dev/2ff28b46-d76c-45e0-ba35-5c1b329bfb2d"
     },
     "runtimeVersion": "1",
+    "owner": "jheffernan26",
     "extra": {
       "router": { "origin": false },
       "eas": {

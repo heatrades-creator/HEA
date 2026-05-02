@@ -11,7 +11,7 @@ import { setupNotifications } from '@/lib/notifications'
 import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.1'
-const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://hea-group.com.au'
+const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
 const DOWNLOAD_URL = `${BASE}/installer-app`
 
 function extractPostcode(address: string): string {

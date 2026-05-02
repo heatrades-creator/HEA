@@ -1,7 +1,7 @@
 import { getToken, clearAuth } from './auth'
 import type { GASJob, Comment, Contact, JobClaim } from './types'
 
-const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://hea-group.com.au'
+const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
 
 export class SessionExpiredError extends Error {
   constructor() { super('Session expired') }

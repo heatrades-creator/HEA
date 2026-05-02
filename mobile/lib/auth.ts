@@ -45,6 +45,10 @@ export async function getInstallerProfile(): Promise<InstallerProfile | null> {
   }
 }
 
+export function getTokenSync(): string | null {
+  return global.__heaToken ?? null
+}
+
 export async function clearAuth(): Promise<void> {
   global.__heaToken = null
   global.__heaProfile = null

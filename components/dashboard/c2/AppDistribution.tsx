@@ -22,6 +22,11 @@ function fmt(iso: string) {
   })
 }
 
+function buildId(url: string): string | null {
+  const name = (url.split('/').pop() ?? '').replace(/\.apk$/i, '')
+  return name.length >= 5 ? name.slice(-5) : null
+}
+
 export function AppDistribution() {
   const [info, setInfo] = useState<ApkInfo>({ url: null, version: null, uploadedAt: null, history: [] })
   const [showForm, setShowForm] = useState(false)
@@ -70,7 +75,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v10</span></p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v11</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">
@@ -170,7 +175,12 @@ export function AppDistribution() {
           <tbody className="divide-y divide-[#e5e9f0]">
             {info.history.map((entry, i) => (
               <tr key={entry.uploadedAt} className="hover:bg-gray-50 transition-colors">
-                <td className="px-3 sm:px-5 py-3 font-mono font-semibold text-[#111827]">v{entry.version}</td>
+                <td className="px-3 sm:px-5 py-3 font-mono font-semibold text-[#111827]">
+                  v{entry.version}
+                  {buildId(entry.url) && (
+                    <span className="text-gray-400 font-normal text-xs ml-1.5">- {buildId(entry.url)}</span>
+                  )}
+                </td>
                 <td className="hidden sm:table-cell px-5 py-3 text-gray-500 text-xs">{fmt(entry.uploadedAt)}</td>
                 <td className="px-3 sm:px-5 py-3 text-center sm:text-right">
                   {i === 0 ? (

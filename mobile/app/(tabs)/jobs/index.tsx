@@ -46,8 +46,25 @@ export default function JobsScreen() {
       setJobs(data)
     } catch (e) {
       if (e instanceof SessionExpiredError) {
-        await clearAuth()
-        router.replace('/(auth)/login')
+        // Diagnostic: show what the server sees before redirecting
+        const memToken = global.__heaToken
+        try {
+          const pingRes = await fetch(`${BASE}/api/installer/ping`, {
+            headers: memToken ? { Authorization: `Bearer ${memToken}` } : {},
+          })
+          const ping = await pingRes.json()
+          Alert.alert(
+            'Auth Debug (screenshot this)',
+            `Token in memory: ${memToken ? memToken.slice(0, 25) + '…' : 'NOT SET'}\n\nPing result:\n${JSON.stringify(ping, null, 2)}`,
+            [{ text: 'OK', onPress: async () => { await clearAuth(); router.replace('/(auth)/login') } }]
+          )
+        } catch (pingErr) {
+          Alert.alert(
+            'Auth Debug',
+            `Token in memory: ${memToken ? memToken.slice(0, 25) + '…' : 'NOT SET'}\nPing failed: ${pingErr}`,
+            [{ text: 'OK', onPress: async () => { await clearAuth(); router.replace('/(auth)/login') } }]
+          )
+        }
         return
       }
       setError(e instanceof Error ? e.message : 'Unknown error')

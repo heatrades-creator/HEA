@@ -193,7 +193,7 @@ function doPost(e) {
 
   if (action === 'uploadJobPhoto') {
     try {
-      return jsonResponse(uploadToJobFolder_(body, '05_Photos'));
+      return jsonResponse(uploadToJobFolder_(body, 'Job Photos'));
     } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }
@@ -201,7 +201,7 @@ function doPost(e) {
 
   if (action === 'uploadJobReceipt') {
     try {
-      return jsonResponse(uploadToJobFolder_(body, '07_Receipts'));
+      return jsonResponse(uploadToJobFolder_(body, 'Job Receipts'));
     } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }
@@ -901,7 +901,7 @@ function getPhotos_(jobNumber) {
   if (!folderId) return { photos: [] };
   try {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
-    const photosFolder = getOrCreateDriveFolder_(clientFolder, '05_Photos');
+    const photosFolder = getOrCreateDriveFolder_(clientFolder, 'Job Photos');
     const files = photosFolder.getFiles();
     const photos = [];
     while (files.hasNext()) {

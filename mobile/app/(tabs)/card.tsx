@@ -64,7 +64,10 @@ export default function CardScreen() {
   }, [])
 
   const openCustomise = () => {
-    setDraft({ ...settings })
+    const d = { ...settings }
+    // Clear title if it was accidentally set to the installer's name
+    if (d.title === installer!.name) d.title = ''
+    setDraft(d)
     setShowModal(true)
   }
 
@@ -121,9 +124,9 @@ export default function CardScreen() {
           >
             <Text style={s.sectionLabel}>YOUR DETAILS</Text>
             <Field
-              label="Name shown on card"
+              label="Job title"
               value={draft.title}
-              placeholder={installer.role === 'lead' ? 'Lead Installer' : 'Solar Installer'}
+              placeholder="e.g. CEO, Lead Installer, Solar Installer"
               onChangeText={v => setDraft(d => ({ ...d, title: v }))}
             />
             <Field

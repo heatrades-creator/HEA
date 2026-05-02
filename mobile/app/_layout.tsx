@@ -35,22 +35,22 @@ export default function RootLayout() {
     init()
   }, [])
 
-  // Synchronous token check — avoids stale async Promise callbacks from rapid
-  // segment changes during navigation causing spurious login redirects.
-  // everLoggedIn prevents iOS system modals (e.g. notification permission dialog)
-  // from triggering a spurious redirect: once the user reaches tabs we never
-  // redirect to login from here — SessionExpiredError in jobs/index.tsx handles
-  // genuine session expiry instead.
+  // everLoggedIn: once the user reaches tabs, never redirect to login from this
+  // guard — session expiry is handled explicitly in jobs/index.tsx instead.
   useEffect(() => {
     if (!ready) return
-    const token = global.__heaToken ?? null
-    const inAuth = segments[0] === '(auth)'
-    const inTabs = segments[0] === '(tabs)'
-    if (inTabs) everLoggedIn.current = true
-    if (!token && !inAuth && !everLoggedIn.current) router.replace('/(auth)/login')
-    if (token && inAuth) router.replace('/(tabs)/jobs')
-    // Authenticated but at the root (e.g. fresh install / update) — go to tabs
-    if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
+    // Read token asynchronously so the callback fires after the current
+    // navigation has settled, avoiding spurious redirects from mid-transition
+    // segment states (e.g. [] between (auth) → (tabs) during login).
+    getToken().then(token => {
+      const inAuth = segments[0] === '(auth)'
+      const inTabs = segments[0] === '(tabs)'
+      if (inTabs) everLoggedIn.current = true
+      if (!token && !inAuth && !everLoggedIn.current) router.replace('/(auth)/login')
+      if (token && inAuth) router.replace('/(tabs)/jobs')
+      // Authenticated but at root (fresh install / app update) — go to tabs
+      if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
+    })
   }, [ready, segments])
 
   // Navigate to job when user taps a notification

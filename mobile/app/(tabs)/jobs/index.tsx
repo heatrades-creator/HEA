@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   View, Text, SectionList, TouchableOpacity, StyleSheet,
-  RefreshControl, TextInput, Linking,
+  RefreshControl, TextInput, Linking, Alert,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
@@ -46,15 +46,16 @@ export default function JobsScreen() {
       setJobs(data)
     } catch (e) {
       if (e instanceof SessionExpiredError) {
-        await clearAuth()
-        router.replace('/(auth)/login')
-        return
+        // Don't auto-redirect — show a clear error so the user can choose.
+        // Auto-redirect fired spuriously after fresh logins and broke the app.
+        setError('session_expired')
+      } else {
+        setError(e instanceof Error ? e.message : 'Unknown error')
       }
-      setError(e instanceof Error ? e.message : 'Unknown error')
     }
     setLoading(false)
     setRefreshing(false)
-  }, [router])
+  }, [])
 
   // Check server version on mount — show banner if behind
   useEffect(() => {
@@ -105,6 +106,17 @@ export default function JobsScreen() {
 
   return (
     <View style={styles.root}>
+      {/* Session expired banner — shown even when jobs are cached */}
+      {error === 'session_expired' && (
+        <TouchableOpacity
+          style={styles.sessionExpiredBanner}
+          onPress={async () => { await clearAuth(); router.replace('/(auth)/login') }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="alert-circle-outline" size={16} color="#fff" />
+          <Text style={styles.sessionExpiredText}>Session expired — tap to sign in again</Text>
+        </TouchableOpacity>
+      )}
       {/* Update available banner */}
       {updateAvailable && (
         <TouchableOpacity
@@ -175,14 +187,30 @@ export default function JobsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>
-              {loading ? 'Loading…' : error ? `Error: ${error}` : 'No active jobs'}
-            </Text>
-            {!loading && (
-              <TouchableOpacity style={styles.retryBtn} onPress={() => load()} activeOpacity={0.7}>
-                <Ionicons name="refresh-outline" size={16} color="#ffd100" />
-                <Text style={styles.retryText}>Tap to retry</Text>
-              </TouchableOpacity>
+            {error === 'session_expired' ? (
+              <>
+                <Text style={styles.emptyText}>Session expired — please sign in again.</Text>
+                <TouchableOpacity
+                  style={styles.retryBtn}
+                  onPress={async () => { await clearAuth(); router.replace('/(auth)/login') }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="log-in-outline" size={16} color="#ffd100" />
+                  <Text style={styles.retryText}>Sign In Again</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyText}>
+                  {loading ? 'Loading…' : error ? `Error: ${error}` : 'No active jobs'}
+                </Text>
+                {!loading && (
+                  <TouchableOpacity style={styles.retryBtn} onPress={() => load()} activeOpacity={0.7}>
+                    <Ionicons name="refresh-outline" size={16} color="#ffd100" />
+                    <Text style={styles.retryText}>Tap to retry</Text>
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </View>
         }
@@ -250,6 +278,11 @@ export default function JobsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#111827' },
+  sessionExpiredBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#ef4444', paddingHorizontal: 16, paddingVertical: 10,
+  },
+  sessionExpiredText: { fontSize: 13, fontWeight: '700', color: '#fff', flex: 1 },
   updateBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#ffd100', paddingHorizontal: 16, paddingVertical: 10,

@@ -109,6 +109,12 @@ export async function fetchContacts(): Promise<Contact[]> {
   return res.json()
 }
 
+export async function fetchAllClaims(): Promise<Array<{ jobNumber: string; installDate: string; installerId: string; installerName: string }>> {
+  const res = await authFetch('/api/installer/claims')
+  if (!res.ok) return []
+  return res.json()
+}
+
 export async function registerPushToken(token: string): Promise<void> {
   await authFetch('/api/installer/push-token', {
     method: 'POST',

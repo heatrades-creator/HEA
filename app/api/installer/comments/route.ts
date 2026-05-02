@@ -63,5 +63,6 @@ export async function POST(req: NextRequest) {
     }
   }).catch(() => {})
 
-  return NextResponse.json(comment, { status: 201 })
+  // Include replies: [] so the app can render without crashing on c.replies.map(...)
+  return NextResponse.json({ ...comment, replies: [] }, { status: 201 })
 }

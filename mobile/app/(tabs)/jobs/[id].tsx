@@ -10,10 +10,12 @@ import * as Haptics from 'expo-haptics'
 import * as ImagePicker from 'expo-image-picker'
 import {
   fetchJob, fetchComments, postComment, uploadJobPhoto, uploadJobReceipt,
-  claimJob, unclaimJob, fetchPhotos,
+  claimJob, unclaimJob, fetchPhotos, fetchAllClaims,
 } from '@/lib/api'
 import { getInstallerProfile } from '@/lib/auth'
 import type { GASJob, Comment, JobClaim } from '@/lib/types'
+
+const MAX_JOBS_PER_DAY = 5
 
 function timeAgo(iso: string): string {
   const diff = (Date.now() - new Date(iso).getTime()) / 1000
@@ -27,26 +29,145 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-// Date input: accepts YYYY-MM-DD, displays as DD/MM/YYYY
-function parseInputDate(raw: string): string | null {
-  const clean = raw.replace(/\D/g, '')
-  if (clean.length !== 8) return null
-  const d = clean.slice(0, 2), m = clean.slice(2, 4), y = clean.slice(4, 8)
-  const dt = new Date(`${y}-${m}-${d}`)
-  if (isNaN(dt.getTime())) return null
-  return `${y}-${m}-${d}`
+function toISODate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 
-function autoFormatDateInput(text: string, prev: string): string {
-  const digits = text.replace(/\D/g, '')
-  if (text.length < prev.length) {
-    // Backspace — strip trailing slash
-    return text.replace(/\/$/, '')
-  }
-  if (digits.length <= 2) return digits
-  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
-  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`
+// ── Month Calendar ─────────────────────────────────────────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
+const DAY_NAMES = ['Mo','Tu','We','Th','Fr','Sa','Su']
+
+interface ClaimSummary {
+  installDate: string
+  installerId: string
+  jobNumber: string
 }
+
+function MonthCalendar({
+  selectedDate,
+  onSelect,
+  claims,
+  myId,
+  excludeJobNumber,
+}: {
+  selectedDate: string | null
+  onSelect: (date: string) => void
+  claims: ClaimSummary[]
+  myId: string | null
+  excludeJobNumber: string
+}) {
+  const initial = selectedDate ? new Date(selectedDate + 'T00:00:00') : new Date()
+  const [year, setYear] = useState(initial.getFullYear())
+  const [month, setMonth] = useState(initial.getMonth())
+
+  const todayStr = toISODate(new Date())
+
+  // Group claims by date, excluding the current job so editing doesn't inflate the count
+  const byDate: Record<string, { count: number; mine: boolean }> = {}
+  for (const c of claims) {
+    if (c.jobNumber === excludeJobNumber) continue
+    if (!byDate[c.installDate]) byDate[c.installDate] = { count: 0, mine: false }
+    byDate[c.installDate].count++
+    if (c.installerId === myId) byDate[c.installDate].mine = true
+  }
+
+  function prevMonth() {
+    if (month === 0) { setYear(y => y - 1); setMonth(11) }
+    else setMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (month === 11) { setYear(y => y + 1); setMonth(0) }
+    else setMonth(m => m + 1)
+  }
+
+  // Build grid cells (Mon-first)
+  const firstDay = new Date(year, month, 1)
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const startOffset = (firstDay.getDay() + 6) % 7
+  const cells: (number | null)[] = []
+  for (let i = 0; i < startOffset; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const rows: (number | null)[][] = []
+  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7))
+
+  return (
+    <View>
+      <View style={calStyles.nav}>
+        <TouchableOpacity onPress={prevMonth} style={calStyles.navBtn} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={18} color="#fff" />
+        </TouchableOpacity>
+        <Text style={calStyles.monthTitle}>{MONTH_NAMES[month]} {year}</Text>
+        <TouchableOpacity onPress={nextMonth} style={calStyles.navBtn} activeOpacity={0.7}>
+          <Ionicons name="chevron-forward" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={calStyles.row}>
+        {DAY_NAMES.map(d => (
+          <View key={d} style={calStyles.cell}>
+            <Text style={calStyles.dayName}>{d}</Text>
+          </View>
+        ))}
+      </View>
+
+      {rows.map((row, ri) => (
+        <View key={ri} style={calStyles.row}>
+          {row.map((d, ci) => {
+            if (!d) return <View key={ci} style={calStyles.cell} />
+            const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+            const info = byDate[ds]
+            const count = info?.count ?? 0
+            const mine = info?.mine ?? false
+            const full = count >= MAX_JOBS_PER_DAY
+            const isSelected = selectedDate === ds
+            const isPast = ds < todayStr
+
+            return (
+              <TouchableOpacity
+                key={ci}
+                style={[
+                  calStyles.cell, calStyles.dateCell,
+                  isSelected && calStyles.cellSelected,
+                  full && !isSelected && calStyles.cellFull,
+                  isPast && calStyles.cellPast,
+                ]}
+                onPress={() => { if (!full && !isPast) onSelect(ds) }}
+                disabled={full || isPast}
+                activeOpacity={0.7}
+              >
+                <Text style={[
+                  calStyles.dateNum,
+                  isSelected && calStyles.dateNumSelected,
+                  isPast && calStyles.dateNumPast,
+                ]}>{d}</Text>
+                {count > 0 && (
+                  <View style={calStyles.dots}>
+                    {Array.from({ length: Math.min(count, 5) }, (_, i) => (
+                      <View key={i} style={[
+                        calStyles.dot,
+                        full ? calStyles.dotFull : mine ? calStyles.dotMine : calStyles.dotOther,
+                      ]} />
+                    ))}
+                  </View>
+                )}
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      ))}
+
+      <View style={calStyles.legend}>
+        <View style={calStyles.legendItem}><View style={[calStyles.dot, calStyles.dotMine]} /><Text style={calStyles.legendText}>Your job</Text></View>
+        <View style={calStyles.legendItem}><View style={[calStyles.dot, calStyles.dotOther]} /><Text style={calStyles.legendText}>Team job</Text></View>
+        <View style={calStyles.legendItem}><View style={[calStyles.dot, calStyles.dotFull]} /><Text style={calStyles.legendText}>Full (5/day max)</Text></View>
+      </View>
+    </View>
+  )
+}
+
+// ── Main screen ────────────────────────────────────────────────────────────
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -62,7 +183,9 @@ export default function JobDetailScreen() {
   // Claim state
   const [claim, setClaim] = useState<JobClaim | null>(null)
   const [claimModalVisible, setClaimModalVisible] = useState(false)
-  const [dateInput, setDateInput] = useState('')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [calendarClaims, setCalendarClaims] = useState<ClaimSummary[]>([])
+  const [calendarLoading, setCalendarLoading] = useState(false)
   const [claimBusy, setClaimBusy] = useState(false)
 
   // Job pack modal
@@ -82,14 +205,21 @@ export default function JobDetailScreen() {
       }).catch(() => setLoading(false))
   }, [id])
 
+  // Load all claims when modal opens (for calendar availability)
+  useEffect(() => {
+    if (!claimModalVisible) return
+    setCalendarLoading(true)
+    fetchAllClaims()
+      .then(setCalendarClaims)
+      .catch(() => {})
+      .finally(() => setCalendarLoading(false))
+  }, [claimModalVisible])
+
   async function openJobPack() {
     setPackVisible(true)
     if (photos.length === 0) {
       setPhotosLoading(true)
-      try {
-        const p = await fetchPhotos(id)
-        setPhotos(p)
-      } catch {}
+      try { const p = await fetchPhotos(id); setPhotos(p) } catch {}
       setPhotosLoading(false)
     }
   }
@@ -136,7 +266,7 @@ export default function JobDetailScreen() {
       Alert.alert('Uploaded', type === 'photo' ? 'Photo saved to job folder in Drive.' : 'Receipt saved to job folder in Drive.')
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Try again.')
+      Alert.alert('Upload failed', e instanceof Error ? e.message : 'Unknown error. Try again.')
     }
     setUploading(null)
   }
@@ -150,23 +280,22 @@ export default function JobDetailScreen() {
       setComments(prev => [...prev, c])
       setCommentText('')
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    } catch {
-      Alert.alert('Error', 'Failed to post note. Try again.')
+    } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+      Alert.alert('Note failed', e instanceof Error ? e.message : 'Could not post note. Try again.')
     }
     setSending(false)
   }
 
   async function handleClaim() {
-    const isoDate = parseInputDate(dateInput)
-    if (!isoDate) {
-      Alert.alert('Invalid date', 'Enter a valid date as DD/MM/YYYY')
+    if (!selectedDate) {
+      Alert.alert('Select a date', 'Tap a date on the calendar to set your installation date.')
       return
     }
     setClaimBusy(true)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
     try {
-      const result = await claimJob(id, isoDate)
+      const result = await claimJob(id, selectedDate)
       setClaim({
         installerId: result.installerId,
         installerName: result.installer.name,
@@ -174,7 +303,7 @@ export default function JobDetailScreen() {
         claimedAt: result.createdAt,
       })
       setClaimModalVisible(false)
-      setDateInput('')
+      setSelectedDate(null)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     } catch (e) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
@@ -200,6 +329,20 @@ export default function JobDetailScreen() {
         },
       },
     ])
+  }
+
+  function addToGoogleCalendar() {
+    if (!claim || !job) return
+    const [y, m, d] = claim.installDate.split('-').map(Number)
+    const end = new Date(y, m - 1, d + 1)
+    const startStr = `${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`
+    const endStr = `${end.getFullYear()}${String(end.getMonth()+1).padStart(2,'0')}${String(end.getDate()).padStart(2,'0')}`
+    const text = encodeURIComponent(`HEA Solar Installation — ${job.jobNumber}`)
+    const details = encodeURIComponent(`Client: ${job.clientName}\nJob: ${job.jobNumber}\nAddress: ${job.address}`)
+    const location = encodeURIComponent(job.address)
+    Linking.openURL(
+      `https://calendar.google.com/calendar/r/eventedit?text=${text}&dates=${startStr}/${endStr}&details=${details}&location=${location}`
+    )
   }
 
   if (loading) {
@@ -253,7 +396,7 @@ export default function JobDetailScreen() {
               <Text style={styles.claimSub}>Tap below to claim this job and set your installation date.</Text>
               <TouchableOpacity
                 style={styles.claimBtn}
-                onPress={() => setClaimModalVisible(true)}
+                onPress={() => { setSelectedDate(null); setClaimModalVisible(true) }}
                 activeOpacity={0.8}
               >
                 <Ionicons name="person-add-outline" size={16} color="#111827" />
@@ -268,21 +411,22 @@ export default function JobDetailScreen() {
               </View>
               <View style={styles.claimDateRow}>
                 <Ionicons name="calendar-outline" size={14} color="#34d399" />
-                <Text style={styles.claimDateText}>
-                  Install: {formatDate(claim!.installDate)}
-                </Text>
+                <Text style={styles.claimDateText}>Install: {formatDate(claim!.installDate)}</Text>
               </View>
               <View style={styles.claimActions}>
                 <TouchableOpacity
                   style={styles.claimEditBtn}
-                  onPress={() => {
-                    const [y, m, d] = claim!.installDate.split('-')
-                    setDateInput(`${d}/${m}/${y}`)
-                    setClaimModalVisible(true)
-                  }}
+                  onPress={() => { setSelectedDate(claim!.installDate); setClaimModalVisible(true) }}
                   disabled={claimBusy}
                 >
                   <Text style={styles.claimEditText}>Change Date</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.calendarBtn}
+                  onPress={addToGoogleCalendar}
+                >
+                  <Ionicons name="calendar-outline" size={14} color="#60a5fa" />
+                  <Text style={styles.calendarBtnText}>Add to Calendar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.unclaimBtn}
@@ -301,9 +445,7 @@ export default function JobDetailScreen() {
               </View>
               <View style={styles.claimDateRow}>
                 <Ionicons name="calendar-outline" size={14} color="#60a5fa" />
-                <Text style={[styles.claimDateText, { color: '#60a5fa' }]}>
-                  Install: {formatDate(claim!.installDate)}
-                </Text>
+                <Text style={[styles.claimDateText, { color: '#60a5fa' }]}>Install: {formatDate(claim!.installDate)}</Text>
               </View>
             </>
           )}
@@ -339,7 +481,7 @@ export default function JobDetailScreen() {
           ) : null}
         </View>
 
-        {/* Site Info: WiFi + EPS */}
+        {/* Site Info */}
         {(job.wifiSsid || job.epsCircuit1) ? (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Site Info</Text>
@@ -433,7 +575,7 @@ export default function JobDetailScreen() {
                     <Text style={styles.commentTime}>{timeAgo(c.createdAt)}</Text>
                   </View>
                   <Text style={styles.commentBody}>{c.body}</Text>
-                  {c.replies.map(r => (
+                  {(c.replies ?? []).map(r => (
                     <View key={r.id} style={styles.replyRow}>
                       <Text style={styles.replyAuthor}>{r.installer?.name ?? 'HEA Office'}</Text>
                       <Text style={styles.replyBody}>{r.body}</Text>
@@ -458,7 +600,9 @@ export default function JobDetailScreen() {
               onPress={submitComment}
               disabled={!commentText.trim() || sending}
             >
-              <Ionicons name="send" size={18} color="#111827" />
+              {sending
+                ? <ActivityIndicator size="small" color="#111827" />
+                : <Ionicons name="send" size={18} color="#111827" />}
             </TouchableOpacity>
           </View>
         </View>
@@ -469,36 +613,48 @@ export default function JobDetailScreen() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setClaimModalVisible(false)} />
         <View style={styles.modalSheet}>
           <View style={styles.modalHandle} />
-          <Text style={styles.modalTitle}>{isMyClaim ? 'Update Installation Date' : 'Claim This Job'}</Text>
+          <Text style={styles.modalTitle}>{claim && isMyClaim ? 'Change Installation Date' : 'Claim This Job'}</Text>
           <Text style={styles.modalSub}>
-            {isMyClaim
-              ? 'Change the scheduled installation date for this job.'
-              : 'Enter the scheduled installation date. Your name will be attached to this job for everyone to see.'}
+            {claim && isMyClaim
+              ? 'Select the new scheduled installation date.'
+              : 'Choose your installation date. Your name will be attached to this job for the whole team to see.'}
           </Text>
 
-          <Text style={styles.inputLabel}>Installation Date</Text>
-          <TextInput
-            style={styles.dateInput}
-            value={dateInput}
-            onChangeText={text => setDateInput(autoFormatDateInput(text, dateInput))}
-            placeholder="DD/MM/YYYY"
-            placeholderTextColor="#6b7280"
-            keyboardType="numeric"
-            maxLength={10}
-            autoFocus
-          />
+          {calendarLoading ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <ActivityIndicator color="#ffd100" />
+              <Text style={{ color: '#6b7280', marginTop: 8, fontSize: 13 }}>Loading team schedule…</Text>
+            </View>
+          ) : (
+            <MonthCalendar
+              selectedDate={selectedDate}
+              onSelect={setSelectedDate}
+              claims={calendarClaims}
+              myId={myId}
+              excludeJobNumber={id}
+            />
+          )}
+
+          {selectedDate && (
+            <View style={styles.selectedDateBanner}>
+              <Ionicons name="calendar" size={16} color="#111827" />
+              <Text style={styles.selectedDateText}>
+                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+              </Text>
+            </View>
+          )}
 
           <TouchableOpacity
-            style={[styles.claimConfirmBtn, claimBusy && styles.uploadBtnDisabled]}
+            style={[styles.claimConfirmBtn, (!selectedDate || claimBusy) && styles.claimConfirmDisabled]}
             onPress={handleClaim}
-            disabled={claimBusy}
+            disabled={!selectedDate || claimBusy}
             activeOpacity={0.8}
           >
             {claimBusy
               ? <ActivityIndicator size="small" color="#111827" />
               : <Ionicons name="checkmark-circle-outline" size={18} color="#111827" />}
             <Text style={styles.claimConfirmText}>
-              {claimBusy ? 'Saving…' : isMyClaim ? 'Update Date' : 'Confirm Claim'}
+              {claimBusy ? 'Saving…' : claim && isMyClaim ? 'Update Date' : 'Confirm Claim'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -515,7 +671,6 @@ export default function JobDetailScreen() {
           </View>
 
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
-            {/* Claim info banner */}
             {claim && (
               <View style={styles.packClaimBanner}>
                 <Ionicons name="person-circle-outline" size={18} color="#34d399" />
@@ -525,22 +680,15 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            {/* Client */}
             <Text style={styles.packSection}>Client Details</Text>
             <View style={styles.packCard}>
               <PackRow label="Name" value={job.clientName} />
               <PackRow label="Phone" value={job.phone} onPress={() => Linking.openURL(`tel:${job.phone}`)} />
               <PackRow label="Email" value={job.email} onPress={() => Linking.openURL(`mailto:${job.email}`)} />
-              <PackRow
-                label="Address"
-                value={job.address}
-                onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`)}
-                linkText="Open in Maps ↗"
-              />
+              <PackRow label="Address" value={job.address} onPress={() => Linking.openURL(`https://maps.google.com/?q=${encodeURIComponent(job.address)}`)} linkText="Open in Maps ↗" />
               {job.annualBill ? <PackRow label="Annual Bill" value={`$${job.annualBill}`} /> : null}
             </View>
 
-            {/* Household */}
             {(job.occupants || job.homeDaytime || job.hotWater) ? (
               <>
                 <Text style={styles.packSection}>Household Profile</Text>
@@ -554,7 +702,6 @@ export default function JobDetailScreen() {
               </>
             ) : null}
 
-            {/* System */}
             <Text style={styles.packSection}>System Details</Text>
             <View style={styles.packCard}>
               {job.systemSize ? <PackRow label="Solar" value={`${job.systemSize} kW`} /> : null}
@@ -563,19 +710,13 @@ export default function JobDetailScreen() {
               {job.financeRequired !== undefined ? <PackRow label="Finance" value={job.financeRequired ? 'Required' : 'Not required'} /> : null}
             </View>
 
-            {/* Site */}
             {(job.wifiSsid || job.epsCircuit1) ? (
               <>
                 <Text style={styles.packSection}>Site Info</Text>
                 <View style={styles.packCard}>
                   {job.wifiSsid ? <PackRow label="WiFi SSID" value={job.wifiSsid} /> : null}
                   {job.wifiPassword ? (
-                    <PackRow
-                      label="WiFi Password"
-                      value={job.wifiPassword}
-                      onPress={() => { Clipboard.setString(job.wifiPassword); Alert.alert('Copied', 'WiFi password copied') }}
-                      linkText="Tap to copy"
-                    />
+                    <PackRow label="WiFi Password" value={job.wifiPassword} onPress={() => { Clipboard.setString(job.wifiPassword); Alert.alert('Copied', 'WiFi password copied') }} linkText="Tap to copy" />
                   ) : null}
                   {job.epsCircuit1 ? <PackRow label="EPS Circuit 1" value={job.epsCircuit1} /> : null}
                   {job.epsCircuit2 ? <PackRow label="EPS Circuit 2" value={job.epsCircuit2} /> : null}
@@ -584,7 +725,6 @@ export default function JobDetailScreen() {
               </>
             ) : null}
 
-            {/* Notes */}
             {job.notes ? (
               <>
                 <Text style={styles.packSection}>Site Notes / BOM</Text>
@@ -594,7 +734,6 @@ export default function JobDetailScreen() {
               </>
             ) : null}
 
-            {/* Photos */}
             <Text style={styles.packSection}>Client Photos</Text>
             {photosLoading ? (
               <ActivityIndicator color="#ffd100" style={{ marginVertical: 12 }} />
@@ -603,12 +742,7 @@ export default function JobDetailScreen() {
             ) : (
               <View style={styles.photoGrid}>
                 {photos.map(p => (
-                  <TouchableOpacity
-                    key={p.id}
-                    style={styles.photoThumb}
-                    onPress={() => Linking.openURL(p.url)}
-                    activeOpacity={0.8}
-                  >
+                  <TouchableOpacity key={p.id} style={styles.photoThumb} onPress={() => Linking.openURL(p.url)} activeOpacity={0.8}>
                     <Image source={{ uri: p.url }} style={styles.photoImg} resizeMode="cover" />
                     <Text style={styles.photoName} numberOfLines={1}>{p.name}</Text>
                   </TouchableOpacity>
@@ -616,13 +750,8 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            {/* Drive link */}
             {job.driveUrl ? (
-              <TouchableOpacity
-                style={styles.packDriveBtn}
-                onPress={() => Linking.openURL(job.driveUrl)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity style={styles.packDriveBtn} onPress={() => Linking.openURL(job.driveUrl)} activeOpacity={0.8}>
                 <Ionicons name="folder-open-outline" size={18} color="#ffd100" />
                 <Text style={styles.packDriveBtnText}>Open Client Drive Folder ↗</Text>
               </TouchableOpacity>
@@ -634,14 +763,7 @@ export default function JobDetailScreen() {
   )
 }
 
-function PackRow({
-  label, value, onPress, linkText,
-}: {
-  label: string
-  value: string
-  onPress?: () => void
-  linkText?: string
-}) {
+function PackRow({ label, value, onPress, linkText }: { label: string; value: string; onPress?: () => void; linkText?: string }) {
   return (
     <View style={styles.packRow}>
       <Text style={styles.packLabel}>{label}</Text>
@@ -657,6 +779,32 @@ function PackRow({
   )
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────
+
+const calStyles = StyleSheet.create({
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  navBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#374151', alignItems: 'center', justifyContent: 'center' },
+  monthTitle: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  row: { flexDirection: 'row', marginBottom: 2 },
+  cell: { flex: 1, alignItems: 'center', paddingVertical: 3 },
+  dayName: { fontSize: 10, color: '#6b7280', fontWeight: '700' },
+  dateCell: { minHeight: 40, borderRadius: 8, paddingTop: 4, justifyContent: 'center' },
+  cellSelected: { backgroundColor: '#ffd100' },
+  cellFull: { backgroundColor: '#1f2937', opacity: 0.4 },
+  cellPast: { opacity: 0.3 },
+  dateNum: { fontSize: 13, fontWeight: '600', color: '#fff', textAlign: 'center' },
+  dateNumSelected: { color: '#111827' },
+  dateNumPast: { color: '#4b5563' },
+  dots: { flexDirection: 'row', gap: 2, justifyContent: 'center', flexWrap: 'wrap', marginTop: 2 },
+  dot: { width: 5, height: 5, borderRadius: 3 },
+  dotMine: { backgroundColor: '#34d399' },
+  dotOther: { backgroundColor: '#ffd100' },
+  dotFull: { backgroundColor: '#ef4444' },
+  legend: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 14, marginBottom: 4 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  legendText: { fontSize: 11, color: '#6b7280' },
+})
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#111827' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#111827' },
@@ -671,12 +819,7 @@ const styles = StyleSheet.create({
   mapsLink: { fontSize: 12, color: '#ffd100', fontWeight: '700' },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 },
   contactText: { fontSize: 15, color: '#ffd100', fontWeight: '600' },
-
-  // Claim section
-  claimSection: {
-    backgroundColor: '#1f2937', borderRadius: 16, padding: 16,
-    borderWidth: 1, borderColor: '#374151', marginBottom: 14,
-  },
+  claimSection: { backgroundColor: '#1f2937', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#374151', marginBottom: 14 },
   claimSectionMine: { borderColor: '#065f46', backgroundColor: '#064e3b22' },
   claimSectionOther: { borderColor: '#1e3a5f', backgroundColor: '#1e3a5f22' },
   claimRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
@@ -684,62 +827,36 @@ const styles = StyleSheet.create({
   claimSub: { fontSize: 13, color: '#9ca3af', marginBottom: 14 },
   claimDateRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 },
   claimDateText: { fontSize: 14, color: '#34d399', fontWeight: '600' },
-  claimActions: { flexDirection: 'row', gap: 10 },
-  claimBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#ffd100', borderRadius: 12, paddingVertical: 13,
-  },
+  claimActions: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  claimBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ffd100', borderRadius: 12, paddingVertical: 13 },
   claimBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
-  claimEditBtn: {
-    flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center',
-    backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#34d399',
-  },
-  claimEditText: { fontSize: 13, fontWeight: '600', color: '#34d399' },
-  unclaimBtn: {
-    flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center',
-    backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#6b7280',
-  },
-  unclaimText: { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
-  packBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: '#ffd100', borderRadius: 12, paddingVertical: 13, marginBottom: 20,
-  },
+  claimEditBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#34d399', minWidth: 90 },
+  claimEditText: { fontSize: 12, fontWeight: '600', color: '#34d399' },
+  calendarBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 4, backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#60a5fa', minWidth: 90 },
+  calendarBtnText: { fontSize: 12, fontWeight: '600', color: '#60a5fa' },
+  unclaimBtn: { flex: 1, borderRadius: 10, paddingVertical: 10, alignItems: 'center', backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#6b7280', minWidth: 90 },
+  unclaimText: { fontSize: 12, fontWeight: '600', color: '#9ca3af' },
+  packBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ffd100', borderRadius: 12, paddingVertical: 13, marginBottom: 20 },
   packBtnText: { fontSize: 15, fontWeight: '700', color: '#111827' },
-
   specRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  specCard: {
-    flex: 1, backgroundColor: '#1f2937', borderRadius: 12,
-    padding: 12, borderWidth: 1, borderColor: '#374151', alignItems: 'center',
-  },
+  specCard: { flex: 1, backgroundColor: '#1f2937', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#374151', alignItems: 'center' },
   specValue: { fontSize: 18, fontWeight: '800', color: '#fff' },
   specLabel: { fontSize: 11, color: '#6b7280', marginTop: 2 },
   section: { marginBottom: 24 },
-  sectionLabel: {
-    fontSize: 11, fontWeight: '700', color: '#6b7280',
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10,
-  },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 },
   infoGrid: { flexDirection: 'row', gap: 10 },
-  infoCard: {
-    flex: 1, backgroundColor: '#1f2937', borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: '#374151',
-  },
+  infoCard: { flex: 1, backgroundColor: '#1f2937', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#374151' },
   infoLabel: { fontSize: 10, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4 },
   infoValue: { fontSize: 13, color: '#d1d5db', fontWeight: '600', marginBottom: 2 },
   infoSub: { fontSize: 11, color: '#6b7280', marginTop: 4 },
   notesBox: { backgroundColor: '#1f2937', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#374151' },
   notesText: { fontSize: 14, color: '#d1d5db', lineHeight: 22, fontFamily: 'monospace' },
   uploadRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  uploadBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 14, gap: 8,
-  },
+  uploadBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 14, gap: 8 },
   uploadBtnReceipt: { backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#ffd100' },
   uploadBtnDisabled: { opacity: 0.5 },
   uploadBtnText: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  driveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 6, marginBottom: 24, paddingVertical: 8,
-  },
+  driveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 24, paddingVertical: 8 },
   driveBtnAlt: { fontSize: 13, color: '#6b7280' },
   emptyNotes: { fontSize: 14, color: '#6b7280', fontStyle: 'italic' },
   commentCard: { backgroundColor: '#1f2937', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#374151' },
@@ -753,88 +870,38 @@ const styles = StyleSheet.create({
   replyAuthor: { fontSize: 12, fontWeight: '600', color: '#9ca3af', marginBottom: 2 },
   replyBody: { fontSize: 13, color: '#d1d5db' },
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-end', marginTop: 12 },
-  commentInput: {
-    flex: 1, backgroundColor: '#1f2937', borderRadius: 12,
-    borderWidth: 1, borderColor: '#374151', paddingHorizontal: 14,
-    paddingVertical: 10, fontSize: 14, color: '#fff', maxHeight: 100,
-  },
-  sendBtn: {
-    width: 44, height: 44, borderRadius: 12,
-    backgroundColor: '#ffd100', alignItems: 'center', justifyContent: 'center',
-  },
+  commentInput: { flex: 1, backgroundColor: '#1f2937', borderRadius: 12, borderWidth: 1, borderColor: '#374151', paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, color: '#fff', maxHeight: 100 },
+  sendBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#ffd100', alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { opacity: 0.4 },
-
-  // Claim modal
   modalOverlay: { flex: 1, backgroundColor: '#00000088' },
-  modalSheet: {
-    backgroundColor: '#1f2937', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, paddingBottom: 48,
-  },
-  modalHandle: {
-    width: 36, height: 4, backgroundColor: '#374151',
-    borderRadius: 2, alignSelf: 'center', marginBottom: 20,
-  },
+  modalSheet: { backgroundColor: '#1f2937', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 48 },
+  modalHandle: { width: 36, height: 4, backgroundColor: '#374151', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '800', color: '#fff', marginBottom: 8 },
-  modalSub: { fontSize: 14, color: '#9ca3af', marginBottom: 24, lineHeight: 20 },
-  inputLabel: { fontSize: 11, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 },
-  dateInput: {
-    backgroundColor: '#111827', borderRadius: 12, borderWidth: 1, borderColor: '#374151',
-    paddingHorizontal: 16, paddingVertical: 14, fontSize: 22, color: '#fff',
-    fontWeight: '700', letterSpacing: 2, marginBottom: 20, textAlign: 'center',
-  },
-  claimConfirmBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 16,
-  },
+  modalSub: { fontSize: 14, color: '#9ca3af', marginBottom: 20, lineHeight: 20 },
+  selectedDateBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#ffd100', borderRadius: 12, padding: 12, marginTop: 16, marginBottom: 4 },
+  selectedDateText: { fontSize: 14, fontWeight: '700', color: '#111827', flex: 1 },
+  claimConfirmBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#ffd100', borderRadius: 14, paddingVertical: 16, marginTop: 16 },
+  claimConfirmDisabled: { opacity: 0.4 },
   claimConfirmText: { fontSize: 16, fontWeight: '800', color: '#111827' },
-
-  // Job pack modal
   packModal: { flex: 1, backgroundColor: '#111827' },
-  packHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingTop: 56, paddingBottom: 16,
-    backgroundColor: '#1f2937', borderBottomWidth: 1, borderBottomColor: '#374151',
-  },
+  packHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 56, paddingBottom: 16, backgroundColor: '#1f2937', borderBottomWidth: 1, borderBottomColor: '#374151' },
   packClose: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#374151', alignItems: 'center', justifyContent: 'center' },
   packTitle: { fontSize: 16, fontWeight: '700', color: '#fff', flex: 1 },
-  packClaimBanner: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: '#064e3b', borderRadius: 12, padding: 12, marginBottom: 20,
-  },
+  packClaimBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#064e3b', borderRadius: 12, padding: 12, marginBottom: 20 },
   packClaimText: { fontSize: 14, color: '#34d399', fontWeight: '600', flex: 1 },
-  packSection: {
-    fontSize: 11, fontWeight: '700', color: '#6b7280',
-    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 20,
-  },
-  packCard: {
-    backgroundColor: '#1f2937', borderRadius: 14,
-    borderWidth: 1, borderColor: '#374151', overflow: 'hidden',
-  },
-  packRow: {
-    flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between',
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#374151',
-  },
+  packSection: { fontSize: 11, fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginTop: 20 },
+  packCard: { backgroundColor: '#1f2937', borderRadius: 14, borderWidth: 1, borderColor: '#374151', overflow: 'hidden' },
+  packRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#374151' },
   packLabel: { fontSize: 13, color: '#6b7280', fontWeight: '500', marginRight: 8 },
   packValue: { fontSize: 13, color: '#fff', fontWeight: '600', textAlign: 'right' },
   packLink: { fontSize: 11, color: '#ffd100', marginTop: 2, textAlign: 'right' },
-  packNotesCard: {
-    backgroundColor: '#1f2937', borderRadius: 14,
-    borderWidth: 1, borderColor: '#374151', padding: 14,
-  },
+  packNotesCard: { backgroundColor: '#1f2937', borderRadius: 14, borderWidth: 1, borderColor: '#374151', padding: 14 },
   packNotesText: { fontSize: 14, color: '#d1d5db', lineHeight: 22, fontFamily: 'monospace' },
   packEmpty: { fontSize: 14, color: '#6b7280', fontStyle: 'italic', marginBottom: 8 },
   photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8 },
-  photoThumb: {
-    width: '47%', borderRadius: 10, overflow: 'hidden',
-    backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#374151',
-  },
+  photoThumb: { width: '47%', borderRadius: 10, overflow: 'hidden', backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#374151' },
   photoImg: { width: '100%', height: 110 },
   photoName: { fontSize: 11, color: '#9ca3af', padding: 6 },
-  packDriveBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    marginTop: 20, backgroundColor: '#1f2937', borderRadius: 14,
-    borderWidth: 1, borderColor: '#ffd100', paddingVertical: 14,
-  },
+  packDriveBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 20, backgroundColor: '#1f2937', borderRadius: 14, borderWidth: 1, borderColor: '#ffd100', paddingVertical: 14 },
   packDriveBtnText: { fontSize: 15, fontWeight: '700', color: '#ffd100' },
 })

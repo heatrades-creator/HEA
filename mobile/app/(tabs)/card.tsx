@@ -2,8 +2,10 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   View, Text, StyleSheet, Modal, ScrollView, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform, Pressable,
+  useWindowDimensions,
 } from 'react-native'
 import { useFocusEffect } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
 import { getInstallerProfile } from '@/lib/auth'
 import { BusinessCard3D } from '@/components/BusinessCard3D'
 import {
@@ -11,6 +13,8 @@ import {
 } from '@/lib/card-settings'
 import type { InstallerProfile } from '@/lib/types'
 import type { CardSettings } from '@/lib/card-settings'
+
+const CARD_W = 340
 
 function Field({
   label,
@@ -48,10 +52,15 @@ export default function CardScreen() {
   const [installer, setInstaller] = useState<InstallerProfile | null>(null)
   const [settings, setSettings] = useState<CardSettings>(CARD_DEFAULTS)
   const [showModal, setShowModal] = useState(false)
+  const [showPresent, setShowPresent] = useState(false)
   const [draft, setDraft] = useState<CardSettings>(CARD_DEFAULTS)
   const [cardKey, setCardKey] = useState(0)
+  const [presentKey, setPresentKey] = useState(0)
 
-  // Reset the card to front face whenever this tab comes into focus
+  const { width: screenW } = useWindowDimensions()
+  const presentScale = (screenW - 48) / CARD_W
+
+  // Reset card to front face whenever this tab comes into focus
   useFocusEffect(useCallback(() => {
     setCardKey(k => k + 1)
   }, []))
@@ -62,6 +71,11 @@ export default function CardScreen() {
       setSettings(saved)
     })
   }, [])
+
+  const openPresent = () => {
+    setPresentKey(k => k + 1)
+    setShowPresent(true)
+  }
 
   const openCustomise = () => {
     const d = { ...settings }
@@ -99,9 +113,54 @@ export default function CardScreen() {
         Show the front to introduce yourself.{'\n'}Flip to the QR code for a free quote.
       </Text>
 
+      <TouchableOpacity style={s.presentBtn} onPress={openPresent} activeOpacity={0.85}>
+        <Text style={s.presentBtnText}>Present card</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={s.customiseBtn} onPress={openCustomise} activeOpacity={0.75}>
         <Text style={s.customiseBtnText}>Customise card</Text>
       </TouchableOpacity>
+
+      {/* ── Presentation mode ────────────────────────────────────────────────── */}
+      <Modal
+        visible={showPresent}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setShowPresent(false)}
+      >
+        <StatusBar style="light" hidden />
+        <View style={s.presentRoot}>
+          {/* Tap backdrop to close */}
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowPresent(false)} />
+
+          {/* Done button */}
+          <Pressable style={s.presentDone} onPress={() => setShowPresent(false)} hitSlop={20}>
+            <Text style={s.presentDoneText}>Done</Text>
+          </Pressable>
+
+          {/* Scaled card — wrapper matches visual size so gestures cover the whole card */}
+          <Pressable
+            onPress={() => {}}
+            style={{
+              width: CARD_W * presentScale,
+              height: 215 * presentScale,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <View style={{ transform: [{ scale: presentScale }] }}>
+              <BusinessCard3D
+                key={presentKey}
+                installer={installer}
+                settings={settings}
+                resolvedTitle={resolvedTitle}
+              />
+            </View>
+          </Pressable>
+
+          <Text style={s.presentHint}>Drag or tap to flip  ·  tap outside to close</Text>
+        </View>
+      </Modal>
 
       {/* ── Customise modal ─────────────────────────────────────────────── */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
@@ -211,20 +270,59 @@ const s = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 28,
+    marginBottom: 24,
+  },
+  presentBtn: {
+    backgroundColor: '#ffd100',
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 40,
+    marginBottom: 12,
+  },
+  presentBtnText: {
+    color: '#111827',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   customiseBtn: {
     borderWidth: 1,
-    borderColor: '#ffd100',
+    borderColor: '#374151',
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 28,
   },
   customiseBtnText: {
-    color: '#ffd100',
+    color: '#6b7280',
     fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.2,
+  },
+
+  // ── Presentation mode ──────────────────────────────────────────────────────
+  presentRoot: {
+    flex: 1,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presentDone: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 20,
+    right: 24,
+    zIndex: 10,
+  },
+  presentDoneText: {
+    color: '#4b5563',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  presentHint: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 48 : 28,
+    fontSize: 11,
+    color: '#374151',
+    letterSpacing: 0.3,
   },
 
   // ── Modal ──────────────────────────────────────────────────────────────────

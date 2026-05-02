@@ -901,12 +901,19 @@ function getPhotos_(jobNumber) {
   if (!folderId) return { photos: [] };
   try {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
-    const photosFolder = getOrCreateDriveFolder_(clientFolder, 'Job Photos');
-    const files = photosFolder.getFiles();
     const photos = [];
-    while (files.hasNext()) {
-      const f = files.next();
-      photos.push({ name: f.getName(), url: f.getUrl(), id: f.getId() });
+    // Collect from both intake photos (05_Photos) and installer-uploaded photos (Job Photos)
+    var TARGET_FOLDERS = ['05_Photos', 'Job Photos'];
+    for (var ti = 0; ti < TARGET_FOLDERS.length; ti++) {
+      var iter = clientFolder.getFoldersByName(TARGET_FOLDERS[ti]);
+      if (iter.hasNext()) {
+        var folder = iter.next();
+        var files = folder.getFiles();
+        while (files.hasNext()) {
+          var f = files.next();
+          photos.push({ name: f.getName(), url: f.getUrl(), id: f.getId() });
+        }
+      }
     }
     return { photos: photos };
   } catch (e) {

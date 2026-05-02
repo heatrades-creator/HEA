@@ -523,34 +523,32 @@ export default function JobDetailScreen() {
           </View>
         </View>
 
-        {/* Upload actions — only for jobs with a Drive folder */}
-        {job.driveUrl ? (
-          <View style={styles.uploadRow}>
-            <TouchableOpacity
-              style={[styles.uploadBtn, uploading === 'photo' && styles.uploadBtnDisabled]}
-              onPress={() => pickAndUpload('photo')}
-              disabled={uploading !== null}
-              activeOpacity={0.7}
-            >
-              {uploading === 'photo'
-                ? <ActivityIndicator size="small" color="#111827" />
-                : <Ionicons name="camera-outline" size={18} color="#111827" />}
-              <Text style={styles.uploadBtnText}>{uploading === 'photo' ? 'Uploading…' : 'Site Photo'}</Text>
-            </TouchableOpacity>
+        {/* Upload actions */}
+        <View style={styles.uploadRow}>
+          <TouchableOpacity
+            style={[styles.uploadBtn, uploading === 'photo' && styles.uploadBtnDisabled]}
+            onPress={() => pickAndUpload('photo')}
+            disabled={uploading !== null}
+            activeOpacity={0.7}
+          >
+            {uploading === 'photo'
+              ? <ActivityIndicator size="small" color="#111827" />
+              : <Ionicons name="camera-outline" size={18} color="#111827" />}
+            <Text style={styles.uploadBtnText}>{uploading === 'photo' ? 'Uploading…' : 'Site Photo'}</Text>
+          </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.uploadBtn, styles.uploadBtnReceipt, uploading === 'receipt' && styles.uploadBtnDisabled]}
-              onPress={() => pickAndUpload('receipt')}
-              disabled={uploading !== null}
-              activeOpacity={0.7}
-            >
-              {uploading === 'receipt'
-                ? <ActivityIndicator size="small" color="#ffd100" />
-                : <Ionicons name="receipt-outline" size={18} color="#ffd100" />}
-              <Text style={[styles.uploadBtnText, { color: '#ffd100' }]}>{uploading === 'receipt' ? 'Uploading…' : 'Job Receipt'}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
+          <TouchableOpacity
+            style={[styles.uploadBtn, styles.uploadBtnReceipt, uploading === 'receipt' && styles.uploadBtnDisabled]}
+            onPress={() => pickAndUpload('receipt')}
+            disabled={uploading !== null}
+            activeOpacity={0.7}
+          >
+            {uploading === 'receipt'
+              ? <ActivityIndicator size="small" color="#ffd100" />
+              : <Ionicons name="receipt-outline" size={18} color="#ffd100" />}
+            <Text style={[styles.uploadBtnText, { color: '#ffd100' }]}>{uploading === 'receipt' ? 'Uploading…' : 'Job Receipt'}</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Drive folder */}
         {job.driveUrl ? (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -9,6 +9,7 @@ import { getToken } from '@/lib/auth'
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
+  const everLoggedIn = useRef(false)
   const router = useRouter()
   const segments = useSegments()
 
@@ -36,12 +37,17 @@ export default function RootLayout() {
 
   // Synchronous token check — avoids stale async Promise callbacks from rapid
   // segment changes during navigation causing spurious login redirects.
+  // everLoggedIn prevents iOS system modals (e.g. notification permission dialog)
+  // from triggering a spurious redirect: once the user reaches tabs we never
+  // redirect to login from here — SessionExpiredError in jobs/index.tsx handles
+  // genuine session expiry instead.
   useEffect(() => {
     if (!ready) return
     const token = global.__heaToken ?? null
     const inAuth = segments[0] === '(auth)'
     const inTabs = segments[0] === '(tabs)'
-    if (!token && !inAuth) router.replace('/(auth)/login')
+    if (inTabs) everLoggedIn.current = true
+    if (!token && !inAuth && !everLoggedIn.current) router.replace('/(auth)/login')
     if (token && inAuth) router.replace('/(tabs)/jobs')
     // Authenticated but at the root (e.g. fresh install / update) — go to tabs
     if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')

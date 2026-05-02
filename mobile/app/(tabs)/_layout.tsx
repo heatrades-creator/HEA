@@ -27,6 +27,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="card"
+        options={{
+          title: 'Card',
+          tabBarIcon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="clock"
         options={{
           title: 'Clock',
@@ -45,13 +52,6 @@ export default function TabLayout() {
         options={{
           title: 'Receipts',
           tabBarIcon: ({ color, size }) => <Ionicons name="receipt-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="card"
-        options={{
-          title: 'Card',
-          tabBarIcon: ({ color, size }) => <Ionicons name="card-outline" size={size} color={color} />,
         }}
       />
     </Tabs>

@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 const SETTINGS_KEY = 'hea_card_settings'
 
 export interface CardSettings {
+  name: string
   tagline: string
   title: string
   phone: string
@@ -12,6 +13,7 @@ export interface CardSettings {
 }
 
 export const CARD_DEFAULTS: CardSettings = {
+  name: '',
   tagline: 'Electrical • Automation • Solar & Battery',
   title: '',
   phone: '',

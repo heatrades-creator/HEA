@@ -65,7 +65,6 @@ export default function CardScreen() {
 
   const openCustomise = () => {
     const d = { ...settings }
-    // Clear title if it was accidentally set to the installer's name
     if (d.title === installer!.name) d.title = ''
     setDraft(d)
     setShowModal(true)
@@ -123,6 +122,12 @@ export default function CardScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <Text style={s.sectionLabel}>YOUR DETAILS</Text>
+            <Field
+              label="Name"
+              value={draft.name}
+              placeholder={installer.name}
+              onChangeText={v => setDraft(d => ({ ...d, name: v }))}
+            />
             <Field
               label="Job title"
               value={draft.title}

@@ -53,6 +53,7 @@ function GoldSweep() {
 }
 
 function CardFront({ installer, settings, resolvedTitle }: Omit<BusinessCardProps, 'intakeUrl'>) {
+  const displayName = settings.name || installer.name
   return (
     <View style={styles.front}>
       {/* HEA logo */}
@@ -63,7 +64,7 @@ function CardFront({ installer, settings, resolvedTitle }: Omit<BusinessCardProp
 
       {/* Name / Title / Contact */}
       <View style={styles.nameBlock}>
-        <Text style={styles.name} numberOfLines={1}>{installer.name}</Text>
+        <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
         <Text style={styles.roleLine} numberOfLines={1}>{resolvedTitle}</Text>
         {(!!settings.phone || !!settings.email) && (
           <View style={styles.contactRow}>
@@ -81,6 +82,7 @@ function CardFront({ installer, settings, resolvedTitle }: Omit<BusinessCardProp
 }
 
 function CardBack({ installer, settings, resolvedTitle, intakeUrl }: BusinessCardProps) {
+  const displayName = settings.name || installer.name
   return (
     <View style={styles.back}>
       {/* QR code + name centered */}
@@ -93,7 +95,7 @@ function CardBack({ installer, settings, resolvedTitle, intakeUrl }: BusinessCar
         />
         <View style={styles.backNameBlock}>
           <Text style={styles.backRole} numberOfLines={1}>{resolvedTitle}</Text>
-          <Text style={styles.backName} numberOfLines={1}>{installer.name}</Text>
+          <Text style={styles.backName} numberOfLines={1}>{displayName}</Text>
         </View>
       </View>
 

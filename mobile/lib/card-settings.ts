@@ -35,3 +35,4 @@ export async function saveCardSettings(settings: CardSettings): Promise<void> {
     await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
   } catch {}
 }
+

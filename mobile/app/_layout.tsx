@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -10,6 +10,7 @@ import { setupNotifications } from '@/lib/notifications'
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
+  const notificationsSetup = useRef(false)
   const router = useRouter()
   const segments = useSegments()
 
@@ -44,7 +45,10 @@ export default function RootLayout() {
       if (token && inAuth) router.replace('/(tabs)/jobs')
       // Authenticated but at the root (e.g. fresh install / update) — go to tabs
       if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
-      if (token && inTabs) setupNotifications().catch(() => {})
+      if (token && inTabs && !notificationsSetup.current) {
+        notificationsSetup.current = true
+        setupNotifications().catch(() => {})
+      }
     })
   }, [ready, segments])
 

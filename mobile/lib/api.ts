@@ -16,7 +16,6 @@ async function authFetch(path: string, init: RequestInit = {}): Promise<Response
   if (token) headers['Authorization'] = `Bearer ${token}`
   const res = await fetch(`${BASE}${path}`, { ...init, headers })
   if (res.status === 401) {
-    await clearAuth()
     throw new SessionExpiredError()
   }
   return res

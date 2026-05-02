@@ -6,6 +6,7 @@ import {
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { fetchJobs, SessionExpiredError } from '@/lib/api'
+import { clearAuth } from '@/lib/auth'
 import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.1'
@@ -43,6 +44,7 @@ export default function JobsScreen() {
       setJobs(data)
     } catch (e) {
       if (e instanceof SessionExpiredError) {
+        await clearAuth()
         router.replace('/(auth)/login')
         return
       }

@@ -14,6 +14,14 @@ export default async function InstallerAppPage() {
   const apkUrl = urlCfg?.value ?? null
   const version = versionCfg?.value ?? null
 
+  // Extract last 5 chars of APK filename as a build ID hint (e.g. "7A1mE")
+  const buildId = apkUrl
+    ? (() => {
+        const name = (apkUrl.split('/').pop() ?? '').replace(/\.apk$/i, '')
+        return name.length >= 5 ? name.slice(-5) : null
+      })()
+    : null
+
   return (
     <>
       <main className="min-h-screen bg-[#111827] flex flex-col items-center justify-center px-6 py-16">
@@ -35,7 +43,9 @@ export default async function InstallerAppPage() {
                   <div>
                     <p className="text-white font-semibold">Android App</p>
                     {version && (
-                      <p className="text-gray-400 text-xs mt-0.5">Version {version}</p>
+                      <p className="text-gray-400 text-xs mt-0.5">
+                        Version {version}{buildId ? ` - ${buildId}` : ''}
+                      </p>
                     )}
                   </div>
                   <span className="text-xs px-2.5 py-1 rounded-full bg-green-900/40 text-green-400 font-medium border border-green-800/40">

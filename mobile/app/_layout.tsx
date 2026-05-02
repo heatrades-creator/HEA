@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { Slot, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
@@ -6,11 +6,9 @@ import { View, ActivityIndicator } from 'react-native'
 import * as Notifications from 'expo-notifications'
 import * as Updates from 'expo-updates'
 import { getToken } from '@/lib/auth'
-import { setupNotifications } from '@/lib/notifications'
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
-  const notificationsSetup = useRef(false)
   const router = useRouter()
   const segments = useSegments()
 
@@ -29,27 +27,24 @@ export default function RootLayout() {
           // No network or update server unavailable — continue with cached bundle
         }
       }
+      // Warm the global token cache from SecureStore before showing UI
       await getToken()
       setReady(true)
     }
     init()
   }, [])
 
-  // Re-read token on every navigation change so login state is always fresh
+  // Synchronous token check — avoids stale async Promise callbacks from rapid
+  // segment changes during navigation causing spurious login redirects.
   useEffect(() => {
     if (!ready) return
-    getToken().then(token => {
-      const inAuth = segments[0] === '(auth)'
-      const inTabs = segments[0] === '(tabs)'
-      if (!token && !inAuth) router.replace('/(auth)/login')
-      if (token && inAuth) router.replace('/(tabs)/jobs')
-      // Authenticated but at the root (e.g. fresh install / update) — go to tabs
-      if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
-      if (token && inTabs && !notificationsSetup.current) {
-        notificationsSetup.current = true
-        setupNotifications().catch(() => {})
-      }
-    })
+    const token = global.__heaToken ?? null
+    const inAuth = segments[0] === '(auth)'
+    const inTabs = segments[0] === '(tabs)'
+    if (!token && !inAuth) router.replace('/(auth)/login')
+    if (token && inAuth) router.replace('/(tabs)/jobs')
+    // Authenticated but at the root (e.g. fresh install / update) — go to tabs
+    if (token && !inAuth && !inTabs) router.replace('/(tabs)/jobs')
   }, [ready, segments])
 
   // Navigate to job when user taps a notification

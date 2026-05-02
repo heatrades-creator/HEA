@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   View, Text, SectionList, TouchableOpacity, StyleSheet,
   RefreshControl, TextInput, Linking, Alert,
@@ -7,6 +7,7 @@ import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { fetchJobs, SessionExpiredError } from '@/lib/api'
 import { clearAuth } from '@/lib/auth'
+import { setupNotifications } from '@/lib/notifications'
 import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.1'
@@ -34,6 +35,7 @@ export default function JobsScreen() {
   const [search, setSearch] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [updateAvailable, setUpdateAvailable] = useState(false)
+  const notificationsSetup = useRef(false)
   const router = useRouter()
 
   const load = useCallback(async (quiet = false) => {
@@ -65,6 +67,15 @@ export default function JobsScreen() {
   }, [])
 
   useEffect(() => { load() }, [])
+
+  // Request notification permission once after the jobs screen first mounts.
+  // Kept here (not in _layout.tsx) so it never interferes with navigation guards.
+  useEffect(() => {
+    if (!notificationsSetup.current) {
+      notificationsSetup.current = true
+      setupNotifications().catch(() => {})
+    }
+  }, [])
 
   // Auto-refresh every 30 s so the list stays live without manual pull
   useEffect(() => {

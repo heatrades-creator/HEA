@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   View, Text, StyleSheet, Modal, ScrollView, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform, Pressable,
 } from 'react-native'
+import { useFocusEffect } from 'expo-router'
 import { getInstallerProfile } from '@/lib/auth'
 import { BusinessCard3D } from '@/components/BusinessCard3D'
 import {
@@ -48,6 +49,12 @@ export default function CardScreen() {
   const [settings, setSettings] = useState<CardSettings>(CARD_DEFAULTS)
   const [showModal, setShowModal] = useState(false)
   const [draft, setDraft] = useState<CardSettings>(CARD_DEFAULTS)
+  const [cardKey, setCardKey] = useState(0)
+
+  // Reset the card to front face whenever this tab comes into focus
+  useFocusEffect(useCallback(() => {
+    setCardKey(k => k + 1)
+  }, []))
 
   useEffect(() => {
     Promise.all([getInstallerProfile(), getCardSettings()]).then(([profile, saved]) => {
@@ -79,6 +86,7 @@ export default function CardScreen() {
 
       <View style={s.cardArea}>
         <BusinessCard3D
+          key={cardKey}
           installer={installer}
           settings={settings}
           resolvedTitle={resolvedTitle}

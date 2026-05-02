@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text } from 'react-native'
+import { StyleSheet, View, Text, Image } from 'react-native'
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming,
   interpolate, Easing, cancelAnimation,
@@ -11,6 +11,8 @@ import type { CardSettings } from '@/lib/card-settings'
 
 const CARD_W = 340
 const CARD_H = 215
+
+const logo = require('@/assets/logo.png')
 
 export interface BusinessCardProps {
   installer: InstallerProfile
@@ -53,10 +55,8 @@ function GoldSweep() {
 function CardFront({ installer, settings, resolvedTitle }: Omit<BusinessCardProps, 'intakeUrl'>) {
   return (
     <View style={styles.front}>
-      {/* Logo mark */}
-      <View style={styles.logo}>
-        <Text style={styles.logoText}>HEA</Text>
-      </View>
+      {/* HEA logo */}
+      <Image source={logo} style={styles.logo} resizeMode="contain" />
 
       {/* Tagline */}
       <Text style={styles.tagline} numberOfLines={1}>{settings.tagline}</Text>
@@ -129,14 +129,24 @@ export function BusinessCard3D({
     return Math.min(Math.max(val, min), max)
   }
 
+  function snapToNearest() {
+    'worklet'
+    rotateY.value = withSpring(rotateY.value > 90 ? 180 : 0, {
+      stiffness: 200, damping: 20,
+    })
+  }
+
+  // activeOffsetX: only activate after 8px horizontal drag (prevents accidental triggers)
+  // failOffsetY: fail if user moves >20px vertically before activating (lets vertical scrolls through)
+  // onFinalize: fires whether gesture ends OR is cancelled — card always snaps to a valid face
   const pan = Gesture.Pan()
+    .activeOffsetX([-8, 8])
+    .failOffsetY([-20, 20])
     .onUpdate((e) => {
       rotateY.value = clamp(rotateY.value + e.changeX * 0.6, 0, 180)
     })
-    .onEnd(() => {
-      rotateY.value = withSpring(rotateY.value > 90 ? 180 : 0, {
-        stiffness: 200, damping: 20,
-      })
+    .onFinalize(() => {
+      snapToNearest()
     })
 
   const tap = Gesture.Tap().onEnd(() => {
@@ -222,18 +232,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   logo: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: GOLD,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 13,
-    fontWeight: '900',
-    color: '#111827',
-    letterSpacing: 1,
+    height: 48,
+    width: 160,
   },
   tagline: {
     fontSize: 11,

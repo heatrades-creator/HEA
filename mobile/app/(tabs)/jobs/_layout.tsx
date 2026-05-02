@@ -10,6 +10,8 @@ export default function JobsLayout() {
         headerShadowVisible: false,
         contentStyle: { backgroundColor: '#111827' },
       }}
-    />
+    >
+      <Stack.Screen name="index" options={{ headerShown: false }} />
+    </Stack>
   )
 }

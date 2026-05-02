@@ -35,7 +35,9 @@ export default function LoginScreen() {
     setLoading(true)
     try {
       const { token, installer } = await loginInstaller(name.trim(), fullPin)
-      await saveAuth(token, installer, rememberMe)
+      // saveAuth sets global.__heaToken synchronously first, then persists to
+      // SecureStore async. Navigate immediately — auth guard reads the global.
+      void saveAuth(token, installer, rememberMe)
       router.replace('/(tabs)/jobs')
     } catch {
       Alert.alert('Login Failed', 'Incorrect name or PIN. Try again.')

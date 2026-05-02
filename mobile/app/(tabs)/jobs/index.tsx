@@ -10,7 +10,7 @@ import { clearAuth } from '@/lib/auth'
 import { setupNotifications } from '@/lib/notifications'
 import type { GASJob } from '@/lib/types'
 
-const VERSION = 'v2.1'
+const VERSION = 'v2.2'
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
 const DOWNLOAD_URL = `${BASE}/installer-app`
 
@@ -344,7 +344,6 @@ const styles = StyleSheet.create({
   claimText: { fontSize: 12, color: '#34d399', fontWeight: '600' },
   empty: { alignItems: 'center', paddingTop: 60, gap: 16 },
   emptyText: { color: '#6b7280', fontSize: 15 },
-  version: { fontSize: 10, color: '#374151', fontWeight: '600' },
   retryBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#1f2937', borderRadius: 10, borderWidth: 1, borderColor: '#374151' },
   retryText: { fontSize: 14, color: '#ffd100', fontWeight: '600' },
 })

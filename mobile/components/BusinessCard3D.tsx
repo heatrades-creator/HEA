@@ -1,60 +1,127 @@
 import { StyleSheet, View, Text } from 'react-native'
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolate } from 'react-native-reanimated'
+import Animated, {
+  useSharedValue, useAnimatedStyle, withSpring, withTiming,
+  interpolate, Easing, cancelAnimation,
+} from 'react-native-reanimated'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import QRCode from 'react-native-qrcode-svg'
+import { useEffect } from 'react'
 import type { InstallerProfile } from '@/lib/types'
+import type { CardSettings } from '@/lib/card-settings'
 
 const CARD_W = 340
-const CARD_H = 210
+const CARD_H = 215
 
-interface Props {
+export interface BusinessCardProps {
   installer: InstallerProfile
+  settings: CardSettings
+  resolvedTitle: string
   intakeUrl?: string
 }
 
-function CardFront({ name, role }: { name: string; role: string }) {
+// Diagonal gold sweep that plays every 6 seconds
+function GoldSweep() {
+  const x = useSharedValue(-80)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    function schedule() {
+      cancelAnimation(x)
+      x.value = -80
+      x.value = withTiming(CARD_W + 100, {
+        duration: 1800,
+        easing: Easing.inOut(Easing.ease),
+      })
+      timer = setTimeout(schedule, 6000)
+    }
+    timer = setTimeout(schedule, 1500)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ rotate: '20deg' }, { translateX: x.value }],
+    opacity: interpolate(x.value, [-80, 20, CARD_W - 20, CARD_W + 100], [0, 0.8, 0.8, 0]),
+  }))
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Animated.View style={[styles.sweepBar, style]} />
+    </View>
+  )
+}
+
+function CardFront({ installer, settings, resolvedTitle }: Omit<BusinessCardProps, 'intakeUrl'>) {
   return (
     <View style={styles.front}>
-      {/* Gold top strip */}
-      <View style={styles.goldStrip} />
+      {/* Logo mark */}
+      <View style={styles.logo}>
+        <Text style={styles.logoText}>HEA</Text>
+      </View>
 
-      <View style={styles.frontContent}>
-        {/* Logo mark */}
-        <View style={styles.logoMark}>
-          <Text style={styles.logoMarkText}>HEA</Text>
-        </View>
+      {/* Tagline */}
+      <Text style={styles.tagline} numberOfLines={1}>{settings.tagline}</Text>
 
-        <View style={styles.frontRight}>
-          <Text style={styles.cardName}>{name}</Text>
-          <Text style={styles.cardRole}>{role === 'lead' ? 'Lead Installer' : 'Solar Installer'}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.cardTagline}>Solar Specialists</Text>
-          <Text style={styles.cardLocation}>Bendigo &amp; Surrounds</Text>
+      {/* Name / Title / Contact */}
+      <View style={styles.nameBlock}>
+        <Text style={styles.name} numberOfLines={1}>{installer.name}</Text>
+        <Text style={styles.roleLine} numberOfLines={1}>{resolvedTitle}</Text>
+        {(!!settings.phone || !!settings.email) && (
+          <View style={styles.contactRow}>
+            {!!settings.phone && <Text style={styles.contact}>{settings.phone}</Text>}
+            {!!settings.email && (
+              <Text style={styles.contact} numberOfLines={1}>{settings.email}</Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      <GoldSweep />
+    </View>
+  )
+}
+
+function CardBack({ installer, settings, resolvedTitle, intakeUrl }: BusinessCardProps) {
+  return (
+    <View style={styles.back}>
+      {/* QR code + name centered */}
+      <View style={styles.backCenter}>
+        <QRCode
+          value={intakeUrl!}
+          size={88}
+          backgroundColor="#111111"
+          color="#ffd100"
+        />
+        <View style={styles.backNameBlock}>
+          <Text style={styles.backRole} numberOfLines={1}>{resolvedTitle}</Text>
+          <Text style={styles.backName} numberOfLines={1}>{installer.name}</Text>
         </View>
       </View>
 
-      {/* Bottom gold bar */}
-      <View style={styles.goldBottom} />
+      {/* Bottom: contact left, ABN/REC right */}
+      <View style={styles.backBottom}>
+        <View>
+          {!!settings.phone && <Text style={styles.backDetail}>{settings.phone}</Text>}
+          {!!settings.email && (
+            <Text style={styles.backDetail} numberOfLines={1}>{settings.email}</Text>
+          )}
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          {!!settings.abn && <Text style={styles.backDetail}>ABN: {settings.abn}</Text>}
+          {!!settings.rec && <Text style={styles.backDetail}>REC: {settings.rec}</Text>}
+        </View>
+      </View>
+
+      <GoldSweep />
     </View>
   )
 }
 
-function CardBack({ intakeUrl }: { intakeUrl: string }) {
-  return (
-    <View style={styles.back}>
-      <QRCode
-        value={intakeUrl}
-        size={120}
-        backgroundColor="#ffffff"
-        color="#111827"
-      />
-      <Text style={styles.backLabel}>Get a free solar quote</Text>
-      <Text style={styles.backUrl}>hea-group.com.au</Text>
-    </View>
-  )
-}
-
-export function BusinessCard3D({ installer, intakeUrl = 'https://hea-group.com.au/intake' }: Props) {
+export function BusinessCard3D({
+  installer,
+  settings,
+  resolvedTitle,
+  intakeUrl = 'https://hea-group.com.au/intake',
+}: BusinessCardProps) {
   const rotateY = useSharedValue(0)
 
   function clamp(val: number, min: number, max: number) {
@@ -67,11 +134,15 @@ export function BusinessCard3D({ installer, intakeUrl = 'https://hea-group.com.a
       rotateY.value = clamp(rotateY.value + e.changeX * 0.6, 0, 180)
     })
     .onEnd(() => {
-      rotateY.value = withSpring(rotateY.value > 90 ? 180 : 0, { stiffness: 200, damping: 20 })
+      rotateY.value = withSpring(rotateY.value > 90 ? 180 : 0, {
+        stiffness: 200, damping: 20,
+      })
     })
 
   const tap = Gesture.Tap().onEnd(() => {
-    rotateY.value = withSpring(rotateY.value > 90 ? 0 : 180, { stiffness: 200, damping: 20 })
+    rotateY.value = withSpring(rotateY.value > 90 ? 0 : 180, {
+      stiffness: 200, damping: 20,
+    })
   })
 
   const composed = Gesture.Race(pan, tap)
@@ -101,15 +172,23 @@ export function BusinessCard3D({ installer, intakeUrl = 'https://hea-group.com.a
     <GestureDetector gesture={composed}>
       <View style={styles.container}>
         <Animated.View style={[styles.card, frontStyle]}>
-          <CardFront name={installer.name} role={installer.role} />
+          <CardFront installer={installer} settings={settings} resolvedTitle={resolvedTitle} />
         </Animated.View>
         <Animated.View style={[styles.card, backStyle]}>
-          <CardBack intakeUrl={intakeUrl} />
+          <CardBack
+            installer={installer}
+            settings={settings}
+            resolvedTitle={resolvedTitle}
+            intakeUrl={intakeUrl}
+          />
         </Animated.View>
       </View>
     </GestureDetector>
   )
 }
+
+const GOLD_ON_WHITE = '#b8920a'
+const GOLD = '#ffd100'
 
 const styles = StyleSheet.create({
   container: { width: CARD_W, height: CARD_H },
@@ -118,37 +197,118 @@ const styles = StyleSheet.create({
     height: CARD_H,
     borderRadius: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.4,
+    shadowColor: GOLD,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
     shadowRadius: 24,
     elevation: 14,
   },
-  // ── Front ──────────────────────────────────────────────────────────────
-  front: { flex: 1, backgroundColor: '#111827' },
-  goldStrip: { height: 6, backgroundColor: '#ffd100' },
-  frontContent: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
-  logoMark: {
-    width: 56, height: 56, borderRadius: 12,
-    backgroundColor: '#ffd100',
-    alignItems: 'center', justifyContent: 'center',
+
+  // ── Sweep ───────────────────────────────────────────────────────────────────
+  sweepBar: {
+    position: 'absolute',
+    top: -200,
+    left: -40,
+    width: 48,
+    height: 600,
+    backgroundColor: 'rgba(255, 209, 0, 0.14)',
   },
-  logoMarkText: { fontSize: 16, fontWeight: '900', color: '#111827' },
-  frontRight: { flex: 1 },
-  cardName: { fontSize: 18, fontWeight: '800', color: '#fff' },
-  cardRole: { fontSize: 12, color: '#9ca3af', marginTop: 2 },
-  divider: { width: 32, height: 2, backgroundColor: '#ffd100', marginVertical: 8 },
-  cardTagline: { fontSize: 11, color: '#d1d5db', fontWeight: '600' },
-  cardLocation: { fontSize: 11, color: '#6b7280', marginTop: 1 },
-  goldBottom: { height: 4, backgroundColor: '#ffd10040' },
-  // ── Back ───────────────────────────────────────────────────────────────
-  back: {
+
+  // ── Front ───────────────────────────────────────────────────────────────────
+  front: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    justifyContent: 'space-between',
+  },
+  logo: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    backgroundColor: GOLD,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
   },
-  backLabel: { fontSize: 14, fontWeight: '700', color: '#111827' },
-  backUrl: { fontSize: 11, color: '#6b7280' },
+  logoText: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#111827',
+    letterSpacing: 1,
+  },
+  tagline: {
+    fontSize: 11,
+    fontWeight: '700',
+    fontStyle: 'italic',
+    color: GOLD_ON_WHITE,
+    letterSpacing: 0.4,
+  },
+  nameBlock: { gap: 2 },
+  name: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: GOLD_ON_WHITE,
+    letterSpacing: 0.1,
+  },
+  roleLine: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: GOLD_ON_WHITE,
+    opacity: 0.8,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 3,
+  },
+  contact: {
+    fontSize: 10,
+    color: GOLD_ON_WHITE,
+    opacity: 0.75,
+    fontWeight: '500',
+  },
+
+  // ── Back ────────────────────────────────────────────────────────────────────
+  back: {
+    flex: 1,
+    backgroundColor: '#111111',
+    padding: 18,
+    justifyContent: 'space-between',
+  },
+  backCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  backNameBlock: {
+    alignItems: 'center',
+    gap: 1,
+  },
+  backRole: {
+    fontSize: 10,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    color: GOLD,
+    opacity: 0.8,
+  },
+  backName: {
+    fontSize: 16,
+    fontWeight: '800',
+    fontStyle: 'italic',
+    color: GOLD,
+  },
+  backBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  backDetail: {
+    fontSize: 9,
+    color: GOLD,
+    fontWeight: '600',
+    fontStyle: 'italic',
+    lineHeight: 14,
+    opacity: 0.8,
+  },
 })

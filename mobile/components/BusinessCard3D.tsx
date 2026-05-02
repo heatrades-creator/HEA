@@ -122,7 +122,7 @@ export function BusinessCard3D({
   installer,
   settings,
   resolvedTitle,
-  intakeUrl = 'https://hea-group.com.au/intake',
+  intakeUrl = 'https://www.hea-group.com.au',
 }: BusinessCardProps) {
   const rotateY = useSharedValue(0)
 

@@ -147,11 +147,14 @@ function generateJobCard(payload) {
     const equipSpec    = getEquipmentSpec(qualityTier, systemKw, batteryKwh);
     const arcResult    = payload.arcFlashResult || null;
 
-    // Build safe filename: TS0001_ClientName_Postcode(task-solar job N)
-    const safeClient   = (payload.clientName || 'Client').replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '_');
-    const safeAddr     = (payload.address    || postcode).replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '_').substring(0, 40);
-    const jobSeqNum    = parseInt(jobNo.replace('TS', '')) || 1;
-    const fileName     = `${jobNo}_${safeAddr || safeClient}(task-solar job ${jobSeqNum})`;
+    // Naming: TS00001-job-card-John-Smith-2026-05-03
+    const clientSlug  = (payload.clientName || 'Unknown').trim()
+                          .replace(/[^a-zA-Z0-9 ]/g, '')
+                          .split(/\s+/).filter(Boolean)
+                          .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
+                          .join('-') || 'Unknown';
+    const dateFileStr = Utilities.formatDate(today, 'Australia/Melbourne', 'yyyy-MM-dd');
+    const fileName    = jobNo + '-job-card-' + clientSlug + '-' + dateFileStr;
 
     const html = buildJobCardHTML({
       jobNo, dateS, clientName, address, postcode, phone, email,

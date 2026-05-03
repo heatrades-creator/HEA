@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!gasUrl) return NextResponse.json({ error: 'GAS not configured' }, { status: 503 })
 
   const { id } = await params
-  const body = await req.json() as { filename?: string; base64?: string; mimeType?: string }
+  const body = await req.json() as { filename?: string; base64?: string; mimeType?: string; category?: string }
   if (!body.filename || !body.base64) {
     return NextResponse.json({ error: 'filename and base64 required' }, { status: 400 })
   }
@@ -44,6 +44,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       filename: body.filename,
       base64: body.base64,
       mimeType: body.mimeType ?? 'image/jpeg',
+      installerName: installer.name,
+      category: body.category ?? 'site',
     }),
   })
   const text = await res.text()

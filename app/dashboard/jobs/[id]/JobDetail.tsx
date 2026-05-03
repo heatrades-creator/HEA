@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import JobDocuments from '@/components/dashboard/JobDocuments';
 import { JobComments } from '@/components/dashboard/JobComments';
 
-const STAGES = ['Lead', 'Quoted', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 
 const STAGE_COLORS: Record<string, string> = {
-  Lead:          'bg-[#3a3a3a] text-[#aaa]',
-  Quoted:        'bg-blue-900/40 text-blue-300',
-  Booked:        'bg-purple-900/40 text-purple-300',
-  'In Progress': 'bg-yellow-900/40 text-[#ffd100]',
-  Complete:      'bg-green-900/40 text-green-400',
+  Lead:          'bg-gray-100 text-gray-600',
+  Estimation:    'bg-blue-100 text-blue-700',
+  Contract:      'bg-orange-100 text-orange-700',
+  Booked:        'bg-purple-100 text-purple-700',
+  'In Progress': 'bg-amber-100 text-amber-900',
+  Complete:      'bg-green-100 text-green-700',
 };
 
 const MILESTONE_LABELS: Record<string, string> = {

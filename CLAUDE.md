@@ -83,7 +83,7 @@ type GASJob = {
   phone: string
   email: string
   address: string
-  status: string       // 'Lead' | 'Quoted' | 'Contract' | 'Booked' | 'In Progress' | 'Complete'
+  status: string       // 'Lead' | 'Estimation' | 'Contract' | 'Booked' | 'In Progress' | 'Complete'
   driveUrl: string
   notes: string
   systemSize: string   // kW as string e.g. "6.6"
@@ -93,7 +93,7 @@ type GASJob = {
 ```
 
 ### Valid GAS statuses (in order)
-`Lead` → `Quoted` → `Contract` → `Booked` → `In Progress` → `Complete`
+`Lead` → `Estimation` → `Contract` → `Booked` → `In Progress` → `Complete`
 
 ### Fetching jobs
 ```typescript

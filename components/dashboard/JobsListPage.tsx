@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import type { Job, Stage } from './KanbanBoard';
 
-const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 type FilterStage = Stage | 'All' | 'Archived';
 
 const STAGE_STYLES: Record<Stage | 'Archived', { badge: string; pill: string }> = {
-  Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]',           pill: 'border-[#555] text-[#aaa]' },
-  Quoted:        { badge: 'bg-blue-900/40 text-blue-300',         pill: 'border-blue-700 text-blue-300' },
-  Contract:      { badge: 'bg-orange-900/40 text-orange-300',     pill: 'border-orange-700 text-orange-300' },
-  Booked:        { badge: 'bg-purple-900/40 text-purple-300',     pill: 'border-purple-700 text-purple-300' },
-  'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]',      pill: 'border-yellow-600 text-[#ffd100]' },
-  Complete:      { badge: 'bg-green-900/40 text-green-400',       pill: 'border-green-700 text-green-400' },
-  Archived:      { badge: 'bg-gray-100 text-gray-500',            pill: 'border-gray-300 text-gray-400' },
+  Lead:          { badge: 'bg-gray-100 text-gray-600',            pill: 'border-gray-400 text-gray-600' },
+  Estimation:    { badge: 'bg-blue-100 text-blue-700',             pill: 'border-blue-400 text-blue-700' },
+  Contract:      { badge: 'bg-orange-100 text-orange-700',         pill: 'border-orange-400 text-orange-700' },
+  Booked:        { badge: 'bg-purple-100 text-purple-700',         pill: 'border-purple-400 text-purple-700' },
+  'In Progress': { badge: 'bg-amber-100 text-amber-900',           pill: 'border-amber-600 text-amber-900' },
+  Complete:      { badge: 'bg-green-100 text-green-700',           pill: 'border-green-500 text-green-700' },
+  Archived:      { badge: 'bg-gray-100 text-gray-500',             pill: 'border-gray-300 text-gray-400' },
 };
 
 const PAGE_SIZE = 25;
@@ -804,7 +804,6 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
   onClick: () => void;
 }) {
   const router = useRouter();
-  const [showMove, setShowMove]         = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent]       = useState(false);
   const [emailError, setEmailError]     = useState('');
@@ -917,20 +916,18 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
                 {completing ? '⏳' : job.status === 'Complete' ? '↩️' : '✅'}
               </button>
 
-              {/* Move stage */}
-              <div className="relative inline-block ml-1">
-                <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5 hover:text-[#374151]">Move ▾</button>
-                {showMove && (
-                  <>
-                    <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-                    <div className="absolute right-0 top-7 bg-white border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
-                      {STAGES.map((s) => (
-                        <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f5f7fa] transition-colors ${s === job.status ? 'text-[#ffd100] font-semibold' : 'text-[#374151]'}`}>{s}</button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
+              {/* Direct stage pills */}
+              <span className="text-[10px] text-[#9ca3af] font-medium ml-1">→</span>
+              {STAGES.filter((s) => s !== job.status).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => onMove(job.jobNumber, s)}
+                  title={`Move to ${s}`}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border border-current font-medium transition-colors hover:opacity-80 whitespace-nowrap ${STAGE_STYLES[s].badge}`}
+                >
+                  {s}
+                </button>
+              ))}
             </>
           )}
 

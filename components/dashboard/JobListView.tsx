@@ -1,18 +1,17 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Job, Stage } from './KanbanBoard';
 
-const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 
 const STAGE_STYLES: Record<Stage, { badge: string }> = {
-  Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]' },
-  Quoted:        { badge: 'bg-blue-900/40 text-blue-300' },
-  Contract:      { badge: 'bg-orange-900/40 text-orange-300' },
-  Booked:        { badge: 'bg-purple-900/40 text-purple-300' },
-  'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]' },
-  Complete:      { badge: 'bg-green-900/40 text-green-400' },
+  Lead:          { badge: 'bg-gray-100 text-gray-600' },
+  Estimation:    { badge: 'bg-blue-100 text-blue-700' },
+  Contract:      { badge: 'bg-orange-100 text-orange-700' },
+  Booked:        { badge: 'bg-purple-100 text-purple-700' },
+  'In Progress': { badge: 'bg-amber-100 text-amber-900' },
+  Complete:      { badge: 'bg-green-100 text-green-700' },
 };
 
 export default function JobListView({
@@ -72,7 +71,6 @@ function JobRow({
   onMove: (jobNumber: string, newStatus: Stage) => void;
   onClick: () => void;
 }) {
-  const [showMove, setShowMove] = useState(false);
   const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
 
   return (
@@ -101,38 +99,17 @@ function JobRow({
         {job.phone ?? '—'}
       </td>
       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-        <div className="relative inline-block">
-          <button
-            onClick={() => setShowMove(!showMove)}
-            className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors px-1 py-0.5"
-          >
-            Move ▾
-          </button>
-          {showMove && (
-            <>
-              {/* Backdrop to close on outside click */}
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowMove(false)}
-              />
-              <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
-                {STAGES.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => {
-                      onMove(job.jobNumber, s);
-                      setShowMove(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${
-                      s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+        <div className="flex items-center justify-end gap-1 flex-wrap">
+          <span className="text-[10px] text-[#9ca3af] font-medium mr-0.5">→</span>
+          {STAGES.filter((s) => s !== job.status).map((s) => (
+            <button
+              key={s}
+              onClick={() => onMove(job.jobNumber, s)}
+              className={`text-[10px] px-2 py-0.5 rounded-full border border-current font-medium transition-colors hover:opacity-80 ${STAGE_STYLES[s].badge}`}
+            >
+              {s}
+            </button>
+          ))}
         </div>
       </td>
     </tr>

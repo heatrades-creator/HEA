@@ -47,21 +47,21 @@ async function getUsage(): Promise<UsageStats> {
 }
 
 const STAGE_STYLES: Record<string, string> = {
-  Lead:          'bg-[#3a3a3a] text-[#aaa]',
-  Quoted:        'bg-blue-900/40 text-blue-300',
-  Contract:      'bg-orange-900/40 text-orange-300',
-  Booked:        'bg-purple-900/40 text-purple-300',
-  'In Progress': 'bg-yellow-900/40 text-[#ffd100]',
-  Complete:      'bg-green-900/40 text-green-400',
+  Lead:          'bg-gray-100 text-gray-600',
+  Estimation:    'bg-blue-100 text-blue-700',
+  Contract:      'bg-orange-100 text-orange-700',
+  Booked:        'bg-purple-100 text-purple-700',
+  'In Progress': 'bg-amber-100 text-amber-900',
+  Complete:      'bg-green-100 text-green-700',
 };
 
 const PIPELINE_STAGES = [
-  { name: 'Lead',        bg: 'bg-[#f0f0f0]',   text: 'text-[#6b7280]' },
-  { name: 'Quoted',      bg: 'bg-blue-50',      text: 'text-blue-600' },
-  { name: 'Contract',    bg: 'bg-orange-50',    text: 'text-orange-600' },
-  { name: 'Booked',      bg: 'bg-purple-50',    text: 'text-purple-600' },
-  { name: 'In Progress', bg: 'bg-yellow-50',    text: 'text-yellow-700' },
-  { name: 'Complete',    bg: 'bg-green-50',     text: 'text-green-600' },
+  { name: 'Lead',        bg: 'bg-gray-100',     text: 'text-gray-600' },
+  { name: 'Estimation',  bg: 'bg-blue-100',     text: 'text-blue-700' },
+  { name: 'Contract',    bg: 'bg-orange-100',   text: 'text-orange-700' },
+  { name: 'Booked',      bg: 'bg-purple-100',   text: 'text-purple-700' },
+  { name: 'In Progress', bg: 'bg-amber-100',    text: 'text-amber-900' },
+  { name: 'Complete',    bg: 'bg-green-100',    text: 'text-green-700' },
 ] as const;
 
 function currentMonth() {

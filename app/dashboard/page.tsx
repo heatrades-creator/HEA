@@ -80,16 +80,17 @@ export default async function DashboardPage() {
   const [jobs, usage] = await Promise.all([getJobs(), getUsage()]);
 
   const { month, year } = currentMonth();
-  const totalJobs = jobs.length;
-  const activeJobs = jobs.filter((j) => j.status !== 'Complete').length;
-  const inProgress = jobs.filter((j) => j.status === 'In Progress').length;
-  const completedThisMonth = jobs.filter((j) => {
+  const visibleJobs = jobs.filter((j) => j.status !== 'Archived');
+  const totalJobs = visibleJobs.length;
+  const activeJobs = visibleJobs.filter((j) => j.status !== 'Complete').length;
+  const inProgress = visibleJobs.filter((j) => j.status === 'In Progress').length;
+  const completedThisMonth = visibleJobs.filter((j) => {
     if (j.status !== 'Complete') return false;
     const d = parseCreatedDate(j.createdDate);
     return d && d.getMonth() === month && d.getFullYear() === year;
   }).length;
 
-  const recentJobs = jobs.slice(0, 5);
+  const recentJobs = visibleJobs.slice(0, 5);
   const usagePct = Math.min(100, Math.round((usage.pdfs_today / usage.daily_limit) * 100));
 
   return (

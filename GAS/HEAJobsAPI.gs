@@ -302,7 +302,7 @@ function getNextJobNumber(sheet) {
 
 function createJob(sheet, data) {
   const jobNumber = getNextJobNumber(sheet);
-  const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
+  const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "dd/MM/yyyy - hh:mm a").toLowerCase();
 
   // Find or create unified client folder inside CLIENTS_FOLDER_ID.
   // If the client already submitted the intake form, their folder exists — reuse it.
@@ -439,6 +439,33 @@ function getAllJobs(sheet) {
     .reverse();
 }
 
+function formatCreatedDate_(raw) {
+  if (!raw) return '';
+  if (raw instanceof Date) {
+    return Utilities.formatDate(raw, Session.getScriptTimeZone(), "dd/MM/yyyy - hh:mm a").toLowerCase();
+  }
+  var s = String(raw).trim();
+  if (!s) return '';
+  // Old GAS format: dd/MM/yyyy HH:mm (24-hour, no dash)
+  var old = s.match(/^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})$/);
+  if (old) {
+    var h = parseInt(old[4]);
+    var ampm = h >= 12 ? 'pm' : 'am';
+    var h12 = String(h % 12 || 12).padStart(2, '0');
+    return old[1] + '/' + old[2] + '/' + old[3] + ' - ' + h12 + ':' + old[5] + ' ' + ampm;
+  }
+  // Already in target format
+  if (/^\d{2}\/\d{2}\/\d{4} - \d{2}:\d{2} [ap]m$/i.test(s)) return s.toLowerCase();
+  // Ugly JS date string or ISO — try native parse
+  try {
+    var d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      return Utilities.formatDate(d, Session.getScriptTimeZone(), "dd/MM/yyyy - hh:mm a").toLowerCase();
+    }
+  } catch(e) {}
+  return s;
+}
+
 function rowToJob(row) {
   return {
     jobNumber:       String(row[0]),
@@ -449,7 +476,7 @@ function rowToJob(row) {
     status:          String(row[5]),
     driveUrl:        String(row[6]),
     notes:           String(row[7]),
-    createdDate:     String(row[8]),
+    createdDate:     formatCreatedDate_(row[8]),
     systemSize:      String(row[9]  || ''),
     batterySize:     String(row[10] || ''),
     totalPrice:      String(row[11] || ''),

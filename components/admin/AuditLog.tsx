@@ -1,5 +1,6 @@
 // components/admin/AuditLog.tsx
 // Table of AuditEntry records. Paid rows highlighted amber.
+import { formatHEADate } from "@/lib/format"
 
 interface AuditEntry {
   id: string
@@ -50,12 +51,7 @@ const ACTION_LABELS: Record<string, string> = {
   thank_you_sent:            "Thank you sent",
 }
 
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat("en-AU", {
-    day: "numeric", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  }).format(new Date(iso))
-}
+const fmtDate = formatHEADate
 
 export function AuditLog({ entries, totalSpendAud }: AuditLogProps) {
   return (

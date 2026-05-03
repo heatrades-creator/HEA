@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { formatHEADateOnly } from "@/lib/format"
 import { BuildDateModal } from "./modals/BuildDateModal"
 import { DepositModal }   from "./modals/DepositModal"
 
@@ -31,9 +32,7 @@ interface Props {
   lead: Stage2Lead
 }
 
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso))
-}
+const fmtDate = formatHEADateOnly
 
 type Modal = "builddate" | "deposit"
 

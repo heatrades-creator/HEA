@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { formatHEADateOnly } from "@/lib/format"
 import { ThankYouModal } from "./modals/ThankYouModal"
 
 export interface Stage3Lead {
@@ -25,9 +26,7 @@ interface Props {
   lead: Stage3Lead
 }
 
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso))
-}
+const fmtDate = formatHEADateOnly
 
 export function Stage3Card({ lead: initial }: Props) {
   const [lead, setLead]         = useState(initial)

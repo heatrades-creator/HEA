@@ -23,7 +23,7 @@ function getNextJobNumber() {
   // Count existing job rows (excluding header)
   const lastRow = sheet.getLastRow();
   const nextNum = lastRow;          // header = row 1, so row 2 = job 1
-  return 'TS' + String(nextNum).padStart(4, '0');
+  return 'TS' + String(nextNum).padStart(5, '0');
 }
 
 function logJobCard(jobNo, payload, driveUrl) {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { formatHEADate } from '@/lib/format'
 
 interface ApkEntry {
   version: string
@@ -15,12 +16,7 @@ interface ApkInfo {
   history: ApkEntry[]
 }
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleString('en-AU', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
-}
+const fmt = formatHEADate
 
 function buildId(url: string): string | null {
   const name = (url.split('/').pop() ?? '').replace(/\.apk$/i, '')
@@ -75,7 +71,7 @@ export function AppDistribution() {
       {/* Header */}
       <div className="px-5 py-4 border-b border-[#e5e9f0] flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v11</span></p>
+          <p className="text-sm font-semibold text-[#111827]">App Distribution <span className="text-xs font-normal text-gray-400 ml-1">v12</span></p>
           <p className="text-xs text-gray-500 mt-0.5">
             Employee download page:{' '}
             <a href="/installer-app" target="_blank" className="text-[#ffd100] hover:underline font-medium">

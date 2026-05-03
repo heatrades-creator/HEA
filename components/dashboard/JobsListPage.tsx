@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import type { Job, Stage } from './KanbanBoard';
+import { formatHEADate } from '@/lib/format';
 
 const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 type FilterStage = Stage | 'All' | 'Archived';
@@ -224,7 +225,7 @@ function MobileJobCard({
             </p>
           )}
         </div>
-        <p className="text-[#9ca3af] text-xs whitespace-nowrap flex-shrink-0">{job.createdDate}</p>
+        <p className="text-[#9ca3af] text-xs whitespace-nowrap flex-shrink-0">{formatHEADate(job.createdDate)}</p>
       </div>
 
       {/* ── Contact quick access ───────────────────────────── */}
@@ -264,7 +265,7 @@ function MobileJobCard({
           <div className="space-y-0.5">
             {followups.map((iso, i) => (
               <p key={iso} className="text-xs text-[#6b7280]">
-                #{i + 1} — {new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                #{i + 1} — {formatHEADate(iso)}
                 <span className="text-[#9ca3af] ml-1">({daysAgo(iso)})</span>
               </p>
             ))}

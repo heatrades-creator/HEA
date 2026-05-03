@@ -25,17 +25,29 @@ export async function GET(req: NextRequest) {
 
   // Parse GAS jobs — may be null if GAS not configured or network error
   let gasJobs: Array<{ jobNumber: string; status: string; [key: string]: unknown }> = []
+  let gasReachable = false
   if (gasResult) {
     try {
       const parsed = JSON.parse(gasResult)
-      if (Array.isArray(parsed) && !parsed[0]?.error) gasJobs = parsed
+      if (Array.isArray(parsed) && !parsed[0]?.error) {
+        gasJobs = parsed
+        gasReachable = true
+      }
     } catch {}
   }
 
-  // Skip Prisma leads that already exist in GAS (matched by gasJobNumber)
+  // Filter Prisma leads:
+  //  - No gasJobNumber → pure lead, always include
+  //  - gasJobNumber in GAS → skip (GAS is source of truth, avoids duplicates)
+  //  - gasJobNumber not in GAS, GAS was reachable → job was deleted, skip
+  //  - gasJobNumber not in GAS, GAS was unreachable → include defensively (GAS may just be down)
   const gasJobNumbers = new Set(gasJobs.map(j => j.jobNumber))
   const leadJobs = leads
-    .filter(l => !l.gasJobNumber || !gasJobNumbers.has(l.gasJobNumber))
+    .filter(l => {
+      if (!l.gasJobNumber) return true
+      if (gasJobNumbers.has(l.gasJobNumber)) return false
+      return !gasReachable
+    })
     .map(leadToJob)
 
   // GAS jobs first, then leads; both filtered to hide Complete

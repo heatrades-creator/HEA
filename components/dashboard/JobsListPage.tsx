@@ -6,18 +6,21 @@ import NewJobModal from './NewJobModal';
 import type { Job, Stage } from './KanbanBoard';
 
 const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
+type FilterStage = Stage | 'All' | 'Archived';
 
-const STAGE_STYLES: Record<Stage, { badge: string; pill: string }> = {
+const STAGE_STYLES: Record<Stage | 'Archived', { badge: string; pill: string }> = {
   Lead:          { badge: 'bg-[#3a3a3a] text-[#aaa]',           pill: 'border-[#555] text-[#aaa]' },
   Quoted:        { badge: 'bg-blue-900/40 text-blue-300',         pill: 'border-blue-700 text-blue-300' },
   Contract:      { badge: 'bg-orange-900/40 text-orange-300',     pill: 'border-orange-700 text-orange-300' },
   Booked:        { badge: 'bg-purple-900/40 text-purple-300',     pill: 'border-purple-700 text-purple-300' },
   'In Progress': { badge: 'bg-yellow-900/40 text-[#ffd100]',      pill: 'border-yellow-600 text-[#ffd100]' },
   Complete:      { badge: 'bg-green-900/40 text-green-400',       pill: 'border-green-700 text-green-400' },
+  Archived:      { badge: 'bg-gray-100 text-gray-500',            pill: 'border-gray-300 text-gray-400' },
 };
 
 const PAGE_SIZE = 25;
 type SortKey = 'jobNumber' | 'clientName' | 'createdDate';
+type AnyJob = Job & { systemSize?: string };
 
 // ── localStorage helpers for follow-up tracking ──────────────────────────────
 
@@ -42,14 +45,94 @@ function daysAgo(iso: string): string {
   return `${diff} days ago`;
 }
 
+// ── Confirmation modal ────────────────────────────────────────────────────────
+
+type ConfirmAction = { type: 'archive' | 'delete'; jobNumber: string; clientName: string };
+
+function ConfirmModal({
+  action,
+  pending,
+  error,
+  onConfirm,
+  onCancel,
+}: {
+  action: ConfirmAction;
+  pending: boolean;
+  error: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const isDelete = action.type === 'delete';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+        <div className={`px-5 py-4 ${isDelete ? 'bg-red-50' : 'bg-amber-50'}`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">{isDelete ? '🗑️' : '🗄️'}</span>
+            <h2 className="text-[#111827] font-bold text-lg">
+              {isDelete ? 'Permanently Delete Job' : 'Archive Job'}
+            </h2>
+          </div>
+        </div>
+        <div className="px-5 py-4 space-y-3">
+          <p className="text-[#374151] text-sm">
+            <span className="font-semibold text-[#111827]">{action.clientName}</span>
+            {' · '}
+            <span className="font-mono text-[#ffd100] font-bold text-xs">{action.jobNumber}</span>
+          </p>
+          {isDelete ? (
+            <p className="text-[#6b7280] text-sm leading-relaxed">
+              This will <strong className="text-red-600">permanently delete</strong> the job from
+              the sheet and move the Google Drive folder to trash. This cannot be undone.
+            </p>
+          ) : (
+            <p className="text-[#6b7280] text-sm leading-relaxed">
+              This will mark the job as <strong className="text-amber-600">Archived</strong> and
+              move the Google Drive folder into the monthly archive. You can still view it later
+              by filtering for Archived jobs.
+            </p>
+          )}
+          {error && (
+            <p className="text-red-600 text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+          )}
+        </div>
+        <div className="px-5 pb-5 flex gap-2">
+          <button
+            onClick={onCancel}
+            disabled={pending}
+            className="flex-1 py-2.5 rounded-xl border border-[#e5e9f0] text-[#374151] text-sm font-medium hover:bg-[#f5f7fa] transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={pending}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 ${
+              isDelete
+                ? 'bg-red-600 text-white hover:bg-red-700'
+                : 'bg-amber-500 text-white hover:bg-amber-600'
+            }`}
+          >
+            {pending ? 'Working…' : isDelete ? 'Delete Forever' : 'Archive Job'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Mobile job card ───────────────────────────────────────────────────────────
 
 function MobileJobCard({
   job,
   onMove,
+  onArchive,
+  onDelete,
 }: {
-  job: Job & { systemSize?: string };
+  job: AnyJob;
   onMove: (jobNumber: string, newStatus: Stage) => void;
+  onArchive: (jobNumber: string, clientName: string) => void;
+  onDelete: (jobNumber: string, clientName: string) => void;
 }) {
   const router = useRouter();
   const [followups, setFollowups] = useState<string[]>([]);
@@ -62,7 +145,9 @@ function MobileJobCard({
     setFollowups(getFollowups(job.jobNumber));
   }, [job.jobNumber]);
 
-  const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
+  const statusStr = job.status as string;
+  const styles = STAGE_STYLES[statusStr as Stage | 'Archived'] ?? STAGE_STYLES.Lead;
+  const isArchived = statusStr === 'Archived';
   const fullName    = job.clientName;
   const fullAddress = job.address ?? '';
 
@@ -129,7 +214,7 @@ function MobileJobCard({
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-[#ffd100] font-mono font-bold text-sm">{job.jobNumber}</span>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles.badge}`}>
-              {job.status}
+              {statusStr}
             </span>
           </div>
           <h3 className="text-[#111827] font-semibold text-base leading-snug">{job.clientName}</h3>
@@ -186,108 +271,125 @@ function MobileJobCard({
       )}
 
       {/* ── Action buttons ────────────────────────────────── */}
-      <div className="px-4 pb-4 grid grid-cols-3 gap-2">
+      {!isArchived && (
+        <div className="px-4 pb-3 grid grid-cols-3 gap-2">
 
-        {/* 1. Solar Analyser */}
-        <a
-          href={analyserUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${btnBase} border-[#ffd100]/40 bg-[#ffd100]/5 text-[#111827] hover:bg-[#ffd100]/15`}
-        >
-          <span className="text-lg">☀️</span>
-          <span>Solar Analyser</span>
-        </a>
+          {/* 1. Solar Analyser */}
+          <a
+            href={analyserUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${btnBase} border-[#ffd100]/40 bg-[#ffd100]/5 text-[#111827] hover:bg-[#ffd100]/15`}
+          >
+            <span className="text-lg">☀️</span>
+            <span>Solar Analyser</span>
+          </a>
 
-        {/* 2. Drive Folder */}
-        {job.driveUrl ? (
+          {/* 2. Drive Folder */}
+          {job.driveUrl ? (
+            <a
+              href={job.driveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${btnBase} border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100`}
+            >
+              <span className="text-lg">📁</span>
+              <span>Client Files</span>
+            </a>
+          ) : (
+            <span className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed`}>
+              <span className="text-lg">📁</span>
+              <span>No Drive Folder</span>
+            </span>
+          )}
+
+          {/* 3. Follow-up Email */}
+          <button
+            onClick={sendFollowup}
+            disabled={sendingEmail || !job.email}
+            className={`${btnBase} ${
+              emailSent
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : !job.email
+                ? 'border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed'
+                : 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 active:bg-purple-200'
+            } disabled:opacity-60`}
+          >
+            <span className="text-lg">{emailSent ? '✅' : '📧'}</span>
+            <span>
+              {sendingEmail ? 'Sending…' : emailSent ? 'Email Sent!' : 'Follow-up Email'}
+            </span>
+            {followups.length > 0 && !emailSent && (
+              <span className="text-[10px] opacity-70">#{followups.length + 1}</span>
+            )}
+          </button>
+
+          {/* 4. OpenSolar Design */}
+          {(job as any).openSolarProjectId ? (
+            <a
+              href={`https://app.opensolar.com/220067/projects/${(job as any).openSolarProjectId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${btnBase} border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100`}
+            >
+              <span className="text-lg">🔆</span>
+              <span>Open Design</span>
+            </a>
+          ) : (
+            <a
+              href="/admin"
+              className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] hover:bg-[#eef0f5] hover:text-[#374151]`}
+            >
+              <span className="text-lg">🔆</span>
+              <span>Create Design</span>
+            </a>
+          )}
+
+          {/* 5. Full Job Details */}
+          <button
+            onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
+            className={`${btnBase} border-[#e5e9f0] bg-[#f5f7fa] text-[#374151] hover:bg-[#eef0f5]`}
+          >
+            <span className="text-lg">📋</span>
+            <span>Full Details</span>
+          </button>
+
+          {/* 6. Complete — full width */}
+          {job.status !== 'Complete' ? (
+            <button
+              onClick={markComplete}
+              disabled={completing}
+              className={`${btnBase} col-span-3 border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-60`}
+            >
+              <span className="text-lg">{completing ? '⏳' : '✅'}</span>
+              <span>{completing ? 'Marking complete…' : 'Mark as Complete'}</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onMove(job.jobNumber, 'Lead')}
+              className={`${btnBase} col-span-3 border-[#e5e9f0] bg-[#f5f7fa] text-[#6b7280] hover:bg-[#eef0f5]`}
+            >
+              <span className="text-lg">↩️</span>
+              <span>Reopen Job</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Archived: Drive link only ──────────────────────── */}
+      {isArchived && job.driveUrl && (
+        <div className="px-4 pb-3">
           <a
             href={job.driveUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className={`${btnBase} border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100`}
+            className={`${btnBase} w-full border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 flex-row gap-2`}
           >
             <span className="text-lg">📁</span>
-            <span>Client Files</span>
+            <span>View Archived Files</span>
           </a>
-        ) : (
-          <span className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed`}>
-            <span className="text-lg">📁</span>
-            <span>No Drive Folder</span>
-          </span>
-        )}
-
-        {/* 3. Follow-up Email */}
-        <button
-          onClick={sendFollowup}
-          disabled={sendingEmail || !job.email}
-          className={`${btnBase} ${
-            emailSent
-              ? 'border-green-300 bg-green-50 text-green-700'
-              : !job.email
-              ? 'border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] cursor-not-allowed'
-              : 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 active:bg-purple-200'
-          } disabled:opacity-60`}
-        >
-          <span className="text-lg">{emailSent ? '✅' : '📧'}</span>
-          <span>
-            {sendingEmail ? 'Sending…' : emailSent ? 'Email Sent!' : 'Follow-up Email'}
-          </span>
-          {followups.length > 0 && !emailSent && (
-            <span className="text-[10px] opacity-70">#{followups.length + 1}</span>
-          )}
-        </button>
-
-        {/* 4. OpenSolar Design */}
-        {(job as any).openSolarProjectId ? (
-          <a
-            href={`https://app.opensolar.com/220067/projects/${(job as any).openSolarProjectId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${btnBase} border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100`}
-          >
-            <span className="text-lg">🔆</span>
-            <span>Open Design</span>
-          </a>
-        ) : (
-          <a
-            href="/admin"
-            className={`${btnBase} border-[#e5e9f0] bg-[#f9fafb] text-[#9ca3af] hover:bg-[#eef0f5] hover:text-[#374151]`}
-          >
-            <span className="text-lg">🔆</span>
-            <span>Create Design</span>
-          </a>
-        )}
-
-        {/* 5. Full Job Details */}
-        <button
-          onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
-          className={`${btnBase} border-[#e5e9f0] bg-[#f5f7fa] text-[#374151] hover:bg-[#eef0f5]`}
-        >
-          <span className="text-lg">📋</span>
-          <span>Full Details</span>
-        </button>
-
-        {/* 6. Complete — full width */}
-        {job.status !== 'Complete' ? (
-          <button
-            onClick={markComplete}
-            disabled={completing}
-            className={`${btnBase} col-span-3 border-green-300 bg-green-50 text-green-800 hover:bg-green-100 disabled:opacity-60`}
-          >
-            <span className="text-lg">{completing ? '⏳' : '✅'}</span>
-            <span>{completing ? 'Marking complete…' : 'Mark as Complete'}</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => onMove(job.jobNumber, 'Lead')}
-            className={`${btnBase} col-span-3 border-[#e5e9f0] bg-[#f5f7fa] text-[#6b7280] hover:bg-[#eef0f5]`}
-          >
-            <span className="text-lg">↩️</span>
-            <span>Reopen Job</span>
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Email error */}
       {emailError && (
@@ -296,20 +398,39 @@ function MobileJobCard({
         </div>
       )}
 
-      {/* ── Stage mover ───────────────────────────────────── */}
-      <div className="border-t border-[#f0f0f0] px-4 py-3 flex items-center gap-2 overflow-x-auto">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] whitespace-nowrap flex-shrink-0">
-          Move to:
-        </span>
-        {STAGES.filter((s) => s !== job.status).map((s) => (
+      {/* ── Archive / Delete strip ─────────────────────────── */}
+      <div className="border-t border-[#f0f0f0] px-4 py-2.5 flex items-center gap-2">
+        {!isArchived && (
           <button
-            key={s}
-            onClick={() => onMove(job.jobNumber, s)}
-            className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap ${STAGE_STYLES[s].pill} bg-transparent hover:opacity-80`}
+            onClick={() => onArchive(job.jobNumber, job.clientName)}
+            className="flex items-center gap-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 transition-colors"
           >
-            {s}
+            <span>🗄️</span> Archive
           </button>
-        ))}
+        )}
+        <button
+          onClick={() => onDelete(job.jobNumber, job.clientName)}
+          className="flex items-center gap-1.5 text-xs font-medium text-red-500 hover:text-red-600 px-2.5 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+        >
+          <span>🗑️</span> Delete
+        </button>
+        {!isArchived && (
+          <>
+            <div className="flex-1" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] whitespace-nowrap flex-shrink-0">
+              Move to:
+            </span>
+            {STAGES.filter((s) => s !== job.status).map((s) => (
+              <button
+                key={s}
+                onClick={() => onMove(job.jobNumber, s)}
+                className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border font-medium transition-colors whitespace-nowrap ${STAGE_STYLES[s].pill} bg-transparent hover:opacity-80`}
+              >
+                {s}
+              </button>
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
@@ -322,13 +443,19 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs);
   const [showNewJob, setShowNewJob] = useState(false);
   const [search, setSearch] = useState('');
-  const [filterStage, setFilterStage] = useState<Stage | 'All'>('All');
+  const [filterStage, setFilterStage] = useState<FilterStage>('All');
   const [page, setPage] = useState(1);
   const [sortKey, setSortKey] = useState<SortKey>('jobNumber');
   const [sortAsc, setSortAsc] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+  const [actionError, setActionError] = useState('');
 
+  // Archived jobs are hidden from 'All' — only shown when 'Archived' filter is active
   const filtered = jobs.filter((j) => {
-    const matchStage = filterStage === 'All' || j.status === filterStage;
+    const status = j.status as string;
+    if (status === 'Archived' && filterStage !== 'Archived') return false;
+    const matchStage = filterStage === 'All' || status === filterStage;
     const q = search.toLowerCase();
     const matchSearch =
       !q ||
@@ -368,6 +495,51 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
     setShowNewJob(false);
   }
 
+  function requestArchive(jobNumber: string, clientName: string) {
+    setActionError('');
+    setConfirmAction({ type: 'archive', jobNumber, clientName });
+  }
+
+  function requestDelete(jobNumber: string, clientName: string) {
+    setActionError('');
+    setConfirmAction({ type: 'delete', jobNumber, clientName });
+  }
+
+  async function handleConfirm() {
+    if (!confirmAction) return;
+    setActionPending(true);
+    setActionError('');
+    const route = confirmAction.type === 'archive' ? 'archive' : 'delete';
+    try {
+      const res = await fetch(`/api/jobs/${confirmAction.jobNumber}/${route}`, { method: 'POST' });
+      if (res.ok) {
+        if (confirmAction.type === 'delete') {
+          setJobs((prev) => prev.filter((j) => j.jobNumber !== confirmAction.jobNumber));
+        } else {
+          setJobs((prev) =>
+            prev.map((j) =>
+              j.jobNumber === confirmAction.jobNumber
+                ? { ...j, status: 'Archived' as unknown as Stage }
+                : j
+            )
+          );
+        }
+        setConfirmAction(null);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionError((data as any).error ?? 'Something went wrong — try again');
+      }
+    } catch {
+      setActionError('Network error — check connection');
+    }
+    setActionPending(false);
+  }
+
+  const stageCountFor = (stage: FilterStage) => {
+    if (stage === 'All') return jobs.filter((j) => (j.status as string) !== 'Archived').length;
+    return jobs.filter((j) => (j.status as string) === stage).length;
+  };
+
   // ─────────────────────────────────────────────────────────────────────────
   // MOBILE VIEW
   // ─────────────────────────────────────────────────────────────────────────
@@ -399,13 +571,13 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
 
         {/* Filter pills — horizontal scroll */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-          {(['All', ...STAGES] as const).map((stage) => {
-            const count  = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
+          {(['All', ...STAGES, 'Archived'] as FilterStage[]).map((stage) => {
+            const count  = stageCountFor(stage);
             const active = filterStage === stage;
             return (
               <button
                 key={stage}
-                onClick={() => { setFilterStage(stage as Stage | 'All'); setPage(1); }}
+                onClick={() => { setFilterStage(stage); setPage(1); }}
                 className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap ${
                   active
                     ? 'bg-[#ffd100] text-[#111827] border-[#ffd100]'
@@ -442,6 +614,8 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
               key={job.jobNumber}
               job={job}
               onMove={moveJob}
+              onArchive={requestArchive}
+              onDelete={requestDelete}
             />
           ))
         )}
@@ -471,28 +645,30 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
   );
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DESKTOP VIEW (unchanged)
+  // DESKTOP VIEW
   // ─────────────────────────────────────────────────────────────────────────
   const desktopView = (
     <div className="hidden md:flex min-h-[calc(100vh-56px)]">
       {/* Sidebar */}
       <aside className="w-48 flex-shrink-0 bg-[#f5f7fb] border-r border-[#e8ecf3] p-4 flex flex-col gap-5">
         <div className="pt-1">
-          <div className="text-3xl font-bold text-[#111827] tabular-nums leading-none">{jobs.length}</div>
-          <div className="text-[#6b7280] text-xs mt-1">Total Jobs</div>
+          <div className="text-3xl font-bold text-[#111827] tabular-nums leading-none">
+            {jobs.filter((j) => (j.status as string) !== 'Archived').length}
+          </div>
+          <div className="text-[#6b7280] text-xs mt-1">Active Jobs</div>
         </div>
         <div className="border-t border-[#e8ecf3]" />
         <div>
           <p className="text-[#6b7280] text-[10px] uppercase tracking-widest font-semibold mb-2">Quick Filters</p>
           <p className="text-[#6b7280] text-[10px] uppercase tracking-widest mb-1.5">Status</p>
           <div className="space-y-0.5">
-            {(['All', ...STAGES] as const).map((stage) => {
-              const count  = stage === 'All' ? jobs.length : jobs.filter((j) => j.status === stage).length;
+            {(['All', ...STAGES, 'Archived'] as FilterStage[]).map((stage) => {
+              const count  = stageCountFor(stage);
               const active = filterStage === stage;
               return (
                 <button
                   key={stage}
-                  onClick={() => { setFilterStage(stage as Stage | 'All'); setPage(1); }}
+                  onClick={() => { setFilterStage(stage); setPage(1); }}
                   className={`w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition-colors ${
                     active ? 'bg-[#ffd100]/10 text-[#ffd100]' : 'text-[#6b7280] hover:text-[#aaa] hover:bg-[#f5f7fb]'
                   }`}
@@ -562,6 +738,8 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
                     job={job}
                     isEven={i % 2 === 0}
                     onMove={moveJob}
+                    onArchive={requestArchive}
+                    onDelete={requestDelete}
                     onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
                   />
                 ))
@@ -586,6 +764,15 @@ export default function JobsListPage({ initialJobs }: { initialJobs: Job[] }) {
       {mobileView}
       {desktopView}
       {showNewJob && <NewJobModal onClose={() => setShowNewJob(false)} onCreated={onJobCreated} />}
+      {confirmAction && (
+        <ConfirmModal
+          action={confirmAction}
+          pending={actionPending}
+          error={actionError}
+          onConfirm={handleConfirm}
+          onCancel={() => { setConfirmAction(null); setActionError(''); }}
+        />
+      )}
     </>
   );
 }
@@ -609,18 +796,23 @@ function Th({ label, sortKey, current, asc, onSort, className = '' }: {
 }
 
 /* ── Desktop table row ── */
-function JobRow({ job, isEven, onMove, onClick }: {
-  job: Job & { systemSize?: string }; isEven: boolean;
-  onMove: (jobNumber: string, newStatus: Stage) => void; onClick: () => void;
+function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
+  job: AnyJob; isEven: boolean;
+  onMove: (jobNumber: string, newStatus: Stage) => void;
+  onArchive: (jobNumber: string, clientName: string) => void;
+  onDelete: (jobNumber: string, clientName: string) => void;
+  onClick: () => void;
 }) {
   const router = useRouter();
-  const [showMove, setShowMove]       = useState(false);
+  const [showMove, setShowMove]         = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailSent, setEmailSent]     = useState(false);
-  const [emailError, setEmailError]   = useState('');
-  const [completing, setCompleting]   = useState(false);
+  const [emailSent, setEmailSent]       = useState(false);
+  const [emailError, setEmailError]     = useState('');
+  const [completing, setCompleting]     = useState(false);
 
-  const styles = STAGE_STYLES[job.status] ?? STAGE_STYLES.Lead;
+  const statusStr = job.status as string;
+  const styles = STAGE_STYLES[statusStr as Stage | 'Archived'] ?? STAGE_STYLES.Lead;
+  const isArchived = statusStr === 'Archived';
 
   const analyserUrl = `/solar-analyser?${new URLSearchParams({
     name:          job.clientName,
@@ -636,7 +828,6 @@ function JobRow({ job, isEven, onMove, onClick }: {
     driveUrl:      job.driveUrl      ?? '',
   }).toString()}`;
 
-  // OpenSolar link — direct project link if confirmed, else admin panel
   const openSolarUrl = (job as any).openSolarProjectId
     ? `https://app.opensolar.com/220067/projects/${(job as any).openSolarProjectId}`
     : `/admin`;
@@ -669,30 +860,34 @@ function JobRow({ job, isEven, onMove, onClick }: {
     setCompleting(false);
   }
 
-  const iconBtn = 'p-1.5 rounded-lg text-sm transition-colors hover:bg-[#333] disabled:opacity-40';
+  const iconBtn = 'p-1.5 rounded-lg text-sm transition-colors hover:bg-[#f0f0f0] disabled:opacity-40';
 
   return (
-    <tr onClick={onClick} className={`border-b border-[#1e1e1e] cursor-pointer transition-colors group bg-[#f5f7fb] hover:bg-[#232323]`}>
+    <tr onClick={onClick} className="border-b border-[#e5e9f0] cursor-pointer transition-colors group bg-white hover:bg-[#fafbfc]">
       <td className="px-4 py-3">
-        <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${styles.badge}`}>{job.status}</span>
+        <span className={`text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ${styles.badge}`}>{statusStr}</span>
       </td>
       <td className="px-4 py-3 font-mono text-[#ffd100] text-xs font-bold whitespace-nowrap">{job.jobNumber}</td>
       <td className="px-4 py-3 text-[#111827] font-medium">{job.clientName}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell"><span className="block truncate max-w-[180px]">{job.address ?? '—'}</span></td>
-      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">{(job as any).systemSize ? `${(job as any).systemSize} kW` : '—'}</td>
+      <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">{job.systemSize ? `${job.systemSize} kW` : '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">{job.createdDate ?? '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">{job.phone ?? '—'}</td>
       {/* Quick actions */}
       <td className="px-3 py-2 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-end gap-1">
-          {/* Solar Analyser */}
-          <a href={analyserUrl} target="_blank" rel="noopener noreferrer"
-            title="Solar Analyser" className={iconBtn}>☀️</a>
+          {!isArchived && (
+            <>
+              {/* Solar Analyser */}
+              <a href={analyserUrl} target="_blank" rel="noopener noreferrer"
+                title="Solar Analyser" className={iconBtn}>☀️</a>
 
-          {/* OpenSolar Design */}
-          <a href={openSolarUrl} target="_blank" rel="noopener noreferrer"
-            title={(job as any).openSolarProjectId ? 'Open OpenSolar project' : 'Create design (admin)'}
-            className={`${iconBtn} ${!(job as any).openSolarProjectId ? 'opacity-50' : ''}`}>🔆</a>
+              {/* OpenSolar Design */}
+              <a href={openSolarUrl} target="_blank" rel="noopener noreferrer"
+                title={(job as any).openSolarProjectId ? 'Open OpenSolar project' : 'Create design (admin)'}
+                className={`${iconBtn} ${!(job as any).openSolarProjectId ? 'opacity-50' : ''}`}>🔆</a>
+            </>
+          )}
 
           {/* Client Files */}
           {job.driveUrl ? (
@@ -702,40 +897,64 @@ function JobRow({ job, isEven, onMove, onClick }: {
             <span title="No Drive folder yet" className={`${iconBtn} opacity-30 cursor-default`}>📁</span>
           )}
 
-          {/* Follow-up Email */}
-          <button onClick={sendFollowup} disabled={sendingEmail || !job.email}
-            title={emailError || (emailSent ? 'Sent!' : 'Send follow-up email')}
-            className={`${iconBtn} ${emailSent ? 'text-green-400' : ''}`}>
-            {emailSent ? '✅' : sendingEmail ? '⏳' : '📧'}
+          {!isArchived && (
+            <>
+              {/* Follow-up Email */}
+              <button onClick={sendFollowup} disabled={sendingEmail || !job.email}
+                title={emailError || (emailSent ? 'Sent!' : 'Send follow-up email')}
+                className={`${iconBtn} ${emailSent ? 'text-green-600' : ''}`}>
+                {emailSent ? '✅' : sendingEmail ? '⏳' : '📧'}
+              </button>
+
+              {/* Full Details */}
+              <button onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
+                title="Full Details" className={iconBtn}>📋</button>
+
+              {/* Mark Complete / Reopen */}
+              <button onClick={markComplete} disabled={completing}
+                title={job.status === 'Complete' ? 'Reopen job' : 'Mark as complete'}
+                className={`${iconBtn} ${job.status === 'Complete' ? 'text-green-600' : ''}`}>
+                {completing ? '⏳' : job.status === 'Complete' ? '↩️' : '✅'}
+              </button>
+
+              {/* Move stage */}
+              <div className="relative inline-block ml-1">
+                <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5 hover:text-[#374151]">Move ▾</button>
+                {showMove && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
+                    <div className="absolute right-0 top-7 bg-white border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
+                      {STAGES.map((s) => (
+                        <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#f5f7fa] transition-colors ${s === job.status ? 'text-[#ffd100] font-semibold' : 'text-[#374151]'}`}>{s}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* Archive */}
+          {!isArchived && (
+            <button
+              onClick={() => onArchive(job.jobNumber, job.clientName)}
+              title="Archive job"
+              className={`${iconBtn} text-amber-500 hover:text-amber-600 hover:bg-amber-50`}
+            >
+              🗄️
+            </button>
+          )}
+
+          {/* Delete */}
+          <button
+            onClick={() => onDelete(job.jobNumber, job.clientName)}
+            title="Delete job permanently"
+            className={`${iconBtn} text-red-400 hover:text-red-600 hover:bg-red-50`}
+          >
+            🗑️
           </button>
-
-          {/* Full Details */}
-          <button onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
-            title="Full Details" className={iconBtn}>📋</button>
-
-          {/* Mark Complete / Reopen */}
-          <button onClick={markComplete} disabled={completing}
-            title={job.status === 'Complete' ? 'Reopen job' : 'Mark as complete'}
-            className={`${iconBtn} ${job.status === 'Complete' ? 'text-green-400' : ''}`}>
-            {completing ? '⏳' : job.status === 'Complete' ? '↩️' : '✅'}
-          </button>
-
-          {/* Move stage */}
-          <div className="relative inline-block ml-1">
-            <button onClick={() => setShowMove(!showMove)} className="text-[#6b7280] text-xs px-1 py-0.5">Move ▾</button>
-            {showMove && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-                <div className="absolute right-0 top-7 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-36 shadow-xl">
-                  {STAGES.map((s) => (
-                    <button key={s} onClick={() => { onMove(job.jobNumber, s); setShowMove(false); }} className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'}`}>{s}</button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
         </div>
-        {emailError && <p className="text-red-400 text-[10px] mt-0.5 text-right">{emailError}</p>}
+        {emailError && <p className="text-red-500 text-[10px] mt-0.5 text-right">{emailError}</p>}
       </td>
     </tr>
   );

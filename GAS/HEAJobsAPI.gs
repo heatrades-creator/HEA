@@ -215,6 +215,22 @@ function doPost(e) {
     }
   }
 
+  if (action === 'deleteJob') {
+    try {
+      return jsonResponse(deleteJob_(sheet, body.jobNumber));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'archiveJob') {
+    try {
+      return jsonResponse(archiveJob_(sheet, body.jobNumber));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
   return jsonResponse({ error: 'Unknown action' }, 400);
 }
 
@@ -919,6 +935,93 @@ function getPhotos_(jobNumber) {
   } catch (e) {
     return { photos: [], error: String(e) };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Delete & Archive — controlled from the dashboard
+// ---------------------------------------------------------------------------
+
+// Permanently removes a job: trashes the Drive folder and deletes the sheet row.
+function deleteJob_(sheet, jobNumber) {
+  const job = findJobByNumber(sheet, jobNumber);
+  if (!job) return { error: 'Job not found' };
+
+  if (job.driveUrl) {
+    const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      try {
+        const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+        const iter = parent.getFolders();
+        while (iter.hasNext()) {
+          const f = iter.next();
+          if (f.getId() === match[1]) { f.setTrashed(true); break; }
+        }
+      } catch (e) {
+        Logger.log('Drive delete error (non-fatal): ' + e);
+      }
+    }
+  }
+
+  const row = findRowByJobNumber(sheet, jobNumber);
+  if (row) sheet.deleteRow(row);
+
+  sendTelegramAlert_('🗑️ <b>Job #' + jobNumber + ' permanently deleted</b>\n👤 ' + (job.clientName || 'Unknown'));
+  return { success: true, jobNumber };
+}
+
+// Marks a job Archived and moves its Drive folder into a monthly archive folder.
+// Also pre-populates the next 12 monthly archive folders so they exist in Drive.
+function archiveJob_(sheet, jobNumber) {
+  const row = findRowByJobNumber(sheet, jobNumber);
+  if (!row) return { error: 'Job not found' };
+
+  const job = rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
+  sheet.getRange(row, COL.STATUS).setValue('Archived');
+
+  let newDriveUrl = job.driveUrl;
+  if (job.driveUrl) {
+    const match = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      try {
+        const archiveRoot = ensureArchiveFolders_();
+        const now = new Date();
+        const monthStr  = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM');
+        const monthName = Utilities.formatDate(now, Session.getScriptTimeZone(), 'MMMM yyyy');
+        const monthFolder = getOrCreateDriveFolder_(archiveRoot, monthStr + ' - ' + monthName);
+
+        const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+        const iter = parent.getFolders();
+        while (iter.hasNext()) {
+          const f = iter.next();
+          if (f.getId() === match[1]) {
+            f.moveTo(monthFolder);
+            newDriveUrl = f.getUrl();
+            sheet.getRange(row, COL.DRIVE_URL).setValue(newDriveUrl);
+            break;
+          }
+        }
+      } catch (e) {
+        Logger.log('Archive Drive error (non-fatal): ' + e);
+      }
+    }
+  }
+
+  sendTelegramAlert_('🗄️ <b>Job #' + jobNumber + ' archived</b>\n👤 ' + (job.clientName || 'Unknown'));
+  return { success: true, jobNumber, newDriveUrl };
+}
+
+// Creates (or finds) the archive root folder and pre-populates 12 monthly sub-folders.
+function ensureArchiveFolders_() {
+  const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
+  const archiveRoot = getOrCreateDriveFolder_(parent, '--- Archived Jobs ---');
+  for (var i = 0; i < 12; i++) {
+    var d = new Date();
+    d.setMonth(d.getMonth() + i);
+    var ms  = Utilities.formatDate(d, Session.getScriptTimeZone(), 'yyyy-MM');
+    var mn  = Utilities.formatDate(d, Session.getScriptTimeZone(), 'MMMM yyyy');
+    getOrCreateDriveFolder_(archiveRoot, ms + ' - ' + mn);
+  }
+  return archiveRoot;
 }
 
 // ---------------------------------------------------------------------------

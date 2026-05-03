@@ -424,8 +424,9 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff', paddingVertical: 10 },
   // Filter chip rows
-  chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4, alignItems: 'flex-start' },
+  chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4 },
   chip: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginRight: 8,
     backgroundColor: '#6b7280',
   },

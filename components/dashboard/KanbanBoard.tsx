@@ -53,6 +53,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
   const filteredJobs = jobs.filter((j) => {
+    if ((j.status as string) === 'Archived') return false;
     const matchesStage = filterStage === 'All' || j.status === filterStage;
     const q = search.toLowerCase();
     const matchesSearch =
@@ -85,8 +86,10 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
       <aside className="w-52 flex-shrink-0 bg-[#f5f7fb] border-r border-[#e8ecf3] p-5 flex flex-col gap-6">
         {/* Total count */}
         <div className="pt-1">
-          <div className="text-4xl font-bold text-[#111827] tabular-nums leading-none">{jobs.length}</div>
-          <div className="text-[#6b7280] text-xs mt-1.5">Total Jobs</div>
+          <div className="text-4xl font-bold text-[#111827] tabular-nums leading-none">
+            {jobs.filter((j) => (j.status as string) !== 'Archived').length}
+          </div>
+          <div className="text-[#6b7280] text-xs mt-1.5">Active Jobs</div>
         </div>
 
         {/* Divider */}
@@ -101,7 +104,7 @@ export default function KanbanBoard({ initialJobs }: { initialJobs: Job[] }) {
           <div className="space-y-0.5">
             {(['All', ...STAGES] as const).map((stage) => {
               const count = stage === 'All'
-                ? jobs.length
+                ? jobs.filter((j) => (j.status as string) !== 'Archived').length
                 : jobs.filter((j) => j.status === stage).length;
               const isActive = filterStage === stage;
               return (

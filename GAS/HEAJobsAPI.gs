@@ -85,6 +85,14 @@ function doGet(e) {
     return jsonResponse(getPhotos_(e.parameter.jobNumber));
   }
 
+  if (e.parameter.action === 'getAnnexTemplateInfo') {
+    return jsonResponse(getAnnexTemplateInfo_());
+  }
+
+  if (e.parameter.action === 'getAnnexJobs' && e.parameter.jobNumber) {
+    return jsonResponse(getAnnexJobsForJob_(e.parameter.jobNumber));
+  }
+
   if (id) {
     const job = findJobByNumber(sheet, id);
     if (!job) return jsonResponse({ error: 'Not found' }, 404);
@@ -230,6 +238,14 @@ function doPost(e) {
   if (action === 'archiveJob') {
     try {
       return jsonResponse(archiveJob_(sheet, body.jobNumber));
+    } catch (err) {
+      return jsonResponse({ error: err.message }, 500);
+    }
+  }
+
+  if (action === 'generateAnnex') {
+    try {
+      return jsonResponse(generateAnnex_(body.jobNumber, body.annexSlug));
     } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }

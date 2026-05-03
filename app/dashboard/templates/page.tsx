@@ -1,22 +1,75 @@
 import { ANNEX_REGISTRY, type AnnexDef } from '@/lib/document-config'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Templates | HEA' }
 
-export default function TemplatesPage() {
+type AnnexTemplateInfo = {
+  slug: string
+  editUrl: string | null
+  configured: boolean
+}
+
+async function fetchAnnexTemplateInfo(): Promise<AnnexTemplateInfo[]> {
+  try {
+    const h = await headers()
+    const host = h.get('host') ?? 'localhost:3000'
+    const proto = host.startsWith('localhost') ? 'http' : 'https'
+    const res = await fetch(`${proto}://${host}/api/dashboard/annex-templates`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    return res.json()
+  } catch {
+    return []
+  }
+}
+
+export default async function TemplatesPage() {
+  const session = await getServerSession(authOptions)
+  const templateInfoList: AnnexTemplateInfo[] = session ? await fetchAnnexTemplateInfo() : []
+  const templateMap = Object.fromEntries(templateInfoList.map((t) => [t.slug, t]))
+
+  const allConfigured = templateInfoList.length > 0 && templateInfoList.every((t) => t.configured)
+  const someConfigured = templateInfoList.some((t) => t.configured)
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Annex Templates</h1>
         <p className="text-[#6b7280] text-sm mt-0.5">
-          {ANNEX_REGISTRY.length} reusable building blocks · Each annex is a self-contained PDF module that
-          plugs into any document via the Documents page.
+          {ANNEX_REGISTRY.length} reusable building blocks · Each annex is a self-contained PDF
+          module that plugs into any document via the Documents page.
         </p>
       </div>
 
+      {/* Setup banner — shown when Slides templates haven't been created yet */}
+      {session && !allConfigured && (
+        <div className="mb-6 bg-[#fffbe6] border border-[#ffd100] rounded-xl p-4 flex items-start gap-3">
+          <span className="text-[#b45309] text-lg leading-none mt-0.5">⚠</span>
+          <div className="text-sm text-[#92400e] space-y-1">
+            <p className="font-semibold">
+              {someConfigured ? 'Some Slides templates not yet configured' : 'Slides templates not yet set up'}
+            </p>
+            <p>
+              To enable one-click template editing for the Slides-based annexes (Site Assessment,
+              Financial Outcomes, System Spec, NMI Data), open the GAS editor and run{' '}
+              <code className="font-mono bg-[#fef3c7] px-1 rounded">setupAnnexMasterTemplates_()</code> once.
+              This creates the master Slides files in Drive and saves their IDs to Script Properties.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {ANNEX_REGISTRY.map((annex) => (
-          <AnnexCard key={annex.slug} annex={annex} />
+          <AnnexCard
+            key={annex.slug}
+            annex={annex}
+            templateInfo={templateMap[annex.slug] ?? null}
+          />
         ))}
       </div>
 
@@ -29,18 +82,40 @@ export default function TemplatesPage() {
         </summary>
         <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5 space-y-4 text-xs text-[#6b7280] leading-relaxed">
           <p>
-            Annexes are modular PDF chunks that attach to a base document. Each annex has a fixed slug,
-            data source, and naming convention. Annexes are generated independently and merged into
-            the final document using <code className="text-[#aaa]">pdf-lib</code> at generation time.
+            Annexes are modular PDF chunks that attach to a base document. Each annex has a fixed
+            slug, data source, and naming convention. Annexes are generated independently and merged
+            into the final document using{' '}
+            <code className="text-[#aaa]">pdf-lib</code> at generation time.
           </p>
           <div>
-            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">Annex naming convention</p>
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">
+              Two generation engines
+            </p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                <span className="font-medium text-[#374151]">Engine A — Google Slides</span>
+                {' '}· Site Assessment, Financial Outcomes, System Spec, NMI Data. Master template
+                lives in Drive. Each job gets its own editable Slides copy.
+              </li>
+              <li>
+                <span className="font-medium text-[#374151]">Engine B — pdf-lib</span>
+                {' '}· Client Photos (intake / follow-up), Installer Photos. Live Drive photos
+                embedded directly into a PDF contact sheet.
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">
+              Annex naming convention
+            </p>
             <p className="font-mono text-[#111827] text-[11px]">
               {'{JOB-ID}-annex-{slug}-{Client-Name}-{YYYY-MM-DD}.pdf'}
             </p>
           </div>
           <div>
-            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">Document build process</p>
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">
+              Document build process
+            </p>
             <ol className="list-decimal list-inside space-y-1 text-xs text-[#6b7280]">
               <li>Base document PDF is generated with job data</li>
               <li>Each enabled annex PDF is generated from its data source</li>
@@ -50,7 +125,10 @@ export default function TemplatesPage() {
           </div>
           <p>
             Enable or disable individual annexes per document type on the{' '}
-            <a href="/dashboard/documents" className="text-[#ffd100] hover:text-[#e6bc00] transition-colors">
+            <a
+              href="/dashboard/documents"
+              className="text-[#ffd100] hover:text-[#e6bc00] transition-colors"
+            >
               Documents page
             </a>
             .
@@ -61,7 +139,21 @@ export default function TemplatesPage() {
   )
 }
 
-function AnnexCard({ annex }: { annex: AnnexDef }) {
+function AnnexCard({
+  annex,
+  templateInfo,
+}: {
+  annex: AnnexDef
+  templateInfo: AnnexTemplateInfo | null
+}) {
+  const slidesEditUrl = templateInfo?.editUrl ?? null
+  const isSlidesAnnex = ['site-assessment', 'financial-outcomes', 'system-spec', 'nmi-data'].includes(
+    annex.slug
+  )
+  const isPhotoAnnex = ['client-photos-intake', 'client-photos-followup', 'installer-photos'].includes(
+    annex.slug
+  )
+
   return (
     <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 flex flex-col gap-3 hover:border-[#d0d5dd] transition-colors">
       {/* Header */}
@@ -96,8 +188,43 @@ function AnnexCard({ annex }: { annex: AnnexDef }) {
         </div>
         <div>
           <p className="text-[10px] text-[#bbb] uppercase tracking-wider mb-0.5">File naming</p>
-          <p className="text-[10px] font-mono text-[#aaa] break-all leading-relaxed">{annex.filePattern}</p>
+          <p className="text-[10px] font-mono text-[#aaa] break-all leading-relaxed">
+            {annex.filePattern}
+          </p>
         </div>
+
+        {/* Edit link */}
+        {isSlidesAnnex && (
+          <div className="pt-1">
+            {slidesEditUrl ? (
+              <a
+                href={slidesEditUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#1a73e8] hover:text-[#1557b0] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3l5 5h-3v4h-4v-4H7l5-5z" />
+                </svg>
+                Open master template
+              </a>
+            ) : (
+              <span className="text-[11px] text-[#bbb]">
+                Template not configured — run{' '}
+                <code className="font-mono">setupAnnexMasterTemplates_()</code>
+              </span>
+            )}
+          </div>
+        )}
+
+        {isPhotoAnnex && (
+          <div className="pt-1">
+            <span className="text-[11px] text-[#6b7280]">
+              Edit via Drive <code className="font-mono text-[#aaa]">05-photos/</code> folder on
+              each job
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )

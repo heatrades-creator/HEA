@@ -251,7 +251,7 @@ export default function JobsScreen() {
       </View>
 
       {/* Group / Sort row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipScroll} contentContainerStyle={styles.chipRow}>
         {GROUP_OPTS.map(opt => (
           <TouchableOpacity
             key={opt.key}
@@ -268,7 +268,7 @@ export default function JobsScreen() {
       </ScrollView>
 
       {/* Service filter row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chipRow, { paddingBottom: 8 }]}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipScroll, { marginBottom: 4 }]} contentContainerStyle={styles.chipRow}>
         {SERVICE_OPTS.map(opt => (
           <TouchableOpacity
             key={opt.key}
@@ -424,9 +424,9 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff', paddingVertical: 10 },
   // Filter chip rows
-  chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4 },
+  chipScroll: { height: 36, flexShrink: 0 },
+  chipRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   chip: {
-    alignSelf: 'flex-start',
     paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginRight: 8,
     backgroundColor: '#6b7280',
   },

@@ -1152,8 +1152,17 @@ function sendTelegramAlert_(message) {
 // Installer app — photo and receipt uploads
 // ---------------------------------------------------------------------------
 
+function safeNameSlug_(name) {
+  return (name || 'Unknown').trim()
+    .replace(/[^a-zA-Z0-9 ]/g, '')
+    .split(/\s+/).filter(Boolean)
+    .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
+    .join('-') || 'Unknown';
+}
+
 // Uploads a base64-encoded image to a subfolder within the job's client Drive folder.
-// Generates a standardised filename: {jobNumber}-{type}-{YYYY-MM-DD}-{HHmmss}.{ext}
+// Photos:   {jobNumber}-photo-{category}-{Installer-Name}-{YYYY-MM-DD}.{ext}
+// Receipts: {jobNumber}-receipt-{Installer-Name}-{YYYY-MM-DD}.{ext}
 function uploadToJobFolder_(data, subfolderName) {
   if (!data.jobNumber || !data.base64) {
     throw new Error('jobNumber and base64 are required');
@@ -1180,10 +1189,15 @@ function uploadToJobFolder_(data, subfolderName) {
 
   const mimeType = data.mimeType || 'image/jpeg';
   const ext = mimeType.split('/')[1] || (data.filename ? data.filename.split('.').pop() : 'jpg');
-  const dateStr = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'yyyy-MM-dd');
-  const timeStr = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'HH-mm-ss');
-  const type    = subfolderName === '05-photos' ? 'photo' : 'receipt';
-  const fileName = data.jobNumber + '-' + type + '-' + dateStr + '-' + timeStr + '.' + ext;
+  const dateStr      = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'yyyy-MM-dd');
+  const installerSlug = safeNameSlug_(data.installerName);
+  var fileName;
+  if (subfolderName === '05-photos') {
+    const category = (data.category || 'site').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    fileName = data.jobNumber + '-photo-' + category + '-' + installerSlug + '-' + dateStr + '.' + ext;
+  } else {
+    fileName = data.jobNumber + '-receipt-' + installerSlug + '-' + dateStr + '.' + ext;
+  }
 
   const targetFolder = getOrCreateDriveFolder_(clientFolder, subfolderName);
   const blob = Utilities.newBlob(Utilities.base64Decode(data.base64), mimeType, fileName);

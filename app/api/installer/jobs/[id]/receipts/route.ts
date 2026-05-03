@@ -25,6 +25,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       filename: body.filename,
       base64: body.base64,
       mimeType: body.mimeType ?? 'image/jpeg',
+      installerName: installer.name,
     }),
   })
   const text = await res.text()

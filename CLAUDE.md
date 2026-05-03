@@ -148,3 +148,4 @@ Never use `r.ok`. Always read raw `.text()`, parse JSON, check for `data.error` 
 
 @.claude/rules/known-issues.md
 @.claude/rules/folder-map.md
+@.claude/rules/naming-conventions.md

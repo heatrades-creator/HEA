@@ -182,7 +182,10 @@ function doPost(e) {
         body.checkoutUrl,
       ].join('\n');
 
-      const fileName = 'Payment Request — ' + body.milestone + ' — ' + ts.replace(/[/:,]/g, '-') + '.txt';
+      const dateStr = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'yyyy-MM-dd');
+      const clientSlug = clientNameSlug_(job.clientName || body.jobNumber);
+      const milestoneSlug = String(body.milestone || 'payment').toLowerCase().replace(/\s+/g, '-');
+      const fileName = body.jobNumber + '-payment-' + milestoneSlug + '-' + clientSlug + '-' + dateStr + '.txt';
       const file = folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
       return jsonResponse({ success: true, fileUrl: file.getUrl() });
     } catch (err) {
@@ -193,7 +196,7 @@ function doPost(e) {
 
   if (action === 'uploadJobPhoto') {
     try {
-      return jsonResponse(uploadToJobFolder_(body, 'Job Photos'));
+      return jsonResponse(uploadToJobFolder_(body, '05-photos'));
     } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }
@@ -201,7 +204,7 @@ function doPost(e) {
 
   if (action === 'uploadJobReceipt') {
     try {
-      return jsonResponse(uploadToJobFolder_(body, 'Job Receipts'));
+      return jsonResponse(uploadToJobFolder_(body, '07-receipts'));
     } catch (err) {
       return jsonResponse({ error: err.message }, 500);
     }
@@ -269,14 +272,14 @@ function getSheet() {
 
 function getNextJobNumber(sheet) {
   const lastRow = sheet.getLastRow();
-  if (lastRow <= 1) return 'TS001';
+  if (lastRow <= 1) return 'TS00001';
   const values = sheet.getRange(2, COL.JOB_NUMBER, lastRow - 1, 1).getValues();
   let max = 0;
   values.forEach(([val]) => {
     const match = String(val).match(/^TS(\d+)$/);
     if (match) max = Math.max(max, parseInt(match[1]));
   });
-  return 'TS' + String(max + 1).padStart(3, '0');
+  return 'TS' + String(max + 1).padStart(5, '0');
 }
 
 function createJob(sheet, data) {
@@ -289,14 +292,14 @@ function createJob(sheet, data) {
   let driveUrl = '';
   let driveError = null;
   try {
-    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
     const clientFolder = withDriveRetry_(function() {
-      return findOrCreateClientFolder_(data.clientName || 'Unknown', safeDate);
+      return findOrCreateClientFolder_(jobNumber, data.clientName || 'Unknown', safeDate);
     });
     // Capture the URL immediately — subfolder creation is non-fatal
     driveUrl = clientFolder.getUrl();
     try {
-      ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
+      ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles'].forEach(function(sub) {
         withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
       });
     } catch (subErr) {
@@ -471,11 +474,11 @@ function saveIntakeDocs_(data) {
   // Drive folder missing — createJob may have failed its Drive step due to a transient error.
   // Recover by creating the folder now (with retry) and patching the job record.
   if (!driveUrl) {
-    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy');
+    const safeDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
     const clientFolder = withDriveRetry_(function() {
-      return findOrCreateClientFolder_(job.clientName || data.jobNumber, safeDate);
+      return findOrCreateClientFolder_(data.jobNumber, job.clientName || data.jobNumber, safeDate);
     });
-    ['00_NMI_Data', '01_Quotes', '02_Proposals', '03_Signed', '04_Installed', '05_Photos', '06_Jobfiles'].forEach(function(sub) {
+    ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles'].forEach(function(sub) {
       withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
     });
     driveUrl = clientFolder.getUrl();
@@ -499,12 +502,15 @@ function saveIntakeDocs_(data) {
   }
   if (!folder) throw new Error('Client folder ' + clientFolderId + ' not found in parent — may not be a direct child');
 
-  const clientName = (job.clientName || data.jobNumber).trim();
+  const jobNumber  = data.jobNumber;
+  const clientSlug = clientNameSlug_((job.clientName || data.jobNumber).trim());
+  const dateStr    = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const prefix     = jobNumber + '-';
   const saved = [];
 
-  const nmiFolder      = getOrCreateDriveFolder_(folder, '00_NMI_Data');
-  const photosFolder   = getOrCreateDriveFolder_(folder, '05_Photos');
-  const jobfilesFolder = getOrCreateDriveFolder_(folder, '06_Jobfiles');
+  const nmiFolder      = getOrCreateDriveFolder_(folder, '00-nmi-data');
+  const photosFolder   = getOrCreateDriveFolder_(folder, '05-photos');
+  const jobfilesFolder = getOrCreateDriveFolder_(folder, '06-jobfiles');
 
   function saveFile_(targetFolder, fileName, base64, mimeType) {
     const existing = targetFolder.getFilesByName(fileName);
@@ -515,52 +521,52 @@ function saveIntakeDocs_(data) {
     saved.push(fileName);
   }
 
-  // NMI consent PDF → 00_NMI_Data (AI-accessible, separate from general job docs)
+  // NMI consent PDF → 00-nmi-data
   if (data.consentPdfBase64) {
-    saveFile_(nmiFolder, clientName + ' - NMI Consent.pdf', data.consentPdfBase64, 'application/pdf');
+    saveFile_(nmiFolder, prefix + 'nmi-consent-' + clientSlug + '-' + dateStr + '.pdf', data.consentPdfBase64, 'application/pdf');
   }
 
-  // Remaining intake docs → 06_Jobfiles
+  // Remaining intake docs → 06-jobfiles
   if (data.jobCardPdfBase64) {
-    saveFile_(jobfilesFolder, clientName + ' - Job Card.pdf', data.jobCardPdfBase64, 'application/pdf');
+    saveFile_(jobfilesFolder, prefix + 'job-card-' + clientSlug + '-' + dateStr + '.pdf', data.jobCardPdfBase64, 'application/pdf');
   }
   if (data.billBase64 && data.billName) {
     const ext = (data.billName.split('.').pop() || 'pdf').toLowerCase();
-    saveFile_(jobfilesFolder, clientName + ' - Electricity Bill.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
+    saveFile_(jobfilesFolder, prefix + 'electricity-bill-' + clientSlug + '-' + dateStr + '.' + ext, data.billBase64, data.billMime || 'application/octet-stream');
   }
 
-  // All photos → 05_Photos
+  // All photos → 05-photos
   if (data.roofPhotoBase64 && data.roofPhotoName) {
     const ext = (data.roofPhotoName.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Roof Photo.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-roof-' + clientSlug + '-' + dateStr + '.' + ext, data.roofPhotoBase64, data.roofPhotoMime || 'image/jpeg');
   }
   if (data.roofGroundPhotoBase64 && data.roofGroundPhotoName) {
     const ext = (data.roofGroundPhotoName.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Roof Ground Photo.' + ext, data.roofGroundPhotoBase64, data.roofGroundPhotoMime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-roof-ground-' + clientSlug + '-' + dateStr + '.' + ext, data.roofGroundPhotoBase64, data.roofGroundPhotoMime || 'image/jpeg');
   }
   if (data.switchboardPhotoBase64 && data.switchboardPhotoName) {
     const ext = (data.switchboardPhotoName.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Switchboard.' + ext, data.switchboardPhotoBase64, data.switchboardPhotoMime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-switchboard-' + clientSlug + '-' + dateStr + '.' + ext, data.switchboardPhotoBase64, data.switchboardPhotoMime || 'image/jpeg');
   }
   if (data.batteryPhoto1Base64 && data.batteryPhoto1Name) {
     const ext = (data.batteryPhoto1Name.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Battery Location Angle 1.' + ext, data.batteryPhoto1Base64, data.batteryPhoto1Mime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-battery-1-' + clientSlug + '-' + dateStr + '.' + ext, data.batteryPhoto1Base64, data.batteryPhoto1Mime || 'image/jpeg');
   }
   if (data.batteryPhoto2Base64 && data.batteryPhoto2Name) {
     const ext = (data.batteryPhoto2Name.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Battery Location Angle 2.' + ext, data.batteryPhoto2Base64, data.batteryPhoto2Mime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-battery-2-' + clientSlug + '-' + dateStr + '.' + ext, data.batteryPhoto2Base64, data.batteryPhoto2Mime || 'image/jpeg');
   }
   if (data.batteryPhoto3Base64 && data.batteryPhoto3Name) {
     const ext = (data.batteryPhoto3Name.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - Battery Location Angle 3.' + ext, data.batteryPhoto3Base64, data.batteryPhoto3Mime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-battery-3-' + clientSlug + '-' + dateStr + '.' + ext, data.batteryPhoto3Base64, data.batteryPhoto3Mime || 'image/jpeg');
   }
   if (data.evPhoto1Base64 && data.evPhoto1Name) {
     const ext = (data.evPhoto1Name.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - EV Charger Location.' + ext, data.evPhoto1Base64, data.evPhoto1Mime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-ev-charger-' + clientSlug + '-' + dateStr + '.' + ext, data.evPhoto1Base64, data.evPhoto1Mime || 'image/jpeg');
   }
   if (data.evPhoto2Base64 && data.evPhoto2Name) {
     const ext = (data.evPhoto2Name.split('.').pop() || 'jpg').toLowerCase();
-    saveFile_(photosFolder, clientName + ' - EV Charger Angle 2.' + ext, data.evPhoto2Base64, data.evPhoto2Mime || 'image/jpeg');
+    saveFile_(photosFolder, prefix + 'photo-ev-charger-2-' + clientSlug + '-' + dateStr + '.' + ext, data.evPhoto2Base64, data.evPhoto2Mime || 'image/jpeg');
   }
 
   return { success: true, saved };
@@ -570,6 +576,19 @@ function safeString_(input) {
   return String(input || '').trim()
     .replace(/[/\\'"<>|*?:@]/g, '')
     .replace(/\s+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .substring(0, 50);
+}
+
+// Converts a client name to Title-Case-Hyphenated slug for file/folder names.
+// e.g. "john smith" → "John-Smith", "O'Brien Mary Jo" → "OBrien-Mary-Jo"
+function clientNameSlug_(name) {
+  return String(name || '').trim()
+    .replace(/[/\\'"<>|*?:@]/g, '')
+    .split(/\s+/)
+    .filter(function(w) { return w.length > 0; })
+    .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
+    .join('-')
     .replace(/-{2,}/g, '-')
     .substring(0, 50);
 }
@@ -595,25 +614,22 @@ function withDriveRetry_(fn) {
   throw lastErr;
 }
 
-// Finds an existing client folder (created by the intake form) or creates a new one.
-// Looks inside CLIENTS_FOLDER_ID for any folder whose name starts with the client's name.
-// This ensures intake docs, bill, NMI data, and all job files share one folder per client.
-function findOrCreateClientFolder_(clientName, dateStr) {
+// Finds an existing client folder by job number prefix, or creates one.
+// Format: TS00001-John-Smith-YYYY-MM-DD
+function findOrCreateClientFolder_(jobNumber, clientName, dateStr) {
   const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
-  const searchName = clientName.trim().toLowerCase();
+  const prefix = jobNumber.toLowerCase();
 
-  // Search for an existing folder for this client
   const iter = parent.getFolders();
   while (iter.hasNext()) {
     const folder = iter.next();
-    if (folder.getName().toLowerCase().startsWith(searchName)) {
+    if (folder.getName().toLowerCase().startsWith(prefix)) {
       return folder;
     }
   }
 
-  // No existing folder — create one in standard format: "ClientName - DD-MM-YYYY"
-  const safeName = clientName.trim().replace(/[/\\'"<>|*?:@]/g, '').substring(0, 80);
-  return parent.createFolder(safeName + ' - ' + dateStr);
+  const slug = clientNameSlug_(clientName);
+  return parent.createFolder(jobNumber + '-' + slug + '-' + dateStr);
 }
 
 // ---------------------------------------------------------------------------
@@ -629,7 +645,7 @@ function checkNMI_(jobNumber) {
 
   try {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
-    const nmiFolder = getOrCreateDriveFolder_(clientFolder, '00_NMI_Data');
+    const nmiFolder = getOrCreateDriveFolder_(clientFolder, '00-nmi-data');
     const files = nmiFolder.getFiles();
     if (files.hasNext()) {
       const file = files.next();
@@ -650,7 +666,7 @@ function checkEstimation_(jobNumber) {
 
   try {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
-    const quotesFolder = getOrCreateDriveFolder_(clientFolder, '01_Quotes');
+    const quotesFolder = getOrCreateDriveFolder_(clientFolder, '01-quotes');
     const files = quotesFolder.getFiles();
     if (files.hasNext()) {
       const file = files.next();
@@ -918,8 +934,7 @@ function getPhotos_(jobNumber) {
   try {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
     const photos = [];
-    // Collect from both intake photos (05_Photos) and installer-uploaded photos (Job Photos)
-    var TARGET_FOLDERS = ['05_Photos', 'Job Photos'];
+    var TARGET_FOLDERS = ['05-photos'];
     for (var ti = 0; ti < TARGET_FOLDERS.length; ti++) {
       var iter = clientFolder.getFoldersByName(TARGET_FOLDERS[ti]);
       if (iter.hasNext()) {
@@ -1089,10 +1104,10 @@ function sendTelegramAlert_(message) {
 // ---------------------------------------------------------------------------
 
 // Uploads a base64-encoded image to a subfolder within the job's client Drive folder.
-// Used for both job site photos (05_Photos) and job receipts (07_Receipts).
+// Generates a standardised filename: {jobNumber}-{type}-{YYYY-MM-DD}-{HHmmss}.{ext}
 function uploadToJobFolder_(data, subfolderName) {
-  if (!data.jobNumber || !data.base64 || !data.filename) {
-    throw new Error('jobNumber, filename, and base64 are required');
+  if (!data.jobNumber || !data.base64) {
+    throw new Error('jobNumber and base64 are required');
   }
 
   const job = findJobByNumber(getSheet(), data.jobNumber);
@@ -1114,12 +1129,15 @@ function uploadToJobFolder_(data, subfolderName) {
   }
   if (!clientFolder) throw new Error('Client folder not found in parent');
 
+  const mimeType = data.mimeType || 'image/jpeg';
+  const ext = mimeType.split('/')[1] || (data.filename ? data.filename.split('.').pop() : 'jpg');
+  const dateStr = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'yyyy-MM-dd');
+  const timeStr = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'HH-mm-ss');
+  const type    = subfolderName === '05-photos' ? 'photo' : 'receipt';
+  const fileName = data.jobNumber + '-' + type + '-' + dateStr + '-' + timeStr + '.' + ext;
+
   const targetFolder = getOrCreateDriveFolder_(clientFolder, subfolderName);
-  const blob = Utilities.newBlob(
-    Utilities.base64Decode(data.base64),
-    data.mimeType || 'image/jpeg',
-    data.filename
-  );
+  const blob = Utilities.newBlob(Utilities.base64Decode(data.base64), mimeType, fileName);
   const file = targetFolder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
@@ -1129,20 +1147,21 @@ function uploadToJobFolder_(data, subfolderName) {
 // Uploads a receipt image to the shared Staff Receipts folder, organised by month.
 // Not job-specific — used for fuel, supplies, and other general expenses.
 function uploadGeneralReceipt_(data) {
-  if (!data.base64 || !data.filename) throw new Error('filename and base64 are required');
+  if (!data.base64) throw new Error('base64 is required');
 
   const parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID);
   const staffReceiptsFolder = getOrCreateDriveFolder_(parent, '--- Staff Receipts ---');
 
-  // Organise by month so the folder stays manageable
   const monthStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM');
   const monthFolder = getOrCreateDriveFolder_(staffReceiptsFolder, monthStr);
 
-  const blob = Utilities.newBlob(
-    Utilities.base64Decode(data.base64),
-    data.mimeType || 'image/jpeg',
-    data.filename
-  );
+  const mimeType = data.mimeType || 'image/jpeg';
+  const ext = mimeType.split('/')[1] || (data.filename ? data.filename.split('.').pop() : 'jpg');
+  const dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const timeStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'HH-mm-ss');
+  const fileName = 'receipt-' + dateStr + '-' + timeStr + '.' + ext;
+
+  const blob = Utilities.newBlob(Utilities.base64Decode(data.base64), mimeType, fileName);
   const file = monthFolder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 

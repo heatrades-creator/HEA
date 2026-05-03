@@ -99,17 +99,17 @@ When Claude makes a mobile change, the commit message will include one of these 
 ### APK build commands (copy-paste into cmd)
 
 ```
-cd C:\path\to\HEA
+cd C:\Users\JDMHe\HEA
 git pull origin main
 cd mobile
-npm install
-npx eas-cli build --platform android --profile preview --non-interactive
+eas build --platform android --profile preview
 ```
 
-After the build completes (~10–15 min):
-1. Copy the `.apk` download URL from the EAS build output
-2. Go to `/dashboard/c2/installers` → App Distribution → paste the URL
-3. Use the Push Notification block to notify installers to update
+After the build completes (~10–15 min on EAS servers):
+1. EAS will print a URL like `https://expo.dev/artifacts/eas/...apk` — copy it
+2. Go to `/dashboard/c2/installers` → App Distribution → paste the URL → Save
+3. Use the Push Notification block to notify installers to reinstall
+4. Installers must manually install the new APK — OTA does not deliver native changes
 
 ### What triggers each
 

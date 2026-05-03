@@ -85,7 +85,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'Intake form → GAS Drive (05-photos/)',
     driveSubfolder: '05-photos/',
     filePattern: '{JOB-ID}-annex-client-photos-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'client-photos-followup',
@@ -95,7 +95,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'Manual upload → GAS Drive (05-photos/)',
     driveSubfolder: '05-photos/',
     filePattern: '{JOB-ID}-annex-client-photos-followup-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'installer-photos',
@@ -105,7 +105,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'HEA Installer App → GAS Drive (05-photos/)',
     driveSubfolder: '05-photos/',
     filePattern: '{JOB-ID}-annex-installer-photos-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'financial-outcomes',
@@ -115,7 +115,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'Calculated from HEA SA data',
     driveSubfolder: '02-proposals/',
     filePattern: '{JOB-ID}-annex-financial-outcomes-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'system-spec',
@@ -125,7 +125,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'OpenSolar / job data',
     driveSubfolder: '01-quotes/',
     filePattern: '{JOB-ID}-annex-system-spec-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'site-assessment',
@@ -135,7 +135,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'Intake form data',
     driveSubfolder: '06-jobfiles/',
     filePattern: '{JOB-ID}-annex-site-assessment-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'nmi-data',

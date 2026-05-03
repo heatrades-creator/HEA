@@ -5,6 +5,7 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import * as SecureStore from 'expo-secure-store'
 import { fetchJobs, SessionExpiredError } from '@/lib/api'
 import { clearAuth } from '@/lib/auth'
 import { setupNotifications } from '@/lib/notifications'
@@ -12,6 +13,7 @@ import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.3'
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
+const APK_BUILD_KEY = 'apk_build_id'
 const DOWNLOAD_URL = `${BASE}/installer-app`
 
 type GroupMode = 'postcode' | 'unclaimed' | 'date'
@@ -109,8 +111,15 @@ export default function JobsScreen() {
   useEffect(() => {
     fetch(`${BASE}/api/installer/version`)
       .then(r => r.json())
-      .then((data: { version: string }) => {
-        if (data.version !== VERSION.replace('v', '')) setUpdateAvailable(true)
+      .then(async (data: { buildId: string | null }) => {
+        if (!data.buildId) return
+        const stored = await SecureStore.getItemAsync(APK_BUILD_KEY)
+        if (!stored) {
+          // First run after install — record the current APK fingerprint, no banner
+          await SecureStore.setItemAsync(APK_BUILD_KEY, data.buildId)
+        } else if (stored !== data.buildId) {
+          setUpdateAvailable(true)
+        }
       })
       .catch(() => {})
   }, [])

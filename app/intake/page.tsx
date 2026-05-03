@@ -612,6 +612,12 @@ function IntakeFormInner() {
                             }`}
                           >{v}</button>
                         ))}
+                        <button type="button"
+                          onClick={() => setValue("roofOrientation", watch("roofOrientation") === "Not sure" ? "" : "Not sure")}
+                          className={`col-span-4 py-2.5 px-1 rounded-xl border text-xs font-medium transition-all ${
+                            watch("roofOrientation") === "Not sure" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 text-slate-700 hover:border-slate-400"
+                          }`}
+                        >Not sure</button>
                       </div>
                     </div>
 
@@ -630,7 +636,7 @@ function IntakeFormInner() {
                     <div>
                       <Label>Power supply type</Label>
                       <div className="space-y-2">
-                        {["Single phase (most homes)", "Three phase", "Not sure"].map(v => (
+                        {["Single phase (most homes)", "Two phase (rare)", "Three phase", "Not sure"].map(v => (
                           <RadioRow key={v} name="phases" value={v} label={v}
                             checked={watch("phases") === v}
                             onChange={() => setValue("phases", v)}

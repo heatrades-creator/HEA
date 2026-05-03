@@ -47,6 +47,7 @@ const COL = {
   EPS_CIRCUIT_1:    22, // V
   EPS_CIRCUIT_2:    23, // W
   EPS_CIRCUIT_3:    24, // X
+  POSTCODE:         25, // Y
 };
 
 // ---------------------------------------------------------------------------
@@ -254,13 +255,14 @@ function getSheet() {
       'Est. Annual Bill ($)', 'Finance Required',
       'Occupants', 'Home Daytime', 'Hot Water', 'Gas Appliances', 'EV',
       'WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3',
+      'Postcode',
     ]);
     sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 24).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 25).setFontWeight('bold');
   } else {
     // Migration: add new column headers if they don't exist yet
     const lastCol = sheet.getLastColumn();
-    const newHeaders = ['WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3'];
+    const newHeaders = ['WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3', 'Postcode'];
     newHeaders.forEach(function(header, i) {
       const col = 20 + i;
       if (lastCol < col) sheet.getRange(1, col).setValue(header);
@@ -284,7 +286,7 @@ function getNextJobNumber(sheet) {
 
 function createJob(sheet, data) {
   const jobNumber = getNextJobNumber(sheet);
-  const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy');
+  const createdDate = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm');
 
   // Find or create unified client folder inside CLIENTS_FOLDER_ID.
   // If the client already submitted the intake form, their folder exists — reuse it.
@@ -299,7 +301,7 @@ function createJob(sheet, data) {
     // Capture the URL immediately — subfolder creation is non-fatal
     driveUrl = clientFolder.getUrl();
     try {
-      ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles'].forEach(function(sub) {
+      ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles', '07-receipts'].forEach(function(sub) {
         withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
       });
     } catch (subErr) {
@@ -308,6 +310,7 @@ function createJob(sheet, data) {
   } catch (e) {
     Logger.log('Drive folder error: ' + e);
     driveError = String(e);
+    sendTelegramAlert_('⚠️ <b>Drive folder creation failed</b>\nJob: ' + jobNumber + '\nError: ' + String(e));
   }
 
   sheet.appendRow([
@@ -335,6 +338,7 @@ function createJob(sheet, data) {
     data.epsCircuit1     || '',
     data.epsCircuit2     || '',
     data.epsCircuit3     || '',
+    data.postcode        || '',
   ]);
 
   return {
@@ -363,6 +367,7 @@ function createJob(sheet, data) {
     epsCircuit1:     data.epsCircuit1     || '',
     epsCircuit2:     data.epsCircuit2     || '',
     epsCircuit3:     data.epsCircuit3     || '',
+    postcode:        data.postcode        || '',
   };
 }
 
@@ -389,13 +394,13 @@ function updateJob(sheet, data) {
   if (data.epsCircuit2     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_2).setValue(data.epsCircuit2);
   if (data.epsCircuit3     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_3).setValue(data.epsCircuit3);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 25).getValues()[0]);
 }
 
 function findJobByNumber(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return null;
-  return rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 25).getValues()[0]);
 }
 
 function findRowByJobNumber(sheet, jobNumber) {
@@ -411,7 +416,7 @@ function findRowByJobNumber(sheet, jobNumber) {
 function getAllJobs(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 24).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 25).getValues();
   return values
     .filter(row => row[0])
     .map(rowToJob)
@@ -444,6 +449,7 @@ function rowToJob(row) {
     epsCircuit1:     String(row[21] || ''),
     epsCircuit2:     String(row[22] || ''),
     epsCircuit3:     String(row[23] || ''),
+    postcode:        String(row[24] || ''),
   };
 }
 
@@ -478,7 +484,7 @@ function saveIntakeDocs_(data) {
     const clientFolder = withDriveRetry_(function() {
       return findOrCreateClientFolder_(data.jobNumber, job.clientName || data.jobNumber, safeDate);
     });
-    ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles'].forEach(function(sub) {
+    ['00-nmi-data', '01-quotes', '02-proposals', '03-signed', '04-installed', '05-photos', '06-jobfiles', '07-receipts'].forEach(function(sub) {
       withDriveRetry_(function() { getOrCreateDriveFolder_(clientFolder, sub); });
     });
     driveUrl = clientFolder.getUrl();
@@ -990,7 +996,7 @@ function archiveJob_(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return { error: 'Job not found' };
 
-  const job = rowToJob(sheet.getRange(row, 1, 1, 24).getValues()[0]);
+  const job = rowToJob(sheet.getRange(row, 1, 1, 25).getValues()[0]);
   sheet.getRange(row, COL.STATUS).setValue('Archived');
 
   let newDriveUrl = job.driveUrl;

@@ -1,11 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import JobDocuments from '@/components/dashboard/JobDocuments';
 import { JobComments } from '@/components/dashboard/JobComments';
-
-const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 
 const STAGE_COLORS: Record<string, string> = {
   Lead:          'bg-gray-100 text-gray-600',
@@ -16,6 +14,95 @@ const STAGE_COLORS: Record<string, string> = {
   Complete:      'bg-green-100 text-green-700',
 };
 
+type WorkflowTask = {
+  id: string;
+  emoji: string;
+  label: string;
+  detail?: string;
+  autoKey?: 'nmi' | 'estimation';
+  informational?: boolean;
+  links?: Array<{ label: string; href: string }>;
+};
+
+const STAGE_WORKFLOW: Record<string, {
+  bg: string; border: string; nextStage: string | null; autoAdvances: boolean; tasks: WorkflowTask[];
+}> = {
+  Lead: {
+    bg: 'bg-gray-50', border: 'border-gray-200', nextStage: 'Estimation', autoAdvances: true,
+    tasks: [
+      {
+        id: 'bill_nmi', emoji: '📄',
+        label: 'Electricity bill viewed & NMI uploaded to PowerCor',
+        detail: 'Download detailed NMI data → save to client Drive NMI folder',
+        autoKey: 'nmi',
+        links: [{ label: 'PowerCor Portal ↗', href: 'https://energyeasy.ue.com.au' }],
+      },
+      {
+        id: 'opensolar', emoji: '🔆',
+        label: 'System pre-designed on OpenSolar',
+        links: [{ label: 'Open OpenSolar ↗', href: 'https://app.opensolar.com/220067/projects' }],
+      },
+      {
+        id: 'analyser', emoji: '☀️',
+        label: 'HEA Solar Analyser run — system size & payback period designed',
+        detail: 'Estimation may be signed here on the spot',
+        autoKey: 'estimation',
+      },
+    ],
+  },
+  Estimation: {
+    bg: 'bg-blue-50', border: 'border-blue-200', nextStage: 'Contract', autoAdvances: true,
+    tasks: [
+      {
+        id: 'estimation_signed', emoji: '✍️',
+        label: 'Estimation accepted & contract signed',
+        detail: 'Turns the estimation into a formal contract/quote',
+      },
+    ],
+  },
+  Contract: {
+    bg: 'bg-orange-50', border: 'border-orange-200', nextStage: 'Booked', autoAdvances: true,
+    tasks: [
+      { id: 'deposit_paid', emoji: '💰', label: '10% system deposit paid by client' },
+      {
+        id: 'materials_ordered', emoji: '📦',
+        label: 'Materials ordered & delivered to site',
+        detail: 'To storage or client\'s address, prior to installation date',
+      },
+    ],
+  },
+  Booked: {
+    bg: 'bg-purple-50', border: 'border-purple-200', nextStage: 'In Progress', autoAdvances: false,
+    tasks: [
+      {
+        id: 'install_date', emoji: '📅', informational: true,
+        label: 'Awaiting installation date — installers will mark on-site via the app',
+        detail: 'Stage advances automatically when installers check in via the installer app',
+      },
+    ],
+  },
+  'In Progress': {
+    bg: 'bg-amber-50', border: 'border-amber-300', nextStage: 'Complete', autoAdvances: false,
+    tasks: [
+      {
+        id: 'installing', emoji: '🔨', informational: true,
+        label: 'Installers currently on-site installing the system',
+        detail: 'Stage advances automatically when installers mark the job complete in the app',
+      },
+    ],
+  },
+  Complete: {
+    bg: 'bg-green-50', border: 'border-green-200', nextStage: null, autoAdvances: false,
+    tasks: [
+      { id: 'installer_complete', emoji: '✅', label: 'Installers marked job complete in app' },
+      { id: 'invoice_80', emoji: '📧', label: 'Invoice for 80% of system cost sent to client', detail: 'Use the Payments section below' },
+      { id: 'esv_booked', emoji: '🔍', label: 'ESV (Energy Safe Victoria) electrical inspection date booked' },
+      { id: 'coes_received', emoji: '📋', label: 'COES (Certificate of Electrical Safety) received from ESV' },
+      { id: 'invoice_10', emoji: '💰', label: 'Final 10% invoiced to client — job auto-archives on full payment', detail: 'Use the Payments section below' },
+    ],
+  },
+};
+
 const MILESTONE_LABELS: Record<string, string> = {
   deposit:    '10% Deposit',
   completion: '80% Completion',
@@ -24,9 +111,10 @@ const MILESTONE_LABELS: Record<string, string> = {
 
 export default function JobDetail({ job, paymentStatus, paymentMilestone }: { job: any; paymentStatus?: string; paymentMilestone?: string }) {
   const router = useRouter();
+  const advancingRef = useRef(false);
 
   // Core fields
-  const [status, setStatus]   = useState(job.status);
+  const [status, setStatus]   = useState<string>(job.status);
   const [notes, setNotes]     = useState(job.notes ?? '');
   const [driveUrl, setDriveUrl] = useState(job.driveUrl ?? '');
 
@@ -48,6 +136,76 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
+
+  // Workflow checklist state
+  const [tasksDone, setTasksDone]       = useState<Record<string, boolean>>({});
+  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; estimation: boolean }>({ nmi: false, estimation: false });
+
+  // Load per-job checklist state from localStorage
+  useEffect(() => {
+    const workflow = STAGE_WORKFLOW[status];
+    if (!workflow) return;
+    const loaded: Record<string, boolean> = {};
+    for (const task of workflow.tasks) {
+      loaded[task.id] = localStorage.getItem(`hea_task_${job.jobNumber}_${task.id}`) === 'true';
+    }
+    setTasksDone(loaded);
+  }, [status, job.jobNumber]);
+
+  // Auto-detect NMI and estimation files for Lead stage (polls every 30s)
+  useEffect(() => {
+    if (status !== 'Lead') { setAutoDetected({ nmi: false, estimation: false }); return; }
+    let cancelled = false;
+    async function check() {
+      try {
+        const [nmiRes, estRes] = await Promise.all([
+          fetch(`/api/dashboard/pipeline/check-nmi?jobNumber=${job.jobNumber}`),
+          fetch(`/api/dashboard/pipeline/check-estimation?jobNumber=${job.jobNumber}`),
+        ]);
+        const [nmiData, estData] = await Promise.all([nmiRes.json(), estRes.json()]);
+        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, estimation: !!estData.hasEstimation });
+      } catch {}
+    }
+    check();
+    const interval = setInterval(check, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [status, job.jobNumber]);
+
+  // Auto-advance stage when all checklist tasks are done
+  useEffect(() => {
+    const workflow = STAGE_WORKFLOW[status];
+    if (!workflow?.autoAdvances || !workflow.nextStage || advancingRef.current) return;
+    const allDone = workflow.tasks.every((t) => {
+      if (t.informational) return true;
+      if (t.autoKey === 'nmi') return autoDetected.nmi;
+      if (t.autoKey === 'estimation') return autoDetected.estimation;
+      return tasksDone[t.id] ?? false;
+    });
+    if (!allDone) return;
+    advancingRef.current = true;
+    const nextStage = workflow.nextStage;
+    fetch(`/api/jobs/${job.jobNumber}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: nextStage }),
+    }).then(() => {
+      setStatus(nextStage);
+      advancingRef.current = false;
+      router.refresh();
+    }).catch(() => { advancingRef.current = false; });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tasksDone, autoDetected]);
+
+  function toggleTask(taskId: string, done: boolean) {
+    localStorage.setItem(`hea_task_${job.jobNumber}_${taskId}`, String(done));
+    setTasksDone((prev) => ({ ...prev, [taskId]: done }));
+  }
+
+  const analyserUrl = `/solar-analyser?${new URLSearchParams({
+    name: job.clientName, email: job.email ?? '', phone: job.phone ?? '',
+    address: job.address ?? '', annualBill: job.annualBill ?? '',
+    driveUrl: job.driveUrl ?? '',
+  }).toString()}`;
 
   async function save() {
     setSaving(true);
@@ -137,25 +295,126 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
       <div className="p-6 space-y-7">
 
-        {/* Stage selector */}
-        <div>
-          <label className="block text-[#374151] text-xs uppercase tracking-wider mb-2">Stage</label>
-          <div className="flex flex-wrap gap-2">
-            {STAGES.map((s) => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all border ${
-                  status === s
-                    ? 'border-[#ffd100] text-[#ffd100] bg-[#ffd100]/10'
-                    : 'border-[#e5e9f0] text-[#6b7280] hover:border-[#555] hover:text-[#aaa]'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* ── Stage Workflow Checklist ── */}
+        {(() => {
+          const workflow = STAGE_WORKFLOW[status];
+          if (!workflow) return null;
+          const { bg, border, nextStage, autoAdvances, tasks } = workflow;
+          const allDone = tasks.every((t) => {
+            if (t.informational) return true;
+            if (t.autoKey === 'nmi') return autoDetected.nmi;
+            if (t.autoKey === 'estimation') return autoDetected.estimation;
+            return tasksDone[t.id] ?? false;
+          });
+          return (
+            <div className={`rounded-xl border ${border} ${bg} p-4`}>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${STAGE_COLORS[status] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {status}
+                  </span>
+                  {nextStage && (
+                    <span className="text-[#9ca3af] text-xs">
+                      → next: <span className={`font-medium px-1.5 py-0.5 rounded-full text-[11px] ${STAGE_COLORS[nextStage] ?? ''}`}>{nextStage}</span>
+                    </span>
+                  )}
+                  {!nextStage && <span className="text-[#9ca3af] text-xs">— final stage</span>}
+                </div>
+                {autoAdvances && allDone && (
+                  <span className="text-[11px] text-green-700 font-semibold bg-green-100 px-2 py-0.5 rounded-full">
+                    ✓ Advancing…
+                  </span>
+                )}
+              </div>
+
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[#9ca3af] mb-2">
+                What needs to be done
+              </p>
+
+              <div className="space-y-3">
+                {tasks.map((task) => {
+                  const isDone = task.informational ? false
+                    : task.autoKey === 'nmi' ? autoDetected.nmi
+                    : task.autoKey === 'estimation' ? autoDetected.estimation
+                    : (tasksDone[task.id] ?? false);
+                  const isAuto = !!task.autoKey;
+
+                  const taskLinks = [
+                    ...(task.links ?? []),
+                    ...(task.id === 'analyser' ? [{ label: 'Solar Analyser ↗', href: analyserUrl }] : []),
+                    ...(task.autoKey === 'nmi' && job.driveUrl ? [{ label: 'Drive Folder ↗', href: job.driveUrl }] : []),
+                  ];
+
+                  return (
+                    <div key={task.id} className="flex items-start gap-3">
+                      {/* Checkbox / auto indicator / info indicator */}
+                      {task.informational ? (
+                        <span className="flex-shrink-0 mt-0.5 text-base">ℹ️</span>
+                      ) : isAuto ? (
+                        <span className={`flex-shrink-0 mt-0.5 text-base ${isDone ? '' : 'opacity-40'}`}>
+                          {isDone ? '✅' : '⏳'}
+                        </span>
+                      ) : (
+                        <input
+                          type="checkbox"
+                          checked={isDone}
+                          onChange={(e) => toggleTask(task.id, e.target.checked)}
+                          className="flex-shrink-0 mt-1 w-4 h-4 accent-[#ffd100] cursor-pointer"
+                        />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-sm font-medium leading-snug ${isDone && !task.informational ? 'line-through text-[#9ca3af]' : 'text-[#111827]'}`}>
+                          {task.emoji} {task.label}
+                        </p>
+                        {task.detail && (
+                          <p className="text-xs text-[#6b7280] mt-0.5 leading-snug">{task.detail}</p>
+                        )}
+                        {taskLinks.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-1.5">
+                            {taskLinks.map((link) => (
+                              <a
+                                key={link.href}
+                                href={link.href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`text-[11px] font-medium px-2 py-0.5 rounded border transition-colors ${STAGE_COLORS[status]?.replace('bg-', 'border-').replace('text-', 'text-') ?? ''} hover:opacity-80`}
+                              >
+                                {link.label}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        {isAuto && !isDone && (
+                          <p className="text-[10px] text-[#9ca3af] mt-0.5">Auto-detecting — checking every 30s</p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Progress bar */}
+              {!tasks.every((t) => t.informational) && (
+                <div className="mt-4">
+                  <div className="w-full h-1.5 bg-white/60 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${STAGE_COLORS[status]?.includes('green') ? 'bg-green-500' : STAGE_COLORS[status]?.includes('blue') ? 'bg-blue-500' : STAGE_COLORS[status]?.includes('orange') ? 'bg-orange-500' : STAGE_COLORS[status]?.includes('purple') ? 'bg-purple-500' : STAGE_COLORS[status]?.includes('amber') ? 'bg-amber-700' : 'bg-gray-500'}`}
+                      style={{
+                        width: `${Math.round(
+                          (tasks.filter((t) => !t.informational && (
+                            t.autoKey === 'nmi' ? autoDetected.nmi
+                            : t.autoKey === 'estimation' ? autoDetected.estimation
+                            : (tasksDone[t.id] ?? false)
+                          )).length / Math.max(1, tasks.filter((t) => !t.informational).length)
+                        ) * 100)}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── System Details ── */}
         <div>

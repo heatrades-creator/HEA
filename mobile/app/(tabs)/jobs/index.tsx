@@ -424,16 +424,16 @@ const styles = StyleSheet.create({
   searchIcon: { marginRight: 8 },
   searchInput: { flex: 1, fontSize: 15, color: '#fff', paddingVertical: 10 },
   // Filter chip rows
-  chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4 },
+  chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4, alignItems: 'center' },
   chip: {
-    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8,
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, marginRight: 8,
     backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#374151',
   },
   chipActive:       { backgroundColor: '#ffd100', borderColor: '#ffd100' },
   chipDisabled:     { opacity: 0.35 },
-  chipText:         { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
+  chipText:         { fontSize: 11, fontWeight: '600', color: '#d1d5db' },
   chipTextActive:   { color: '#111827' },
-  chipTextDisabled: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
+  chipTextDisabled: { fontSize: 11, fontWeight: '600', color: '#6b7280' },
   // Section headers
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 8 },
   sectionLine:   { flex: 1, height: 1, backgroundColor: '#1f2937' },

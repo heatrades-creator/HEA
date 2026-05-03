@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { formatHEADate } from '@/lib/format';
 
 type Template = {
   doc_class: string;
@@ -168,14 +169,4 @@ export default function JobDocuments({ jobNumber }: { jobNumber: string }) {
   );
 }
 
-function formatDate(iso: string): string {
-  if (!iso) return '';
-  try {
-    return new Date(iso).toLocaleString('en-AU', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  } catch {
-    return iso;
-  }
-}
+const formatDate = formatHEADate;

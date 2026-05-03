@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { formatHEADate, formatHEADateOnly } from "@/lib/format"
 import { AppointmentModal }     from "./modals/AppointmentModal"
 import { SolarVicModal }        from "./modals/SolarVicModal"
 import { FinanceModal }         from "./modals/FinanceModal"
@@ -38,13 +39,8 @@ interface Props {
   onStageAdvance: (leadId: string) => void
 }
 
-function fmtDate(iso: string) {
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso))
-}
-
-function fmtDateTime(iso: string) {
-  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(iso))
-}
+const fmtDate = formatHEADateOnly
+const fmtDateTime = formatHEADate
 
 type Modal = "appointment" | "solarvic" | "finance" | "estimation"
 

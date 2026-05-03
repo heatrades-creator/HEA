@@ -18,7 +18,7 @@
  *   O: Occupants   P: Home Daytime  Q: Hot Water  R: Gas Appliances  S: EV
  */
 
-const SHEET_NAME = 'HEA Jobs';
+const SHEET_NAME = 'HEA Jobs'; // deleteJob + archiveJob added
 
 // Unified client folder — all intake docs, bills, NMI data, and job files live here
 const CLIENTS_FOLDER_ID = '12LCs9uDYh4Wynor0LdDelNbcQDe7c-C-';

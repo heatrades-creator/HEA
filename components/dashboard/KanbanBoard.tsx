@@ -331,20 +331,6 @@ function JobCard({
         })}
       </div>
       <p className="text-[#6b7280] text-[10px] mt-1.5 truncate">{NEXT_ACTION[job.status]}</p>
-
-      {/* Move to stage — direct pills */}
-      <div className="mt-3 flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
-        <span className="text-[10px] text-[#9ca3af] font-medium self-center mr-0.5">→</span>
-        {STAGES.filter((s) => s !== job.status).map((s) => (
-          <button
-            key={s}
-            onClick={() => onMove(s)}
-            className={`text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors hover:opacity-80 ${STAGE_STYLES[s].badge} border-current`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
     </div>
   );
 }

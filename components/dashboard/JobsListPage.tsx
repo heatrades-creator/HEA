@@ -807,7 +807,6 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent]       = useState(false);
   const [emailError, setEmailError]     = useState('');
-  const [completing, setCompleting]     = useState(false);
 
   const statusStr = job.status as string;
   const styles = STAGE_STYLES[statusStr as Stage | 'Archived'] ?? STAGE_STYLES.Lead;
@@ -851,12 +850,6 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
       }
     } catch { setEmailError('Network error'); }
     setSendingEmail(false);
-  }
-
-  async function markComplete() {
-    setCompleting(true);
-    await onMove(job.jobNumber, job.status === 'Complete' ? 'Lead' : 'Complete');
-    setCompleting(false);
   }
 
   const iconBtn = 'p-1.5 rounded-lg text-sm transition-colors hover:bg-[#f0f0f0] disabled:opacity-40';
@@ -909,25 +902,7 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
               <button onClick={() => router.push(`/dashboard/jobs/${job.jobNumber}`)}
                 title="Full Details" className={iconBtn}>📋</button>
 
-              {/* Mark Complete / Reopen */}
-              <button onClick={markComplete} disabled={completing}
-                title={job.status === 'Complete' ? 'Reopen job' : 'Mark as complete'}
-                className={`${iconBtn} ${job.status === 'Complete' ? 'text-green-600' : ''}`}>
-                {completing ? '⏳' : job.status === 'Complete' ? '↩️' : '✅'}
-              </button>
-
-              {/* Direct stage pills */}
-              <span className="text-[10px] text-[#9ca3af] font-medium ml-1">→</span>
-              {STAGES.filter((s) => s !== job.status).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => onMove(job.jobNumber, s)}
-                  title={`Move to ${s}`}
-                  className={`text-[10px] px-2 py-0.5 rounded-full border border-current font-medium transition-colors hover:opacity-80 whitespace-nowrap ${STAGE_STYLES[s].badge}`}
-                >
-                  {s}
-                </button>
-              ))}
+              {/* Full job detail is where stage progression happens */}
             </>
           )}
 

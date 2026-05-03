@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4, alignItems: 'flex-start' },
   chip: {
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, marginRight: 8,
-    backgroundColor: '#374151',
+    backgroundColor: '#6b7280',
   },
   chipActive:       { backgroundColor: '#ffd100' },
   chipDisabled:     { opacity: 0.35 },

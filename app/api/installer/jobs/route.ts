@@ -16,11 +16,11 @@ export async function GET(req: NextRequest) {
     gasUrl
       ? fetch(gasUrl, { cache: 'no-store' }).then(r => r.text()).catch(() => null)
       : Promise.resolve(null),
-    prisma.jobClaim.findMany({ include: { installer: { select: { id: true, name: true } } } }),
+    prisma.jobClaim.findMany({ include: { installer: { select: { id: true, name: true } } } }).catch(() => []),
     prisma.lead.findMany({
       where: { status: { notIn: EXCLUDED_LEAD_STATUSES } },
       orderBy: { createdAt: 'desc' },
-    }),
+    }).catch(() => []),
   ])
 
   // Parse GAS jobs — may be null if GAS not configured or network error

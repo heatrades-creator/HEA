@@ -5,25 +5,25 @@ import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import JobListView from './JobListView';
 
-const STAGES = ['Lead', 'Quoted', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
+const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 export type Stage = (typeof STAGES)[number];
 
 const STAGE_STYLES: Record<Stage, { border: string; badge: string; header: string; dotFill: string }> = {
-  Lead:          { border: 'border-[#3a3a3a]',   badge: 'bg-[#3a3a3a] text-[#aaa]',           header: 'text-[#aaa]',       dotFill: 'bg-[#6b7280]' },
-  Quoted:        { border: 'border-blue-800',     badge: 'bg-blue-900/40 text-blue-300',         header: 'text-blue-300',     dotFill: 'bg-blue-400' },
-  Contract:      { border: 'border-orange-700',   badge: 'bg-orange-900/40 text-orange-300',     header: 'text-orange-300',   dotFill: 'bg-orange-400' },
-  Booked:        { border: 'border-purple-800',   badge: 'bg-purple-900/40 text-purple-300',     header: 'text-purple-300',   dotFill: 'bg-purple-400' },
-  'In Progress': { border: 'border-yellow-700',   badge: 'bg-yellow-900/40 text-[#ffd100]',      header: 'text-[#ffd100]',    dotFill: 'bg-[#ffd100]' },
-  Complete:      { border: 'border-green-800',    badge: 'bg-green-900/40 text-green-400',       header: 'text-green-400',    dotFill: 'bg-green-400' },
+  Lead:          { border: 'border-gray-300',    badge: 'bg-gray-100 text-gray-600',            header: 'text-gray-500',      dotFill: 'bg-gray-400' },
+  Estimation:    { border: 'border-blue-200',    badge: 'bg-blue-100 text-blue-700',             header: 'text-blue-600',      dotFill: 'bg-blue-500' },
+  Contract:      { border: 'border-orange-200',  badge: 'bg-orange-100 text-orange-700',         header: 'text-orange-600',    dotFill: 'bg-orange-500' },
+  Booked:        { border: 'border-purple-200',  badge: 'bg-purple-100 text-purple-700',         header: 'text-purple-600',    dotFill: 'bg-purple-500' },
+  'In Progress': { border: 'border-amber-300',   badge: 'bg-amber-100 text-amber-900',           header: 'text-amber-800',     dotFill: 'bg-amber-700' },
+  Complete:      { border: 'border-green-200',   badge: 'bg-green-100 text-green-700',           header: 'text-green-600',     dotFill: 'bg-green-500' },
 };
 
 const NEXT_ACTION: Record<Stage, string> = {
-  Lead:          'Book meeting · prep bill & NMI',
-  Quoted:        'Run HEA SA · load to OpenSolar',
-  Contract:      'Send 10% deposit link',
-  Booked:        'Create as-builts PDF',
-  'In Progress': 'Upload photos · request 80%',
-  Complete:      'ESV sign-off · send final 10%',
+  Lead:          'Bill check · NMI upload to PowerCor · pre-design on OpenSolar',
+  Estimation:    'HEA Solar Analyser · sign estimation on the spot',
+  Contract:      '10% deposit · materials ordered & delivered to site',
+  Booked:        'Awaiting installation date',
+  'In Progress': 'Installers marking progress in app',
+  Complete:      'Invoice 80% · book ESV inspection · final 10% on COES',
 };
 
 export type Job = {
@@ -288,7 +288,6 @@ function JobCard({
   onMove: (stage: Stage) => void;
   onClick: () => void;
 }) {
-  const [showMove, setShowMove] = useState(false);
 
   return (
     <div
@@ -333,32 +332,18 @@ function JobCard({
       </div>
       <p className="text-[#6b7280] text-[10px] mt-1.5 truncate">{NEXT_ACTION[job.status]}</p>
 
-      {/* Move stage */}
-      <div className="mt-3 relative" onClick={(e) => e.stopPropagation()}>
-        <button
-          onClick={() => setShowMove(!showMove)}
-          className="text-[#6b7280] hover:text-[#6b7280] text-xs transition-colors"
-        >
-          Move stage ▾
-        </button>
-        {showMove && (
-          <>
-            <div className="fixed inset-0 z-10" onClick={() => setShowMove(false)} />
-            <div className="absolute left-0 top-6 bg-[#eef0f5] border border-[#e5e9f0] rounded-lg overflow-hidden z-20 w-40 shadow-xl">
-              {STAGES.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => { onMove(s); setShowMove(false); }}
-                  className={`w-full text-left px-3 py-2 text-xs hover:bg-[#333] transition-colors ${
-                    s === job.status ? 'text-[#ffd100]' : 'text-[#aaa]'
-                  }`}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+      {/* Move to stage — direct pills */}
+      <div className="mt-3 flex flex-wrap gap-1" onClick={(e) => e.stopPropagation()}>
+        <span className="text-[10px] text-[#9ca3af] font-medium self-center mr-0.5">→</span>
+        {STAGES.filter((s) => s !== job.status).map((s) => (
+          <button
+            key={s}
+            onClick={() => onMove(s)}
+            className={`text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors hover:opacity-80 ${STAGE_STYLES[s].badge} border-current`}
+          >
+            {s}
+          </button>
+        ))}
       </div>
     </div>
   );

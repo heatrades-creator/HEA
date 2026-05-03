@@ -4,7 +4,7 @@ export function leadStatus(lead: Lead): string {
   if (lead.installedAt) return 'Complete'
   if (lead.contractSignedAt || lead.soldAt) return 'Booked'
   if (lead.estimationSignedAt) return 'Contract'
-  if (lead.openSolarProjectId) return 'Quoted'
+  if (lead.openSolarProjectId) return 'Estimation'
   return 'Lead'
 }
 

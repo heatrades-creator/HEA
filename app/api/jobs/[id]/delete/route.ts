@@ -25,6 +25,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   await prisma.jobComment.deleteMany({ where: { jobNumber: id, parentId: { not: null } } }).catch(() => {});
   await prisma.jobComment.deleteMany({ where: { jobNumber: id } }).catch(() => {});
   await prisma.jobClaim.deleteMany({ where: { jobNumber: id } }).catch(() => {});
+  // Detach any linked Prisma lead so it doesn't resurface in the mobile job list
+  // (when GAS row is gone, the mobile API re-surfaces leads whose gasJobNumber is no longer in GAS)
+  await prisma.lead.updateMany({
+    where: { gasJobNumber: id },
+    data: { status: 'rejected', gasJobNumber: null },
+  }).catch(() => {});
 
   return NextResponse.json(data);
 }

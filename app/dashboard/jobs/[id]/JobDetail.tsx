@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import JobDocuments from '@/components/dashboard/JobDocuments';
+import { formatHEADate } from '@/lib/format';
 import { JobComments } from '@/components/dashboard/JobComments';
 
 const STAGE_COLORS: Record<string, string> = {
@@ -271,7 +272,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
             <h1 className="text-[#111827] text-xl font-semibold">{job.clientName}</h1>
             {job.address && <p className="text-[#6b7280] text-sm mt-0.5">{job.address}</p>}
           </div>
-          <p className="text-[#6b7280] text-xs whitespace-nowrap">{job.createdDate}</p>
+          <p className="text-[#6b7280] text-xs whitespace-nowrap">{formatHEADate(job.createdDate)}</p>
         </div>
         {/* Contact strip — always visible */}
         <div className="flex flex-wrap gap-3">

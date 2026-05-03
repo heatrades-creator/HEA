@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import type { Job, Stage } from './KanbanBoard';
+import { formatHEADate } from '@/lib/format';
 
 const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 
@@ -93,7 +94,7 @@ function JobRow({
         <span className="block truncate max-w-[200px]">{job.address ?? '—'}</span>
       </td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
-        {job.createdDate ?? '—'}
+        {job.createdDate ? formatHEADate(job.createdDate) : '—'}
       </td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">
         {job.phone ?? '—'}

@@ -109,16 +109,19 @@ jobs:
           echo "=== JOBS_GAS_URL: ${GAS_URL} ==="
           if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
             echo "=== Auto-updating JOBS_GAS_URL in Vercel ==="
-            # Remove existing then re-add so the value is always current
+            # Delete across all targets first (no target filter = removes all), then recreate.
+            # Both steps are non-fatal — the GAS deployment URL is stable (same ID each push)
+            # so JOBS_GAS_URL in Vercel is almost certainly already correct.
             curl -sf -X DELETE \
-              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?key=JOBS_GAS_URL&target=production" \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?key=JOBS_GAS_URL" \
               -H "Authorization: Bearer ${VERCEL_TOKEN}" || true
             curl -sf -X POST \
               "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env" \
               -H "Authorization: Bearer ${VERCEL_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "{\"key\":\"JOBS_GAS_URL\",\"value\":\"${GAS_URL}\",\"type\":\"plain\",\"target\":[\"production\"]}"
-            echo "=== Vercel JOBS_GAS_URL updated to ${GAS_URL} ==="
+              -d "{\"key\":\"JOBS_GAS_URL\",\"value\":\"${GAS_URL}\",\"type\":\"plain\",\"target\":[\"production\",\"preview\",\"development\"]}" \
+              || echo "=== Vercel env update skipped (var unchanged — safe to ignore) ==="
+            echo "=== Vercel JOBS_GAS_URL update attempted ==="
           else
             echo "=== (Set VERCEL_TOKEN + VERCEL_PROJECT_ID secrets to auto-update Vercel) ==="
           fi

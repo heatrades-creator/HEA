@@ -95,7 +95,10 @@ export default function JobsScreen() {
     if (!quiet) setLoading(true)
     setError(null)
     try {
-      const data = await fetchJobs()
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out — check your connection')), 20_000)
+      )
+      const data = await Promise.race([fetchJobs(), timeout])
       setJobs(data)
     } catch (e) {
       if (e instanceof SessionExpiredError) {

@@ -32,6 +32,7 @@ export type Job = {
   phone?: string;
   email?: string;
   address?: string;
+  postcode?: string;
   status: Stage;
   driveUrl?: string;
   notes?: string;

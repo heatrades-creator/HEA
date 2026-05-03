@@ -219,7 +219,9 @@ function MobileJobCard({
           </div>
           <h3 className="text-[#111827] font-semibold text-base leading-snug">{job.clientName}</h3>
           {job.address && (
-            <p className="text-[#6b7280] text-xs mt-0.5 leading-snug">{job.address}</p>
+            <p className="text-[#6b7280] text-xs mt-0.5 leading-snug">
+              {job.address}{job.postcode ? <span className="font-mono ml-1 text-[#9ca3af]">{job.postcode}</span> : null}
+            </p>
           )}
         </div>
         <p className="text-[#9ca3af] text-xs whitespace-nowrap flex-shrink-0">{job.createdDate}</p>
@@ -861,7 +863,10 @@ function JobRow({ job, isEven, onMove, onArchive, onDelete, onClick }: {
       </td>
       <td className="px-4 py-3 font-mono text-[#ffd100] text-xs font-bold whitespace-nowrap">{job.jobNumber}</td>
       <td className="px-4 py-3 text-[#111827] font-medium">{job.clientName}</td>
-      <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell"><span className="block truncate max-w-[180px]">{job.address ?? '—'}</span></td>
+      <td className="px-4 py-3 text-[#6b7280] hidden md:table-cell">
+        <span className="block truncate max-w-[180px]">{job.address ?? '—'}</span>
+        {job.postcode && <span className="block text-xs text-[#9ca3af] font-mono">{job.postcode}</span>}
+      </td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap text-xs">{job.systemSize ? `${job.systemSize} kW` : '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden lg:table-cell whitespace-nowrap">{job.createdDate ?? '—'}</td>
       <td className="px-4 py-3 text-[#6b7280] hidden xl:table-cell whitespace-nowrap">{job.phone ?? '—'}</td>

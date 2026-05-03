@@ -217,7 +217,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
           <div className="grid grid-cols-3 gap-3">
             <TextInput label="EPS Circuit 1" value={epsCircuit1} onChange={setEpsCircuit1} placeholder="e.g. Fridge" />
             <TextInput label="EPS Circuit 2" value={epsCircuit2} onChange={setEpsCircuit2} placeholder="e.g. Lights" />
-            <TextInput label="EPS Circuit 3" value={epsCircuit3} onChange={setEpsCircuit3} placeholder="e.g. Hot water" />
+            <TextInput label="EPS Circuit 3" value={epsCircuit3} onChange={setEpsCircuit3} placeholder="e.g. Wifi" />
           </div>
         </div>
 

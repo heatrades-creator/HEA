@@ -710,20 +710,18 @@ export default function JobDetailScreen() {
               {job.financeRequired !== undefined ? <PackRow label="Finance" value={job.financeRequired ? 'Required' : 'Not required'} /> : null}
             </View>
 
-            {(job.wifiSsid || job.epsCircuit1) ? (
-              <>
-                <Text style={styles.packSection}>Site Info</Text>
-                <View style={styles.packCard}>
-                  {job.wifiSsid ? <PackRow label="WiFi SSID" value={job.wifiSsid} /> : null}
-                  {job.wifiPassword ? (
-                    <PackRow label="WiFi Password" value={job.wifiPassword} onPress={() => { Clipboard.setString(job.wifiPassword); Alert.alert('Copied', 'WiFi password copied') }} linkText="Tap to copy" />
-                  ) : null}
-                  {job.epsCircuit1 ? <PackRow label="EPS Circuit 1" value={job.epsCircuit1} /> : null}
-                  {job.epsCircuit2 ? <PackRow label="EPS Circuit 2" value={job.epsCircuit2} /> : null}
-                  {job.epsCircuit3 ? <PackRow label="EPS Circuit 3" value={job.epsCircuit3} /> : null}
-                </View>
-              </>
-            ) : null}
+            <Text style={styles.packSection}>Site Info</Text>
+            <View style={styles.packCard}>
+              <PackRow label="WiFi SSID" value={job.wifiSsid || '—'} />
+              {job.wifiPassword ? (
+                <PackRow label="WiFi Password" value={job.wifiPassword} onPress={() => { Clipboard.setString(job.wifiPassword); Alert.alert('Copied', 'WiFi password copied') }} linkText="Tap to copy" />
+              ) : (
+                <PackRow label="WiFi Password" value="—" />
+              )}
+              <PackRow label="EPS Circuit 1" value={job.epsCircuit1 || '—'} />
+              <PackRow label="EPS Circuit 2" value={job.epsCircuit2 || '—'} />
+              <PackRow label="EPS Circuit 3" value={job.epsCircuit3 || '—'} />
+            </View>
 
             {job.notes ? (
               <>

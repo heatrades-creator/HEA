@@ -1,15 +1,9 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+
+// The current JS bundle version — bump this whenever a meaningful update ships.
+// The installer app compares against this and prompts a re-download if behind.
+const CURRENT_VERSION = '2.2'
 
 export async function GET() {
-  const urlCfg = await prisma.systemConfig.findUnique({ where: { key: 'installer_apk_url' } })
-  const apkUrl = urlCfg?.value ?? null
-
-  let buildId: string | null = null
-  if (apkUrl) {
-    const stem = (apkUrl.split('/').pop() ?? '').replace(/\.apk$/i, '')
-    buildId = stem.length >= 5 ? stem.slice(-5) : stem || null
-  }
-
-  return NextResponse.json({ buildId })
+  return NextResponse.json({ version: CURRENT_VERSION })
 }

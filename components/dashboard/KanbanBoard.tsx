@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import NewJobModal from './NewJobModal';
 import JobListView from './JobListView';
+import { formatHEADate } from '@/lib/format';
 
 const STAGES = ['Lead', 'Estimation', 'Contract', 'Booked', 'In Progress', 'Complete'] as const;
 export type Stage = (typeof STAGES)[number];
@@ -316,7 +317,7 @@ function JobCard({
         <p className="text-[#6b7280] text-xs mt-1 truncate">{job.address}</p>
       )}
       {job.createdDate && (
-        <p className="text-[#6b7280] text-xs mt-2">{job.createdDate}</p>
+        <p className="text-[#6b7280] text-xs mt-2">{formatHEADate(job.createdDate)}</p>
       )}
 
       {/* Pipeline progress dots */}

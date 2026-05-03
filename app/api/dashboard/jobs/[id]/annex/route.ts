@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ jobNumber: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -12,7 +12,7 @@ export async function POST(
   const gasUrl = process.env.JOBS_GAS_URL
   if (!gasUrl) return NextResponse.json({ error: 'GAS not configured' }, { status: 503 })
 
-  const { jobNumber } = await params
+  const { id: jobNumber } = await params
   const { annexSlug } = await req.json()
 
   if (!annexSlug) return NextResponse.json({ error: 'annexSlug required' }, { status: 400 })

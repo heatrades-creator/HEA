@@ -87,6 +87,43 @@ Only needed when native dependencies change, `app.json` plugins change, or `expo
 3. Publish the new EAS artifact URL via the App Distribution block at `/dashboard/c2/installers`
 4. Notify installers via the Push Notification block
 
+---
+
+## Deployment Decision Guide — OTA vs APK
+
+When Claude makes a mobile change, the commit message will include one of these tags:
+
+- **`[OTA]`** — JS/UI only. Pushed automatically via `eas-update.yml` on merge to `main`. Installers get it silently on next app open. No action needed.
+- **`[APK REQUIRED]`** — Native change. OTA cannot deliver this. Run the commands below in `cmd`.
+
+### APK build commands (copy-paste into cmd)
+
+```
+cd C:\path\to\HEA
+git pull origin main
+cd mobile
+npm install
+npx eas-cli build --platform android --profile preview --non-interactive
+```
+
+After the build completes (~10–15 min):
+1. Copy the `.apk` download URL from the EAS build output
+2. Go to `/dashboard/c2/installers` → App Distribution → paste the URL
+3. Use the Push Notification block to notify installers to update
+
+### What triggers each
+
+| Change type | Delivery | Action required |
+|---|---|---|
+| Screen UI, styles, text | OTA | None — auto |
+| New screen or tab | OTA | None — auto |
+| API calls, business logic | OTA | None — auto |
+| New npm package (JS-only, e.g. a UI lib) | OTA | None — auto |
+| New npm package with native code (e.g. camera, BLE) | **APK** | Run build commands |
+| `app.json` plugin added/changed | **APK** | Run build commands |
+| Expo SDK version bump | **APK** | Run build commands |
+| `android/` or `ios/` native files changed | **APK** | Run build commands |
+
 ### Installer roles
 
 Two roles: `installer` (field worker) and `lead` (lead installer). Set at creation in Prisma `Installer` model. Role controls what the mobile app shows.

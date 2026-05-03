@@ -14,8 +14,9 @@ const VERSION = 'v2.2'
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
 const DOWNLOAD_URL = `${BASE}/installer-app`
 
-function extractPostcode(address: string): string {
-  const matches = address.match(/\b\d{4}\b/g)
+function extractPostcode(job: GASJob): string {
+  if (job.postcode && job.postcode.match(/^\d{4}$/)) return job.postcode
+  const matches = job.address.match(/\b\d{4}\b/g)
   return matches ? matches[matches.length - 1] : 'Other'
 }
 
@@ -93,7 +94,7 @@ export default function JobsScreen() {
 
   const grouped: Record<string, GASJob[]> = {}
   for (const job of filtered) {
-    const pc = extractPostcode(job.address)
+    const pc = extractPostcode(job)
     if (!grouped[pc]) grouped[pc] = []
     grouped[pc].push(job)
   }

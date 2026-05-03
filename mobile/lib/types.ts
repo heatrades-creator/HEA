@@ -30,6 +30,7 @@ export interface GASJob {
   epsCircuit1: string
   epsCircuit2: string
   epsCircuit3: string
+  postcode: string
   claim: JobClaim | null
 }
 

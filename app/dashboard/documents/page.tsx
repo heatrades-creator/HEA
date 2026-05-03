@@ -1,186 +1,73 @@
-import Link from 'next/link';
+import { getServerSession } from 'next-auth'
+import { redirect } from 'next/navigation'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { DOCUMENT_REGISTRY, type DocumentConfig } from '@/lib/document-config'
+import { DocumentBuilder } from '@/components/dashboard/documents/DocumentBuilder'
 
-export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Documents | HEA' };
+export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Documents | HEA' }
 
-type DocRecord = {
-  jobNumber?: string;
-  clientName?: string;
-  docClass?: string;
-  status?: string;
-  generatedAt?: string;
-  outputLink?: string;
-  pdfLink?: string;
-  [key: string]: unknown;
-};
-
-async function getAllDocuments(): Promise<DocRecord[]> {
-  const gasUrl = process.env.JOBS_GAS_URL;
-  if (!gasUrl) return [];
-  try {
-    const res = await fetch(`${gasUrl}?action=getAllDocuments`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
+const CONFIG_KEY = 'document_annex_config'
 
 export default async function DocumentsPage() {
-  const docs = await getAllDocuments();
+  const session = await getServerSession(authOptions)
+  if (!session) redirect('/login')
 
-  // Normalise field names — matches actual EXPORT_LOG columns:
-  // timestamp, job_id, doc_class, template_id, output_file_id,
-  // output_file_link, pdf_file_id, pdf_link, status, run_duration_ms, triggered_by, total_tokens
-  const normalised: DocRecord[] = docs.map((row) => ({
-    jobNumber:   String(row.job_id   ?? row.job_number ?? row.jobNumber ?? ''),
-    clientName:  String(row.client_name ?? row.clientName ?? ''),
-    docClass:    String(row.doc_class ?? row.docClass ?? ''),
-    status:      String(row.status ?? ''),
-    generatedAt: String(row.timestamp ?? row.generated_at ?? row.generatedAt ?? ''),
-    outputLink:  String(row.output_file_link ?? row.output_link ?? row.outputLink ?? ''),
-    pdfLink:     String(row.pdf_link ?? row.pdfLink ?? ''),
-  }));
-
-  // Most recent first
-  const sorted = [...normalised].reverse();
+  const row = await prisma.systemConfig.findUnique({ where: { key: CONFIG_KEY } })
+  const savedConfig: DocumentConfig = row ? (JSON.parse(row.value) as DocumentConfig) : {}
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-[#111827] text-xl font-semibold">Documents</h1>
         <p className="text-[#6b7280] text-sm mt-0.5">
-          {sorted.length > 0 ? `${sorted.length} generated document${sorted.length !== 1 ? 's' : ''}` : 'All AI-generated proposals and documents'}
+          {DOCUMENT_REGISTRY.length} document types · Configure which annexes are merged into each one. Toggle off to exclude from a document globally.
         </p>
       </div>
 
-      {sorted.length === 0 ? (
-        <div className="bg-white border border-[#e5e9f0] rounded-xl p-12 text-center">
-          <p className="text-[#6b7280] text-sm mb-2">No documents yet.</p>
-          <p className="text-[#6b7280] text-xs">
-            Generate a proposal from a job detail page. Documents will appear here once the GAS{' '}
-            <code className="bg-[#eef0f5] px-1 py-0.5 rounded text-[#6b7280]">getAllDocuments</code> action is deployed.
-          </p>
-          <div className="mt-6 bg-[#f5f7fb] border border-[#e5e9f0] rounded-lg p-4 text-left max-w-lg mx-auto">
-            <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-2">GAS Setup Required</p>
-            <p className="text-[#6b7280] text-xs leading-relaxed">
-              Add the <code className="text-[#aaa]">getAllDocuments</code> case to your{' '}
-              <code className="text-[#aaa]">HEAJobsAPI.gs</code> doGet handler, then re-deploy the web app.
-              See the GAS snippet in the codebase comments.
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white border border-[#e5e9f0] rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#e5e9f0] bg-[#f5f7fb]">
-                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Job #</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden sm:table-cell">Client</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Doc Type</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium hidden md:table-cell">Generated</th>
-                <th className="px-5 py-3 text-left text-[10px] text-[#6b7280] uppercase tracking-widest font-medium">Links</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((doc, i) => (
-                <tr
-                  key={i}
-                  className={`border-b border-[#edf0f5] hover:bg-gray-100 transition-colors ${i % 2 === 0 ? '' : 'bg-[#1e1e1e]'}`}
-                >
-                  <td className="px-5 py-3">
-                    {doc.jobNumber ? (
-                      <Link
-                        href={`/dashboard/jobs/${doc.jobNumber}`}
-                        className="font-mono text-[#ffd100] text-xs font-bold hover:underline"
-                      >
-                        {doc.jobNumber}
-                      </Link>
-                    ) : (
-                      <span className="text-[#6b7280] text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-5 py-3 text-[#111827] hidden sm:table-cell">{doc.clientName || '—'}</td>
-                  <td className="px-5 py-3">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#eef0f5] text-[#aaa] font-medium">
-                      {doc.docClass || 'Proposal'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell whitespace-nowrap">
-                    {doc.generatedAt || '—'}
-                  </td>
-                  <td className="px-5 py-3">
-                    <div className="flex items-center gap-3">
-                      {doc.outputLink && doc.outputLink !== 'undefined' && (
-                        <a
-                          href={doc.outputLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#6b7280] hover:text-[#ffd100] transition-colors"
-                        >
-                          Draft ↗
-                        </a>
-                      )}
-                      {doc.pdfLink && doc.pdfLink !== 'undefined' && (
-                        <a
-                          href={doc.pdfLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-[#ffd100] hover:text-[#e6bc00] transition-colors font-medium"
-                        >
-                          PDF ↗
-                        </a>
-                      )}
-                      {!doc.outputLink && !doc.pdfLink && (
-                        <span className="text-[#333] text-xs">—</span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DocumentBuilder documents={DOCUMENT_REGISTRY} initialConfig={savedConfig} />
 
-      {/* GAS snippet callout for Jesse */}
+      {/* Naming convention reference */}
       <details className="mt-8 group">
-        <summary className="text-[#6b7280] text-xs cursor-pointer hover:text-[#6b7280] transition-colors select-none">
-          GAS setup — <span className="group-open:hidden">show snippet</span><span className="hidden group-open:inline">hide snippet</span>
+        <summary className="text-[#6b7280] text-xs cursor-pointer select-none hover:text-[#6b7280] transition-colors">
+          Naming convention —{' '}
+          <span className="group-open:hidden">show</span>
+          <span className="hidden group-open:inline">hide</span>
         </summary>
-        <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5">
-          <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-3">
-            Add to HEAJobsAPI.gs — doGet switch statement
-          </p>
-          <pre className="text-[#aaa] text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap">{`case 'getAllDocuments': {
-  const sheet = SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getSheetByName('EXPORT_LOG');
-  if (!sheet) {
-    return ContentService
-      .createTextOutput(JSON.stringify([]))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  const rows = sheet.getDataRange().getValues();
-  if (rows.length < 2) {
-    return ContentService
-      .createTextOutput(JSON.stringify([]))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  const headers = rows[0];
-  const docs = rows.slice(1).map(r =>
-    Object.fromEntries(headers.map((h, i) => [h, r[i]]))
-  );
-  return ContentService
-    .createTextOutput(JSON.stringify(docs))
-    .setMimeType(ContentService.MimeType.JSON);
-}`}</pre>
-          <p className="text-[#6b7280] text-xs mt-3">
-            After adding this, go to <strong className="text-[#6b7280]">Deploy → Manage Deployments → New Version → Deploy</strong>.
+        <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5 space-y-4">
+          <div>
+            <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-2">
+              File naming — base documents + annexes
+            </p>
+            <div className="space-y-1.5 text-xs font-mono">
+              <p>
+                <span className="text-[#aaa]">Base: </span>
+                <span className="text-[#111827]">{'{JOB-ID}-{descriptor}-{Client-Name}-{YYYY-MM-DD}.pdf'}</span>
+              </p>
+              <p>
+                <span className="text-[#aaa]">Annex: </span>
+                <span className="text-[#111827]">{'{JOB-ID}-annex-{slug}-{Client-Name}-{YYYY-MM-DD}.pdf'}</span>
+              </p>
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">Examples</p>
+            <div className="space-y-0.5 text-[10px] font-mono text-[#aaa]">
+              <p>TS00001-job-card-John-Smith-2026-05-03.pdf</p>
+              <p>TS00001-annex-hea-sa-John-Smith-2026-05-03.pdf</p>
+              <p>TS00001-annex-system-spec-John-Smith-2026-05-03.pdf</p>
+              <p>TS00001-annex-installer-photos-John-Smith-2026-05-03.pdf</p>
+              <p>TS00001-electrical-works-proposal-John-Smith-2026-05-03.pdf</p>
+            </div>
+          </div>
+          <p className="text-[#6b7280] text-xs leading-relaxed">
+            When a document is generated for a job, the base PDF is merged with all enabled annexes (in order)
+            using <code className="text-[#aaa]">pdf-lib</code>. The merged output is stored in the client&apos;s
+            Drive folder under the subdirectory shown on each document card.
           </p>
         </div>
       </details>
     </div>
-  );
+  )
 }

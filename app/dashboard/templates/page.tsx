@@ -1,157 +1,104 @@
-export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Templates | HEA' };
+import { ANNEX_REGISTRY, type AnnexDef } from '@/lib/document-config'
 
-type Template = {
-  doc_class: string;
-  template_id: string;
-  display_name: string;
-  active?: boolean;
-  [key: string]: unknown;
-};
+export const dynamic = 'force-dynamic'
+export const metadata = { title: 'Templates | HEA' }
 
-async function getTemplates(): Promise<Template[]> {
-  const gasUrl = process.env.JOBS_GAS_URL;
-  if (!gasUrl) return [];
-  try {
-    const res = await fetch(`${gasUrl}?action=getAvailableTemplates`, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-const DOC_CLASS_COLORS: Record<string, string> = {
-  solar_battery_proposal: 'bg-yellow-900/30 text-yellow-300 border-yellow-800/40',
-  solar_proposal:         'bg-blue-900/30 text-blue-300 border-blue-800/40',
-  battery_proposal:       'bg-purple-900/30 text-purple-300 border-purple-800/40',
-  ev_charger_proposal:    'bg-green-900/30 text-green-300 border-green-800/40',
-};
-
-function docClassColor(docClass: string): string {
-  return DOC_CLASS_COLORS[docClass] ?? 'bg-[#eef0f5] text-[#aaa] border-[#e5e9f0]';
-}
-
-function formatDocClass(s: string): string {
-  return s.split(/[_\s]+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
-
-export default async function TemplatesPage() {
-  const templates = await getTemplates();
-
+export default function TemplatesPage() {
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-[#111827] text-xl font-semibold">Proposal Templates</h1>
+        <h1 className="text-[#111827] text-xl font-semibold">Annex Templates</h1>
         <p className="text-[#6b7280] text-sm mt-0.5">
-          {templates.length > 0
-            ? `${templates.length} active template${templates.length !== 1 ? 's' : ''} configured`
-            : 'Templates are configured in the TEMPLATE_CONFIG sheet in Google Sheets'}
+          {ANNEX_REGISTRY.length} reusable building blocks · Each annex is a self-contained PDF module that
+          plugs into any document via the Documents page.
         </p>
       </div>
 
-      {templates.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {templates.map((t) => (
-            <TemplateCard key={t.doc_class} template={t} />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {ANNEX_REGISTRY.map((annex) => (
+          <AnnexCard key={annex.slug} annex={annex} />
+        ))}
+      </div>
 
-      {/* How templates work */}
+      {/* How annexes work */}
       <details className="mt-8 group">
-        <summary className="text-[#6b7280] text-xs cursor-pointer hover:text-[#6b7280] transition-colors select-none">
-          How templates work —{' '}
-          <span className="group-open:hidden">show details</span>
+        <summary className="text-[#6b7280] text-xs cursor-pointer select-none hover:text-[#6b7280] transition-colors">
+          How annexes work —{' '}
+          <span className="group-open:hidden">show</span>
           <span className="hidden group-open:inline">hide</span>
         </summary>
-        <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5 space-y-3">
+        <div className="mt-3 bg-[#f5f7fb] border border-[#e5e9f0] rounded-xl p-5 space-y-4 text-xs text-[#6b7280] leading-relaxed">
+          <p>
+            Annexes are modular PDF chunks that attach to a base document. Each annex has a fixed slug,
+            data source, and naming convention. Annexes are generated independently and merged into
+            the final document using <code className="text-[#aaa]">pdf-lib</code> at generation time.
+          </p>
           <div>
-            <p className="text-[#ffd100] text-xs font-semibold uppercase tracking-wider mb-2">
-              TEMPLATE_CONFIG sheet columns
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">Annex naming convention</p>
+            <p className="font-mono text-[#111827] text-[11px]">
+              {'{JOB-ID}-annex-{slug}-{Client-Name}-{YYYY-MM-DD}.pdf'}
             </p>
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-[#e5e9f0]">
-                  {['doc_class', 'template_id', 'active', 'display_name'].map((h) => (
-                    <th key={h} className="pb-2 text-left text-[#6b7280] font-mono">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="py-2 text-[#6b7280] font-mono">solar_battery_proposal</td>
-                  <td className="py-2 text-[#6b7280] font-mono">1INXF_5V9…</td>
-                  <td className="py-2 text-green-400 font-mono">TRUE</td>
-                  <td className="py-2 text-[#6b7280]">Solar + Battery</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
-          <p className="text-[#6b7280] text-xs leading-relaxed">
-            To add a new template: create a Google Slides presentation, copy its file ID, and add a new row
-            to the <span className="text-[#6b7280]">TEMPLATE_CONFIG</span> sheet with <span className="text-green-400 font-mono">active = TRUE</span>.
-            The template will appear here and be selectable from a job&apos;s detail page.
+          <div>
+            <p className="text-[10px] text-[#aaa] uppercase tracking-wider mb-1.5 font-medium">Document build process</p>
+            <ol className="list-decimal list-inside space-y-1 text-xs text-[#6b7280]">
+              <li>Base document PDF is generated with job data</li>
+              <li>Each enabled annex PDF is generated from its data source</li>
+              <li>Base + enabled annexes are merged in order using pdf-lib</li>
+              <li>Merged PDF is stored in the client Drive folder</li>
+            </ol>
+          </div>
+          <p>
+            Enable or disable individual annexes per document type on the{' '}
+            <a href="/dashboard/documents" className="text-[#ffd100] hover:text-[#e6bc00] transition-colors">
+              Documents page
+            </a>
+            .
           </p>
         </div>
       </details>
     </div>
-  );
+  )
 }
 
-function TemplateCard({ template }: { template: Template }) {
-  const colorClass = docClassColor(String(template.doc_class));
-  const displayName = template.display_name || formatDocClass(String(template.doc_class));
-
+function AnnexCard({ annex }: { annex: AnnexDef }) {
   return (
-    <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 flex flex-col gap-3 hover:border-[#3a3a3a] transition-colors">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-[#111827] font-semibold text-sm">{displayName}</h3>
-          <p className="text-[#6b7280] text-xs font-mono mt-0.5">{template.doc_class}</p>
+    <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 flex flex-col gap-3 hover:border-[#d0d5dd] transition-colors">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="text-[#111827] font-semibold text-sm leading-snug">{annex.name}</h3>
+          <p className="text-[10px] font-mono text-[#bbb] mt-0.5 truncate">{annex.slug}</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-full border font-medium whitespace-nowrap ${colorClass}`}>
-          Active
+        <span
+          className={`text-[10px] px-2 py-0.5 rounded-full border font-medium whitespace-nowrap shrink-0 ${
+            annex.status === 'available'
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-[#f5f7fb] text-[#bbb] border-[#e5e9f0]'
+          }`}
+        >
+          {annex.status === 'available' ? 'Available' : 'Planned'}
         </span>
       </div>
 
-      <div className="border-t border-[#e5e9f0] pt-3">
-        <p className="text-[#6b7280] text-[10px] uppercase tracking-wider mb-1">Template ID</p>
-        <p className="text-[#6b7280] text-xs font-mono truncate">{template.template_id}</p>
-      </div>
+      {/* Description */}
+      <p className="text-[#6b7280] text-xs leading-relaxed flex-1">{annex.description}</p>
 
-      <a
-        href={`https://docs.google.com/presentation/d/${template.template_id}/edit`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-auto text-xs text-[#ffd100] hover:text-[#e6bc00] transition-colors flex items-center gap-1"
-      >
-        Open in Slides
-        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
-      </a>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="bg-white border border-[#e5e9f0] rounded-xl p-12 text-center">
-      <div className="w-12 h-12 bg-[#eef0f5] rounded-xl flex items-center justify-center mx-auto mb-4">
-        <svg className="w-6 h-6 text-[#6b7280]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round"
-            d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-        </svg>
+      {/* Metadata */}
+      <div className="border-t border-[#e5e9f0] pt-3 space-y-2">
+        <div>
+          <p className="text-[10px] text-[#bbb] uppercase tracking-wider mb-0.5">Source</p>
+          <p className="text-xs text-[#6b7280]">{annex.source}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-[#bbb] uppercase tracking-wider mb-0.5">Drive folder</p>
+          <p className="text-xs font-mono text-[#6b7280]">{annex.driveSubfolder}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-[#bbb] uppercase tracking-wider mb-0.5">File naming</p>
+          <p className="text-[10px] font-mono text-[#aaa] break-all leading-relaxed">{annex.filePattern}</p>
+        </div>
       </div>
-      <p className="text-[#111827] text-sm font-medium mb-1">No templates configured</p>
-      <p className="text-[#6b7280] text-xs max-w-xs mx-auto leading-relaxed">
-        Add rows to the <span className="text-[#6b7280]">TEMPLATE_CONFIG</span> sheet in Google Sheets
-        with <span className="text-green-400 font-mono text-[10px]">active = TRUE</span> to see templates here.
-      </p>
     </div>
-  );
+  )
 }

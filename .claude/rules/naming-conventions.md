@@ -86,6 +86,47 @@ Version `{NNN}` is 3-digit zero-padded starting at `001`.
 
 ---
 
+## PDFs — Modular Document Builder (Base Documents)
+
+Seven base document types managed in `/dashboard/documents`. Each merges with its enabled annexes at generation time.
+
+| Slug | Audience | Drive folder | Pattern |
+|---|---|---|---|
+| `job-card` | Installers | `06-jobfiles/` | `{JOB-ID}-job-card-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `electrical-works-proposal` | Client | `02-proposals/` | `{JOB-ID}-electrical-works-proposal-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `wholesale-order` | Supplier | `06-jobfiles/` | `{JOB-ID}-wholesale-order-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `work-order` | Subcontractors | `06-jobfiles/` | `{JOB-ID}-work-order-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `completion-report` | Client | `04-installed/` | `{JOB-ID}-completion-report-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `finance-pack` | Finance broker | `03-signed/` | `{JOB-ID}-finance-pack-{Client-Name}-{YYYY-MM-DD}.pdf` |
+| `grid-connection` | DNSP | `06-jobfiles/` | `{JOB-ID}-grid-connection-{Client-Name}-{YYYY-MM-DD}.pdf` |
+
+---
+
+## PDFs — Annexes (Modular Building Blocks)
+
+Annexes are reusable PDF chunks that attach to any base document. Configured per-document in `/dashboard/documents`. Config stored in Prisma `SystemConfig` key `"document_annex_config"`.
+
+**Naming pattern:** `{JOB-ID}-annex-{slug}-{Client-Name}-{YYYY-MM-DD}.pdf`
+
+| Slug | Name | Drive folder |
+|---|---|---|
+| `hea-sa` | HEA Solar Analysis | `01-quotes/` |
+| `open-solar` | Open Solar Report | `02-proposals/` |
+| `client-photos-intake` | Client Intake Photos | `05-photos/` |
+| `client-photos-followup` | Client Follow-up Photos | `05-photos/` |
+| `installer-photos` | Post-Install Installer Photos | `05-photos/` |
+| `financial-outcomes` | Financial Outcomes | `02-proposals/` |
+| `system-spec` | System Specification | `01-quotes/` |
+| `site-assessment` | Site Assessment | `06-jobfiles/` |
+| `nmi-data` | NMI & Grid Data | `00-nmi-data/` |
+
+Examples:
+- `TS00001-annex-hea-sa-John-Smith-2026-05-03.pdf`
+- `TS00001-annex-system-spec-John-Smith-2026-05-03.pdf`
+- `TS00001-annex-installer-photos-John-Smith-2026-05-03.pdf`
+
+---
+
 ## Photos — Intake Form (Customer Submitted)
 
 All photos stored in `05-photos/` subfolder.
@@ -220,3 +261,6 @@ When building names from user input:
 | **Installer photo** | `TS00001-photo-switchboard-Josh-Brown-2026-05-03.jpg` |
 | **Job receipt** | `TS00001-receipt-Josh-Brown-2026-05-03.pdf` |
 | **Payment record** | `TS00001-payment-deposit-John-Smith-2026-05-03.txt` |
+| **Annex** | `TS00001-annex-hea-sa-John-Smith-2026-05-03.pdf` |
+| **Electrical works proposal** | `TS00001-electrical-works-proposal-John-Smith-2026-05-03.pdf` |
+| **Completion report** | `TS00001-completion-report-John-Smith-2026-05-03.pdf` |

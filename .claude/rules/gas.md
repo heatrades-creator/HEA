@@ -55,17 +55,20 @@ The workflow: `clasp push --force` then `clasp deploy -i <DEPLOYMENT_ID>`. For s
 ### GAS Drive folder structure per client
 
 ```
-ClientName - DD-MM-YYYY/
-  00_NMI_Data/      ← PowerCor NMI files
-  01_Quotes/        ← Quote PDFs
-  02_Proposals/     ← Proposal documents
-  03_Signed/        ← Signed estimation/contract
-  04_Installed/     ← Post-install photos
-  05_Photos/        ← Intake form photo uploads
-  06_Jobfiles/      ← Intake form documents (job card PDF, electricity bill)
+TS00001-John-Smith-YYYY-MM-DD/
+  00-nmi-data/      ← PowerCor NMI files
+  01-quotes/        ← Quote PDFs
+  02-proposals/     ← Proposal documents
+  03-signed/        ← Signed estimation/contract
+  04-installed/     ← Post-install photos
+  05-photos/        ← All photo uploads (intake + installer app)
+  06-jobfiles/      ← Intake form documents (job card PDF, electricity bill)
+  07-receipts/      ← Job site receipts from installer app
 ```
 
 `driveUrl` on the job points to the root client folder.
+
+See `.claude/rules/naming-conventions.md` for the full file naming standard.
 
 ### GAS Drive auto-detection actions
 

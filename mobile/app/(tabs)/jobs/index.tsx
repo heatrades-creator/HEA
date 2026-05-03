@@ -5,7 +5,6 @@ import {
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import * as SecureStore from 'expo-secure-store'
 import { fetchJobs, SessionExpiredError } from '@/lib/api'
 import { clearAuth } from '@/lib/auth'
 import { setupNotifications } from '@/lib/notifications'
@@ -13,7 +12,6 @@ import type { GASJob } from '@/lib/types'
 
 const VERSION = 'v2.3'
 const BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://www.hea-group.com.au'
-const APK_BUILD_KEY = 'apk_build_id'
 const DOWNLOAD_URL = `${BASE}/installer-app`
 
 type GroupMode = 'postcode' | 'unclaimed' | 'date'
@@ -95,10 +93,7 @@ export default function JobsScreen() {
     if (!quiet) setLoading(true)
     setError(null)
     try {
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Request timed out — check your connection')), 20_000)
-      )
-      const data = await Promise.race([fetchJobs(), timeout])
+      const data = await fetchJobs()
       setJobs(data)
     } catch (e) {
       if (e instanceof SessionExpiredError) {
@@ -114,15 +109,8 @@ export default function JobsScreen() {
   useEffect(() => {
     fetch(`${BASE}/api/installer/version`)
       .then(r => r.json())
-      .then(async (data: { buildId: string | null }) => {
-        if (!data.buildId) return
-        const stored = await SecureStore.getItemAsync(APK_BUILD_KEY)
-        if (!stored) {
-          // First run after install — record the current APK fingerprint, no banner
-          await SecureStore.setItemAsync(APK_BUILD_KEY, data.buildId)
-        } else if (stored !== data.buildId) {
-          setUpdateAvailable(true)
-        }
+      .then((data: { version: string }) => {
+        if (data.version !== VERSION.replace('v', '')) setUpdateAvailable(true)
       })
       .catch(() => {})
   }, [])
@@ -438,14 +426,14 @@ const styles = StyleSheet.create({
   // Filter chip rows
   chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4 },
   chip: {
-    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginRight: 8,
+    paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, marginRight: 8,
     backgroundColor: '#1f2937', borderWidth: 1, borderColor: '#374151',
   },
   chipActive:       { backgroundColor: '#ffd100', borderColor: '#ffd100' },
   chipDisabled:     { opacity: 0.35 },
-  chipText:         { fontSize: 12, fontWeight: '600', color: '#d1d5db' },
+  chipText:         { fontSize: 13, fontWeight: '600', color: '#9ca3af' },
   chipTextActive:   { color: '#111827' },
-  chipTextDisabled: { fontSize: 12, fontWeight: '600', color: '#6b7280' },
+  chipTextDisabled: { fontSize: 13, fontWeight: '600', color: '#6b7280' },
   // Section headers
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 8 },
   sectionLine:   { flex: 1, height: 1, backgroundColor: '#1f2937' },

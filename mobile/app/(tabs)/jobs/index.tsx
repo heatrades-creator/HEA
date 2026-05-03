@@ -426,12 +426,12 @@ const styles = StyleSheet.create({
   // Filter chip rows
   chipRow: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 4, alignItems: 'flex-start' },
   chip: {
-    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, marginRight: 8,
+    paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, marginRight: 8,
     backgroundColor: '#6b7280',
   },
   chipActive:       { backgroundColor: '#ffd100' },
   chipDisabled:     { opacity: 0.35 },
-  chipText:         { fontSize: 11, fontWeight: '600', color: '#ffffff' },
+  chipText:         { fontSize: 12, fontWeight: '600', color: '#ffffff' },
   chipTextActive:   { color: '#111827' },
   chipTextDisabled: { fontSize: 11, fontWeight: '600', color: '#9ca3af' },
   // Section headers

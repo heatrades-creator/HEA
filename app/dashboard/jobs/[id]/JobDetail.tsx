@@ -42,13 +42,14 @@ const STAGE_WORKFLOW: Record<string, {
       {
         id: 'opensolar', emoji: '🔆',
         label: 'System pre-designed on OpenSolar',
+        detail: 'Proposal PDF saved to client Drive proposals folder',
+        autoKey: 'openSolar',
         links: [{ label: 'Open OpenSolar ↗', href: 'https://app.opensolar.com/220067/projects' }],
       },
       {
         id: 'analyser', emoji: '☀️',
         label: 'HEA Solar Analyser run — system size & payback period designed',
-        detail: 'Estimation may be signed here on the spot',
-        autoKey: 'estimation',
+        detail: 'Run with client. They can take the solution now or come back later — either way, tick when complete',
       },
     ],
   },

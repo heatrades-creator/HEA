@@ -1,3 +1,6 @@
+// Public entry point — select this in the Run dropdown to create/recreate all 4 master templates.
+function setupAnnexTemplates() { return setupAnnexMasterTemplates_(); }
+
 /**
  * AnnexEngine.gs — Google Slides annex generator
  * Part of GAS/HEAJobsAPI project.

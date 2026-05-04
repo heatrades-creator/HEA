@@ -696,9 +696,12 @@ function checkNMI_(jobNumber) {
     const clientFolder = DriveApp.getFolderById(folderId[1]);
     const nmiFolder = getOrCreateDriveFolder_(clientFolder, '00-nmi-data');
     const files = nmiFolder.getFiles();
-    if (files.hasNext()) {
+    while (files.hasNext()) {
       const file = files.next();
-      return { hasNMI: true, fileName: file.getName(), fileUrl: file.getUrl(), nmiSubfolderUrl: nmiFolder.getUrl() };
+      const nm = file.getName().toLowerCase();
+      if (nm.endsWith('.csv') || nm.includes('interval') || nm.includes('nem12')) {
+        return { hasNMI: true, fileName: file.getName(), fileUrl: file.getUrl(), nmiSubfolderUrl: nmiFolder.getUrl() };
+      }
     }
     return { hasNMI: false, fileName: null, fileUrl: null, nmiSubfolderUrl: nmiFolder.getUrl() };
   } catch (e) {

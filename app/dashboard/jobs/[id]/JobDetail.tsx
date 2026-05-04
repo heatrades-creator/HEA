@@ -141,7 +141,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Workflow checklist state
   const [tasksDone, setTasksDone]       = useState<Record<string, boolean>>({});
-  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; estimation: boolean }>({ nmi: false, estimation: false });
+  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; estimation: boolean; nmiSubfolderUrl?: string }>({ nmi: false, estimation: false });
 
   // Load per-job checklist state from localStorage
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
           fetch(`/api/dashboard/pipeline/check-estimation?jobNumber=${job.jobNumber}`),
         ]);
         const [nmiData, estData] = await Promise.all([nmiRes.json(), estRes.json()]);
-        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, estimation: !!estData.hasEstimation });
+        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, estimation: !!estData.hasEstimation, nmiSubfolderUrl: nmiData.nmiSubfolderUrl ?? undefined });
       } catch {}
     }
     check();
@@ -344,11 +344,11 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                   const taskLinks = [
                     ...(task.links ?? []),
                     ...(task.id === 'analyser' ? [{ label: 'Solar Analyser ↗', href: analyserUrl }] : []),
-                    ...(task.autoKey === 'nmi' && job.driveUrl ? [{ label: 'Drive Folder ↗', href: job.driveUrl }] : []),
+                    ...(task.autoKey === 'nmi' ? [{ label: 'Drive Folder ↗', href: autoDetected.nmiSubfolderUrl ?? job.driveUrl ?? '' }].filter(l => l.href) : []),
                   ];
 
                   return (
-                    <div key={task.id} className="flex items-start gap-3">
+                    <div key={task.id} className={`flex items-start gap-3 rounded-lg px-2 py-1 -mx-2 transition-colors duration-500 ${isDone && isAuto ? 'bg-green-50' : ''}`}>
                       {/* Checkbox / auto indicator / info indicator */}
                       {task.informational ? (
                         <span className="flex-shrink-0 mt-0.5 text-base">ℹ️</span>

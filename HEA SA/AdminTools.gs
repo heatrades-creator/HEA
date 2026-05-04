@@ -32,8 +32,8 @@ function getDriveFiles(adminPin) {
       // Search files directly in client folder (legacy location)
       scanFolder(clientFolder, clientName);
 
-      // Search specifically in 00_NMI_Data subfolder (new standard location)
-      const nmiIter = clientFolder.getFoldersByName('00_NMI_Data');
+      // Search specifically in 00-nmi-data subfolder (standard location)
+      const nmiIter = clientFolder.getFoldersByName('00-nmi-data');
       if (nmiIter.hasNext()) {
         scanFolder(nmiIter.next(), clientName + '/00_NMI_Data');
       }

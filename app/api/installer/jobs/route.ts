@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getInstallerFromRequest } from '@/lib/installer-auth'
 import { prisma } from '@/lib/db'
-import { leadToJob } from '@/lib/installer-jobs'
+import { leadToJob, leadStatus } from '@/lib/installer-jobs'
 
 const HIDDEN_STATUSES = new Set(['Complete', 'Archived'])
 const EXCLUDED_LEAD_STATUSES = ['rejected', 'duplicate', 'archived']
@@ -37,14 +37,14 @@ export async function GET(req: NextRequest) {
   }
 
   // Filter Prisma leads:
-  //  - No gasJobNumber → pure lead, always include
+  //  - No gasJobNumber → pure lead; only show if Booked (sold/contracted) — hides test intakes and unqualified leads
   //  - gasJobNumber in GAS → skip (GAS is source of truth, avoids duplicates)
   //  - gasJobNumber not in GAS, GAS was reachable → job was deleted, skip
   //  - gasJobNumber not in GAS, GAS was unreachable → include defensively (GAS may just be down)
   const gasJobNumbers = new Set(gasJobs.map(j => j.jobNumber))
   const leadJobs = leads
     .filter(l => {
-      if (!l.gasJobNumber) return true
+      if (!l.gasJobNumber) return leadStatus(l) === 'Booked'
       if (gasJobNumbers.has(l.gasJobNumber)) return false
       return !gasReachable
     })

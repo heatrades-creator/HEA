@@ -40,7 +40,7 @@ jobs:
           echo "$TOKEN" > ~/.config/clasp/default.json
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
           echo "$TOKEN" > "${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json"
-          clasp whoami || echo "whoami check — verify token if this failed"
+          clasp list || echo "token check — verify CLASPRC_JSON secret if this failed"
 
       - name: Push and deploy
         working-directory: 'HEA INTAKE'

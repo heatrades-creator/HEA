@@ -31,5 +31,5 @@ jobs:
           echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
           echo "$TOKEN" > "${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json"
           echo "=== Verifying token ==="
-          clasp whoami
+          clasp list
           echo "=== Token is alive ==="

@@ -431,153 +431,776 @@ function _parseAmt_(val) {
   return parseFloat(String(val).replace(/[$,\s]/g, '')) || 0;
 }
 
-// ── First-time setup: creates master Slides templates in Drive ────────────────
+// ── First-time setup ─────────────────────────────────────────────────────────
 //
-// Run this ONCE from the GAS editor: setupAnnexMasterTemplates_()
-// It creates 4 Slides files in a "HEA Annex Master Templates" folder in Drive.
-// Saves their IDs to Script Properties — no code change needed.
-// Open each file in Drive and design it using the placeholder tokens as a guide.
+// Run ONCE from the GAS editor: setupAnnexMasterTemplates_()
+// Creates 4 fully designed master Slides in "HEA Annex Master Templates" folder.
+// IDs are saved to Script Properties automatically.
+// Re-run at any time to regenerate templates from scratch.
+//
+// TOKEN REFERENCE — all tokens available per annex:
+//
+// FINANCIAL OUTCOMES (financial-outcomes)
+//   {FO_JobNumber}  {FO_ClientName}  {FO_Address}  {FO_GeneratedDate}
+//   {FO_SystemSizeKw}  {FO_BatterySizeKwh}  {FO_AnnualBillAud}  {FO_SystemCostAud}
+//   {FO_AnnualGenKwh}  {FO_ImportSavingsAud}  {FO_FitIncomeAud}
+//   {FO_Year1BenefitAud}  {FO_BillReductionPct}  {FO_PaybackYears}
+//   {FO_Total25YrAud}  {FO_CarbonTonnesPerYr}  {FO_CarsEquiv}
+//   {FO_Yr1Savings}…{FO_Yr10Savings}  {FO_Yr1Cumul}…{FO_Yr10Cumul}
+//   {FO_RetailTariff}  {FO_FeedInTariff}  {FO_SelfConsumptionPct}
+//   {FO_TariffEscPct}  {FO_DegradationPct}
+//
+// SITE ASSESSMENT (site-assessment)
+//   {SA_JobNumber}  {SA_ClientName}  {SA_Phone}  {SA_Email}
+//   {SA_Address}  {SA_Postcode}  {SA_CreatedDate}  {SA_ServiceDesc}
+//   {SA_SystemSizeKw}  {SA_BatterySizeKwh}
+//   {SA_RoofMaterial}  {SA_RoofOrientation}  {SA_ShadingIssues}  {SA_Phases}
+//   {SA_Occupants}  {SA_HomeDaytime}  {SA_HotWater}  {SA_GasAppliances}  {SA_Ev}
+//   {SA_FinanceRequired}  {SA_SatelliteUrl}
+//   {SA_WifiSsid}  {SA_WifiPassword}
+//   {SA_EpsCircuit1}  {SA_EpsCircuit2}  {SA_EpsCircuit3}
+//   {SA_Notes}  {SA_GeneratedDate}
+//
+// SYSTEM SPECIFICATION (system-spec)
+//   {SS_JobNumber}  {SS_ClientName}  {SS_Address}  {SS_Postcode}  {SS_Date}  {SS_Status}
+//   {SS_SystemSizeKw}  {SS_PanelMake}  {SS_PanelModel}  {SS_PanelWatts}  {SS_PanelCount}
+//   {SS_InverterType}  {SS_InverterMake}  {SS_InverterModel}  {SS_InverterKw}
+//   {SS_BatterySizeKwh}  {SS_BatteryMake}  {SS_BatteryModel}  {SS_BatteryUsableKwh}
+//   {SS_EpsCircuit1}  {SS_EpsCircuit2}  {SS_EpsCircuit3}
+//   {SS_WifiSsid}  {SS_WifiPassword}
+//   {SS_EvStatus}  {SS_EvChargerMake}  {SS_EvChargerModel}  {SS_EvChargerKw}
+//   {SS_RoofType}  {SS_MountingType}  {SS_CableRunMetres}  {SS_Notes}
+//
+// NMI & GRID DATA (nmi-data)
+//   {NMI_JobNumber}  {NMI_ClientName}  {NMI_Address}  {NMI_GeneratedDate}
+//   {NMI_NmiNumber}  {NMI_Dnsp}  {NMI_TariffName}  {NMI_Phases}
+//   {NMI_ImportRateKwh}  {NMI_FeedInRateKwh}
+//   {NMI_AnnualKwh}  {NMI_AvgDailyKwh}  {NMI_PeakPct}  {NMI_OffpeakPct}
+//   {NMI_DaysAccepted}  {NMI_ChosenChannel}
 
 function setupAnnexMasterTemplates_() {
-  var parent = DriveApp.getFolderById(CLIENTS_FOLDER_ID).getParent();
+  var parent    = DriveApp.getFolderById(CLIENTS_FOLDER_ID).getParent();
   var tplFolder = getOrCreateDriveFolder_(parent, 'HEA Annex Master Templates');
 
-  var annexes = [
-    {
-      slug: 'site-assessment',
-      title: 'Site Assessment',
-      sections: [
-        { heading: 'CLIENT DETAILS', tokens: ['{SA_JobNumber}', '{SA_ClientName}', '{SA_Phone}', '{SA_Email}', '{SA_Address}', '{SA_Postcode}', '{SA_CreatedDate}', '{SA_ServiceDesc}'] },
-        { heading: 'SYSTEM PREFERENCE', tokens: ['{SA_SystemSizeKw}', '{SA_BatterySizeKwh}'] },
-        { heading: 'ROOF & PROPERTY — complete from satellite or on site', tokens: ['{SA_RoofMaterial}', '{SA_RoofOrientation}', '{SA_ShadingIssues}', '{SA_Phases}', '{SA_SatelliteUrl}'] },
-        { heading: 'GRID CONNECTION', tokens: ['{SA_Phases}', '{SA_FinanceRequired}'] },
-        { heading: 'HOUSEHOLD PROFILE', tokens: ['{SA_Occupants}', '{SA_HomeDaytime}', '{SA_HotWater}', '{SA_GasAppliances}', '{SA_Ev}'] },
-        { heading: 'BATTERY & EPS', tokens: ['{SA_WifiSsid}', '{SA_WifiPassword}', '{SA_EpsCircuit1}', '{SA_EpsCircuit2}', '{SA_EpsCircuit3}'] },
-        { heading: 'NOTES', tokens: ['{SA_Notes}'] },
-      ],
-    },
-    {
-      slug: 'financial-outcomes',
-      title: 'Financial Outcomes',
-      sections: [
-        { heading: 'SYSTEM OVERVIEW', tokens: ['{FO_JobNumber}', '{FO_ClientName}', '{FO_Address}', '{FO_SystemSizeKw}', '{FO_BatterySizeKwh}', '{FO_AnnualBillAud}', '{FO_SystemCostAud}'] },
-        { heading: 'YEAR 1 PROJECTIONS', tokens: ['{FO_AnnualGenKwh}', '{FO_ImportSavingsAud}', '{FO_FitIncomeAud}', '{FO_Year1BenefitAud}', '{FO_BillReductionPct}', '{FO_PaybackYears}'] },
-        { heading: '10-YEAR OUTLOOK', tokens: ['{FO_Yr1Savings}', '{FO_Yr2Savings}', '{FO_Yr3Savings}', '{FO_Yr4Savings}', '{FO_Yr5Savings}', '{FO_Yr6Savings}', '{FO_Yr7Savings}', '{FO_Yr8Savings}', '{FO_Yr9Savings}', '{FO_Yr10Savings}', '{FO_Yr1Cumul}', '{FO_Yr2Cumul}', '{FO_Yr3Cumul}', '{FO_Yr4Cumul}', '{FO_Yr5Cumul}', '{FO_Yr6Cumul}', '{FO_Yr7Cumul}', '{FO_Yr8Cumul}', '{FO_Yr9Cumul}', '{FO_Yr10Cumul}'] },
-        { heading: '25-YEAR TOTAL', tokens: ['{FO_Total25YrAud}'] },
-        { heading: 'ENVIRONMENTAL', tokens: ['{FO_CarbonTonnesPerYr}', '{FO_CarsEquiv}'] },
-        { heading: 'ASSUMPTIONS', tokens: ['{FO_RetailTariff}', '{FO_FeedInTariff}', '{FO_SelfConsumptionPct}', '{FO_TariffEscPct}', '{FO_DegradationPct}'] },
-      ],
-    },
-    {
-      slug: 'system-spec',
-      title: 'System Specification',
-      sections: [
-        { heading: 'JOB', tokens: ['{SS_JobNumber}', '{SS_ClientName}', '{SS_Address}', '{SS_Postcode}', '{SS_Date}', '{SS_Status}'] },
-        { heading: 'SOLAR ARRAY', tokens: ['{SS_SystemSizeKw}', '{SS_PanelMake}', '{SS_PanelModel}', '{SS_PanelWatts}', '{SS_PanelCount}'] },
-        { heading: 'INVERTER', tokens: ['{SS_InverterType}', '{SS_InverterMake}', '{SS_InverterModel}', '{SS_InverterKw}'] },
-        { heading: 'BATTERY STORAGE', tokens: ['{SS_BatterySizeKwh}', '{SS_BatteryMake}', '{SS_BatteryModel}', '{SS_BatteryUsableKwh}', '{SS_EpsCircuit1}', '{SS_EpsCircuit2}', '{SS_EpsCircuit3}', '{SS_WifiSsid}', '{SS_WifiPassword}'] },
-        { heading: 'EV CHARGER', tokens: ['{SS_EvStatus}', '{SS_EvChargerMake}', '{SS_EvChargerModel}', '{SS_EvChargerKw}'] },
-        { heading: 'INSTALLATION', tokens: ['{SS_RoofType}', '{SS_MountingType}', '{SS_CableRunMetres}', '{SS_Notes}'] },
-      ],
-    },
-    {
-      slug: 'nmi-data',
-      title: 'NMI & Grid Data',
-      sections: [
-        { heading: 'JOB', tokens: ['{NMI_JobNumber}', '{NMI_ClientName}', '{NMI_Address}', '{NMI_GeneratedDate}'] },
-        { heading: 'METER IDENTIFIER', tokens: ['{NMI_NmiNumber}', '{NMI_Dnsp}', '{NMI_TariffName}', '{NMI_Phases}'] },
-        { heading: 'TARIFF RATES', tokens: ['{NMI_ImportRateKwh}', '{NMI_FeedInRateKwh}'] },
-        { heading: 'CONSUMPTION', tokens: ['{NMI_AnnualKwh}', '{NMI_AvgDailyKwh}', '{NMI_PeakPct}', '{NMI_OffpeakPct}'] },
-        { heading: 'DATA QUALITY', tokens: ['{NMI_DaysAccepted}', '{NMI_ChosenChannel}'] },
-      ],
-    },
-  ];
+  var builders = {
+    'financial-outcomes': _createFinancialOutcomesTemplate_,
+    'site-assessment':    _createSiteAssessmentTemplate_,
+    'system-spec':        _createSystemSpecTemplate_,
+    'nmi-data':           _createNMIDataTemplate_,
+  };
 
   var results = {};
-
-  annexes.forEach(function(annex) {
-    var id = _createAnnexSlides_(annex.slug, annex.title, annex.sections, tplFolder);
-    PropertiesService.getScriptProperties().setProperty('ANNEX_TPL_' + annex.slug, id);
-    results[annex.slug] = {
-      id: id,
-      editUrl: 'https://docs.google.com/presentation/d/' + id + '/edit',
-    };
-    Logger.log('[SETUP] ' + annex.slug + ' → ' + id);
+  Object.keys(builders).forEach(function(slug) {
+    var id = builders[slug](tplFolder);
+    PropertiesService.getScriptProperties().setProperty('ANNEX_TPL_' + slug, id);
+    results[slug] = { id: id, editUrl: 'https://docs.google.com/presentation/d/' + id + '/edit' };
+    Logger.log('[SETUP] ' + slug + ' → ' + id);
   });
 
-  Logger.log('');
-  Logger.log('=== SETUP COMPLETE ===');
-  Logger.log('Master templates created in "HEA Annex Master Templates" folder.');
-  Logger.log('IDs saved to Script Properties — no code change needed.');
-  Logger.log('Open each template and design it using the placeholder tokens.');
-  Logger.log('');
+  Logger.log('=== SETUP COMPLETE — 4 master templates created ===');
   Logger.log(JSON.stringify(results, null, 2));
   return results;
 }
 
-// Creates a single master Slides template with HEA branding and placeholder tokens.
-function _createAnnexSlides_(slug, title, sections, parentFolder) {
-  var pres = SlidesApp.create('MASTER — ' + title + ' Annex');
+// ── Shared slide helpers ───────────────────────────────────────────────────────
 
-  // Move file to templates folder (Google creates it in root by default)
-  var file = DriveApp.getFileById(pres.getId());
-  parentFolder.addFile(file);
+var _W = 720, _H = 540;
+
+function _movePresToFolder_(presId, folder) {
+  var file = DriveApp.getFileById(presId);
+  folder.addFile(file);
   DriveApp.getRootFolder().removeFile(file);
+}
 
-  var slide = pres.getSlides()[0];
-  var W = 720;  // standard Slides width (px)
-  var H = 540;  // standard Slides height (px)
+function _clearSlide_(slide) {
+  slide.getPageElements().forEach(function(el) { try { el.remove(); } catch(e) {} });
+}
 
-  // Clear default placeholders
-  slide.getPageElements().forEach(function(el) {
-    try { el.remove(); } catch(e) {}
+// Full HEA header: dark logo block left + company info right + yellow rule.
+// Returns y position after header (75).
+function _annexHeader_(slide) {
+  var W = _W;
+  // Dark logo panel
+  var logoBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, 192, 72);
+  logoBg.getFill().setSolidFill('#111827');
+  logoBg.getBorder().setTransparent();
+
+  var heaLabel = slide.insertTextBox('HEA', 10, 8, 56, 36);
+  heaLabel.getText().setText('HEA');
+  heaLabel.getText().getTextStyle().setFontSize(30).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+
+  var companyLabel = slide.insertTextBox('HEFFERNAN\nELECTRICAL\nAUTOMATION', 72, 8, 112, 56);
+  companyLabel.getText().setText('HEFFERNAN\nELECTRICAL\nAUTOMATION');
+  companyLabel.getText().getTextStyle().setFontSize(7.5).setBold(true).setForegroundColor('#ffffff').setFontFamily('Arial');
+
+  // White fill rest of header row
+  var hdrBg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 192, 0, W - 192, 72);
+  hdrBg.getFill().setSolidFill('#ffffff');
+  hdrBg.getBorder().setTransparent();
+
+  // Company info right
+  var info = slide.insertTextBox(
+    'Heffernan Electrical Automation PTY LTD\nREC 37307\nMobile: 0481 267 812\ninfo@hea-group.com.au  ·  hea-group.com.au',
+    W - 228, 8, 220, 56
+  );
+  info.getText().setText('Heffernan Electrical Automation PTY LTD\nREC 37307\nMobile: 0481 267 812\ninfo@hea-group.com.au  ·  hea-group.com.au');
+  info.getText().getTextStyle().setFontSize(7.5).setForegroundColor('#374151').setFontFamily('Arial');
+  info.getText().getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
+
+  // Yellow rule
+  var rule = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 72, W, 3);
+  rule.getFill().setSolidFill('#FFD100');
+  rule.getBorder().setTransparent();
+
+  return 75;
+}
+
+// Compact header for detail slides (dark bar, single line). Returns y after (48).
+function _annexCompactHeader_(slide, docTitle, jobToken, clientToken) {
+  var W = _W;
+  var bar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, 44);
+  bar.getFill().setSolidFill('#111827');
+  bar.getBorder().setTransparent();
+
+  // Left: HEA pill
+  var pill = slide.insertTextBox('HEA', 10, 12, 36, 20);
+  pill.getText().setText('HEA');
+  pill.getText().getTextStyle().setFontSize(11).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+
+  // Right: doc title + tokens
+  var label = slide.insertTextBox(
+    docTitle + '  ·  ' + clientToken + '  ·  ' + jobToken,
+    56, 14, W - 66, 16
+  );
+  label.getText().setText(docTitle + '  ·  ' + clientToken + '  ·  ' + jobToken);
+  label.getText().getTextStyle().setFontSize(8).setForegroundColor('#ffffff').setFontFamily('Arial');
+
+  var rule = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 44, W, 3);
+  rule.getFill().setSolidFill('#FFD100');
+  rule.getBorder().setTransparent();
+
+  return 47;
+}
+
+// Info strip: array of {label, value} objects, spread across 4 columns.
+// Returns y after strip.
+function _annexInfoStrip_(slide, y, fields) {
+  var W = _W;
+  var stripH = 44;
+  var bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, y, W, stripH);
+  bg.getFill().setSolidFill('#f9fafb');
+  bg.getBorder().setTransparent();
+
+  var colW = W / fields.length;
+  fields.forEach(function(f, i) {
+    var x = i * colW + 10;
+    var lbl = slide.insertTextBox(f.label, x, y + 4, colW - 14, 14);
+    lbl.getText().setText(f.label);
+    lbl.getText().getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor('#6b7280').setFontFamily('Arial');
+    var val = slide.insertTextBox(f.value, x, y + 18, colW - 14, 22);
+    val.getText().setText(f.value);
+    val.getText().getTextStyle().setFontSize(9).setForegroundColor('#111827').setFontFamily('Arial');
   });
 
-  // ── Header bar ──────────────────────────────────────────────────────────────
-  var headerBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, 50);
-  headerBar.getFill().setSolidFill('#111827');
-  headerBar.getBorder().setTransparent();
-  var headerText = headerBar.getText();
-  headerText.setText('HEFFERNAN ELECTRICAL AUTOMATION  |  REC 37307  |  hea-group.com.au');
-  headerText.getTextStyle().setFontSize(8).setForegroundColor('#ffffff').setFontFamily('Arial');
-  headerText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+  return y + stripH;
+}
 
-  // ── Yellow accent bar ────────────────────────────────────────────────────────
-  var accentBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 50, W, 4);
-  accentBar.getFill().setSolidFill('#FFD100');
-  accentBar.getBorder().setTransparent();
+// Dark hero section. Returns y after hero.
+function _annexHero_(slide, y, heroH, line1, highlight, line2, subtext) {
+  var W = _W;
+  var bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, y, W, heroH);
+  bg.getFill().setSolidFill('#1f2937');
+  bg.getBorder().setTransparent();
 
-  // ── Title ────────────────────────────────────────────────────────────────────
-  var titleBox = slide.insertTextBox(title, 32, 62, W - 64, 36);
-  titleBox.getText().setText(title);
-  var ts = titleBox.getText().getTextStyle();
-  ts.setFontSize(20).setBold(true).setForegroundColor('#111827').setFontFamily('Arial');
+  var contentW = W * 0.58;
 
-  // ── Token reference box ───────────────────────────────────────────────────────
-  // This lists all available tokens so Jesse can position them in the design.
-  var tokenLines = ['PLACEHOLDER TOKENS — position and style these in your design:', ''];
-  sections.forEach(function(section) {
-    tokenLines.push('── ' + section.heading + ' ──');
-    section.tokens.forEach(function(t) { tokenLines.push('  ' + t); });
-    tokenLines.push('');
+  if (line1) {
+    var t1 = slide.insertTextBox(line1, 20, y + 14, contentW, 28);
+    t1.getText().setText(line1);
+    t1.getText().getTextStyle().setFontSize(18).setBold(true).setForegroundColor('#ffffff').setFontFamily('Arial');
+  }
+  if (highlight) {
+    var hl = slide.insertTextBox(highlight, 20, y + 42, contentW, 46);
+    hl.getText().setText(highlight);
+    hl.getText().getTextStyle().setFontSize(30).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  }
+  if (line2) {
+    var t2 = slide.insertTextBox(line2, 20, y + 88, contentW, 28);
+    t2.getText().setText(line2);
+    t2.getText().getTextStyle().setFontSize(18).setBold(true).setForegroundColor('#ffffff').setFontFamily('Arial');
+  }
+  if (subtext) {
+    var sub = slide.insertTextBox(subtext, W * 0.62, y + 16, W * 0.36, heroH - 28);
+    sub.getText().setText(subtext);
+    sub.getText().getTextStyle().setFontSize(9).setForegroundColor('#9ca3af').setFontFamily('Arial');
+  }
+
+  return y + heroH;
+}
+
+// Bottom stats bar with yellow values. stats = [{value, label}].
+function _annexStatsBar_(slide, y, stats) {
+  var W = _W;
+  var barH = _H - y;
+  var bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, y, W, barH);
+  bg.getFill().setSolidFill('#111827');
+  bg.getBorder().setTransparent();
+
+  var colW = W / stats.length;
+  stats.forEach(function(stat, i) {
+    var x = i * colW + 20;
+    var vb = slide.insertTextBox(stat.value, x, y + 10, colW - 24, 42);
+    vb.getText().setText(stat.value);
+    vb.getText().getTextStyle().setFontSize(24).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+    var lb = slide.insertTextBox(stat.label, x, y + 54, colW - 24, 14);
+    lb.getText().setText(stat.label);
+    lb.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#9ca3af').setFontFamily('Arial');
   });
-  tokenLines.push('── FOOTER ──');
-  tokenLines.push('Generated: {' + slug.replace(/-/g, '_').toUpperCase().substring(0, 3) + '_GeneratedDate}');
+}
 
-  var tokenText = tokenLines.join('\n');
-  var tokenBox = slide.insertTextBox(tokenText, 32, 104, W - 64, H - 130);
-  tokenBox.getText().setText(tokenText);
-  tokenBox.getText().getTextStyle()
-    .setFontSize(8).setForegroundColor('#374151').setFontFamily('Courier New');
+// Section heading band on a detail slide.
+function _sectionBand_(slide, y, text) {
+  var W = _W;
+  var bg = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 16, y, W - 32, 16);
+  bg.getFill().setSolidFill('#111827');
+  bg.getBorder().setTransparent();
+  var lbl = slide.insertTextBox(text, 20, y + 1, W - 40, 14);
+  lbl.getText().setText(text);
+  lbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  return y + 18;
+}
 
-  // ── Footer ───────────────────────────────────────────────────────────────────
-  var footerBar = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, H - 24, W, 24);
-  footerBar.getFill().setSolidFill('#f9fafb');
-  footerBar.getBorder().setTransparent();
-  var footerText = footerBar.getText();
-  footerText.setText('HEFFERNAN ELECTRICAL AUTOMATION  |  REC 37307  |  hea-group.com.au  |  0481 267 812');
-  footerText.getTextStyle().setFontSize(7).setForegroundColor('#9ca3af').setFontFamily('Arial');
-  footerText.getParagraphStyle().setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
+// Two-column label:value rows. rows = [[label, token], ...]. Returns y after.
+function _fieldRows_(slide, y, rows, col1X, col2X, rowH) {
+  col1X = col1X || 20;
+  col2X = col2X || 170;
+  rowH  = rowH  || 16;
+  rows.forEach(function(row) {
+    var lbl = slide.insertTextBox(row[0], col1X, y, col2X - col1X - 6, rowH - 2);
+    lbl.getText().setText(row[0]);
+    lbl.getText().getTextStyle().setFontSize(8).setBold(true).setForegroundColor('#374151').setFontFamily('Arial');
+    var val = slide.insertTextBox(row[1], col2X, y, _W - col2X - 16, rowH - 2);
+    val.getText().setText(row[1]);
+    val.getText().getTextStyle().setFontSize(8).setForegroundColor('#111827').setFontFamily('Arial');
+    y += rowH;
+  });
+  return y;
+}
+
+// ── Financial Outcomes template ───────────────────────────────────────────────
+// Slide 1: Hero summary (matching Jesse's existing proposal design)
+// Slide 2: 10-year savings table + key metrics
+// Slide 3: Assumptions + environmental impact
+
+function _createFinancialOutcomesTemplate_(tplFolder) {
+  var pres = SlidesApp.create('MASTER — Financial Outcomes Annex');
+  _movePresToFolder_(pres.getId(), tplFolder);
+
+  // ── Slide 1: Hero ───────────────────────────────────────────────────────────
+  var s1 = pres.getSlides()[0];
+  _clearSlide_(s1);
+
+  var y = _annexHeader_(s1);
+
+  y = _annexInfoStrip_(s1, y, [
+    { label: 'JOB NUMBER',  value: '{FO_JobNumber}'     },
+    { label: 'DATE',        value: '{FO_GeneratedDate}' },
+    { label: 'FOR',         value: '{FO_ClientName}'    },
+    { label: 'ADDRESS',     value: '{FO_Address}'       },
+  ]);
+
+  y = _annexHero_(s1, y, 290,
+    'YOUR PATH TO',
+    '{FO_Year1BenefitAud}',
+    'A YEAR IN SAVINGS',
+    'Thank you for the opportunity to present your renewable energy solution.\n\n{FO_SystemSizeKw} Solar  +  {FO_BatterySizeKwh} Battery\nfor {FO_ClientName}\n\nYour system will offset {FO_CarbonTonnesPerYr} of CO₂ per year — equivalent to {FO_CarsEquiv} cars off the road.'
+  );
+
+  _annexStatsBar_(s1, y, [
+    { value: '{FO_CarbonTonnesPerYr}', label: 'CO2 NET OFFSET' },
+    { value: '{FO_PaybackYears}',      label: 'PAYBACK PERIOD' },
+    { value: '{FO_Total25YrAud}',      label: '25 YEAR VALUE'  },
+  ]);
+
+  // ── Slide 2: 10-year table ──────────────────────────────────────────────────
+  var s2 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s2);
+
+  var y2 = _annexCompactHeader_(s2, 'Financial Outcomes', '{FO_JobNumber}', '{FO_ClientName}');
+  y2 += 6;
+
+  // Section title
+  var stitle = s2.insertTextBox('10-YEAR SAVINGS PROJECTION', 16, y2, 400, 22);
+  stitle.getText().setText('10-YEAR SAVINGS PROJECTION');
+  stitle.getText().getTextStyle().setFontSize(14).setBold(true).setForegroundColor('#111827').setFontFamily('Arial');
+  y2 += 26;
+
+  var sub2 = s2.insertTextBox(
+    'System: {FO_SystemSizeKw}  ·  Retail tariff: {FO_RetailTariff}  ·  Feed-in: {FO_FeedInTariff}  ·  Self-consumption: {FO_SelfConsumptionPct}  ·  Annual generation: {FO_AnnualGenKwh}',
+    16, y2, _W - 32, 14
+  );
+  sub2.getText().setText('System: {FO_SystemSizeKw}  ·  Retail tariff: {FO_RetailTariff}  ·  Feed-in: {FO_FeedInTariff}  ·  Self-consumption: {FO_SelfConsumptionPct}  ·  Annual generation: {FO_AnnualGenKwh}');
+  sub2.getText().getTextStyle().setFontSize(7.5).setForegroundColor('#6b7280').setFontFamily('Arial');
+  y2 += 18;
+
+  // Table: Year | Annual Savings | Cumulative
+  var tblW = _W * 0.62;
+  var tbl  = s2.insertTable(11, 3, 16, y2, tblW, 360);
+  var tblHeaders = ['YEAR', 'ANNUAL SAVINGS', 'CUMULATIVE'];
+  tblHeaders.forEach(function(h, c) {
+    tbl.getCell(0, c).getFill().setSolidFill('#111827');
+    tbl.getCell(0, c).getText().setText(h);
+    tbl.getCell(0, c).getText().getTextStyle()
+      .setFontSize(8).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  });
+  for (var yr = 1; yr <= 10; yr++) {
+    var cells = [String(yr), '{FO_Yr' + yr + 'Savings}', '{FO_Yr' + yr + 'Cumul}'];
+    cells.forEach(function(val, c) {
+      tbl.getCell(yr, c).getFill().setSolidFill(yr % 2 === 0 ? '#f9fafb' : '#ffffff');
+      tbl.getCell(yr, c).getText().setText(val);
+      var ts = tbl.getCell(yr, c).getText().getTextStyle().setFontFamily('Arial').setFontSize(9);
+      if (c === 2) tbl.getCell(yr, c).getText().getTextStyle().setForegroundColor('#059669');
+    });
+  }
+
+  // Key metrics sidebar
+  var metX = 16 + tblW + 12;
+  var metW = _W - metX - 16;
+  var metrics = [
+    { label: 'YEAR 1 BENEFIT',  value: '{FO_Year1BenefitAud}'  },
+    { label: 'BILL REDUCTION',  value: '{FO_BillReductionPct}' },
+    { label: 'SYSTEM COST',     value: '{FO_SystemCostAud}'    },
+    { label: 'IMPORT SAVINGS',  value: '{FO_ImportSavingsAud}' },
+    { label: 'FEED-IN INCOME',  value: '{FO_FitIncomeAud}'     },
+  ];
+  var my = y2;
+  metrics.forEach(function(m) {
+    var mbg = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, metX, my, metW, 46);
+    mbg.getFill().setSolidFill('#111827');
+    mbg.getBorder().setTransparent();
+    var mlbl = s2.insertTextBox(m.label, metX + 8, my + 4, metW - 12, 12);
+    mlbl.getText().setText(m.label);
+    mlbl.getText().getTextStyle().setFontSize(6.5).setBold(true).setForegroundColor('#9ca3af').setFontFamily('Arial');
+    var mval = s2.insertTextBox(m.value, metX + 8, my + 16, metW - 12, 24);
+    mval.getText().setText(m.value);
+    mval.getText().getTextStyle().setFontSize(16).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+    my += 50;
+  });
+
+  // ── Slide 3: Assumptions + environmental ────────────────────────────────────
+  var s3 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s3);
+
+  var y3 = _annexCompactHeader_(s3, 'Financial Outcomes — Assumptions', '{FO_JobNumber}', '{FO_ClientName}');
+  y3 += 8;
+
+  y3 = _sectionBand_(s3, y3, 'CALCULATION ASSUMPTIONS');
+  y3 += 4;
+  y3 = _fieldRows_(s3, y3, [
+    ['Retail tariff',      '{FO_RetailTariff}'      ],
+    ['Feed-in tariff',     '{FO_FeedInTariff}'      ],
+    ['Self-consumption',   '{FO_SelfConsumptionPct}'],
+    ['Tariff escalation',  '{FO_TariffEscPct}'      ],
+    ['Panel degradation',  '{FO_DegradationPct}'    ],
+    ['Annual generation',  '{FO_AnnualGenKwh}'      ],
+    ['System cost',        '{FO_SystemCostAud}'     ],
+    ['Current annual bill','{FO_AnnualBillAud}'     ],
+  ]);
+
+  y3 += 10;
+  y3 = _sectionBand_(s3, y3, 'ENVIRONMENTAL IMPACT');
+  y3 += 4;
+  y3 = _fieldRows_(s3, y3, [
+    ['CO₂ offset per year', '{FO_CarbonTonnesPerYr}'],
+    ['Cars equivalent',     '{FO_CarsEquiv} cars off the road per year'],
+    ['25-year total value',  '{FO_Total25YrAud}'     ],
+  ]);
+
+  y3 += 10;
+  y3 = _sectionBand_(s3, y3, 'DISCLAIMER');
+  y3 += 4;
+  var disc = s3.insertTextBox(
+    'Projections are estimates based on the assumptions above. Actual savings will vary depending on energy usage, tariff changes, shading, and system performance. This document does not constitute financial advice.',
+    20, y3, _W - 36, 48
+  );
+  disc.getText().setText('Projections are estimates based on the assumptions above. Actual savings will vary depending on energy usage, tariff changes, shading, and system performance. This document does not constitute financial advice.');
+  disc.getText().getTextStyle().setFontSize(7.5).setForegroundColor('#9ca3af').setFontFamily('Arial');
+
+  pres.saveAndClose();
+  return pres.getId();
+}
+
+// ── Site Assessment template ──────────────────────────────────────────────────
+// Slide 1: Hero summary (address, system, key stats)
+// Slide 2: Client details + system preference + roof & property
+// Slide 3: Grid connection + household profile + battery/EPS + notes
+
+function _createSiteAssessmentTemplate_(tplFolder) {
+  var pres = SlidesApp.create('MASTER — Site Assessment Annex');
+  _movePresToFolder_(pres.getId(), tplFolder);
+
+  // ── Slide 1: Hero ───────────────────────────────────────────────────────────
+  var s1 = pres.getSlides()[0];
+  _clearSlide_(s1);
+
+  var y = _annexHeader_(s1);
+
+  y = _annexInfoStrip_(s1, y, [
+    { label: 'JOB NUMBER', value: '{SA_JobNumber}'     },
+    { label: 'DATE',       value: '{SA_GeneratedDate}' },
+    { label: 'CLIENT',     value: '{SA_ClientName}'    },
+    { label: 'ADDRESS',    value: '{SA_Address}'       },
+  ]);
+
+  y = _annexHero_(s1, y, 290,
+    'SITE ASSESSMENT',
+    '{SA_Address}',
+    '{SA_ServiceDesc}',
+    'Prepared for {SA_ClientName}\n\nPhone: {SA_Phone}\nEmail: {SA_Email}\n\nSystem interest:\n{SA_SystemSizeKw} Solar\n{SA_BatterySizeKwh} Battery\n\nCreated: {SA_CreatedDate}'
+  );
+
+  _annexStatsBar_(s1, y, [
+    { value: '{SA_SystemSizeKw}',   label: 'SYSTEM SIZE'   },
+    { value: '{SA_BatterySizeKwh}', label: 'BATTERY'       },
+    { value: '{SA_Phases}',         label: 'PHASE SUPPLY'  },
+  ]);
+
+  // ── Slide 2: Client + roof details ──────────────────────────────────────────
+  var s2 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s2);
+
+  var y2 = _annexCompactHeader_(s2, 'Site Assessment', '{SA_JobNumber}', '{SA_ClientName}');
+  y2 += 6;
+
+  var half = Math.floor(_W / 2);
+
+  // Left column
+  y2 = _sectionBand_(s2, y2, 'CLIENT DETAILS');
+  var leftY = y2 + 4;
+  leftY = _fieldRows_(s2, leftY, [
+    ['Job number', '{SA_JobNumber}'  ],
+    ['Client',     '{SA_ClientName}' ],
+    ['Phone',      '{SA_Phone}'      ],
+    ['Email',      '{SA_Email}'      ],
+    ['Address',    '{SA_Address}'    ],
+    ['Postcode',   '{SA_Postcode}'   ],
+    ['Created',    '{SA_CreatedDate}'],
+  ], 20, 130, 17);
+
+  leftY += 6;
+  var sectionY2 = leftY;
+  var bandBg = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, 16, leftY, half - 32, 16);
+  bandBg.getFill().setSolidFill('#111827');
+  bandBg.getBorder().setTransparent();
+  var bandLbl = s2.insertTextBox('SYSTEM PREFERENCE', 20, leftY + 1, half - 40, 14);
+  bandLbl.getText().setText('SYSTEM PREFERENCE');
+  bandLbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  leftY += 20;
+
+  // Yellow highlight box for system size
+  var sysBg = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, 20, leftY, half - 36, 38);
+  sysBg.getFill().setSolidFill('#111827');
+  sysBg.getBorder().setTransparent();
+  var sysTxt = s2.insertTextBox('{SA_SystemSizeKw}  +  {SA_BatterySizeKwh}', 26, leftY + 4, half - 44, 28);
+  sysTxt.getText().setText('{SA_SystemSizeKw}  +  {SA_BatterySizeKwh}');
+  sysTxt.getText().getTextStyle().setFontSize(14).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  leftY += 44;
+
+  leftY = _fieldRows_(s2, leftY, [
+    ['Finance required', '{SA_FinanceRequired}'],
+    ['Service interest', '{SA_ServiceDesc}'    ],
+  ], 20, 130, 17);
+
+  // Right column — roof & property
+  var rightX = half + 8;
+  var rightY = y2 + 4;
+  var roofBand = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, rightX, rightY - 2, _W - rightX - 16, 16);
+  roofBand.getFill().setSolidFill('#111827');
+  roofBand.getBorder().setTransparent();
+  var roofLbl = s2.insertTextBox('ROOF & PROPERTY', rightX + 4, rightY - 1, _W - rightX - 24, 14);
+  roofLbl.getText().setText('ROOF & PROPERTY');
+  roofLbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  rightY += 18;
+
+  rightY = _fieldRows_(s2, rightY, [
+    ['Roof material',      '{SA_RoofMaterial}'   ],
+    ['Main orientation',   '{SA_RoofOrientation}'],
+    ['Shading conditions', '{SA_ShadingIssues}'  ],
+    ['Roof pitch',         '—'                   ],
+    ['Accessible areas',   '—'                   ],
+    ['Obstructions',       '—'                   ],
+    ['Satellite view',     '{SA_SatelliteUrl}'   ],
+  ], rightX + 4, rightX + 120, 17);
+
+  // ── Slide 3: Grid + household + battery ─────────────────────────────────────
+  var s3 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s3);
+
+  var y3 = _annexCompactHeader_(s3, 'Site Assessment', '{SA_JobNumber}', '{SA_ClientName}');
+  y3 += 8;
+
+  // Two columns
+  var c1X = 20, c1VX = 130, c2X = half + 8, c2VX = half + 120;
+
+  y3 = _sectionBand_(s3, y3, 'GRID CONNECTION');
+  var col1Y = y3 + 4;
+  col1Y = _fieldRows_(s3, col1Y, [
+    ['Phase supply',       '{SA_Phases}'       ],
+    ['Meter location',     '—'                 ],
+    ['Switchboard loc.',   '—'                 ],
+    ['Switchboard cap.',   '—'                 ],
+    ['Spare circuits',     '—'                 ],
+    ['NMI number',         '—'                 ],
+  ], c1X, c1VX, 17);
+
+  // Right column — household
+  var col2Y = y3 + 4;
+  var hhBand = s3.insertShape(SlidesApp.ShapeType.RECTANGLE, c2X - 4, y3 - 18, _W - c2X - 8, 16);
+  hhBand.getFill().setSolidFill('#111827');
+  hhBand.getBorder().setTransparent();
+  var hhLbl = s3.insertTextBox('HOUSEHOLD PROFILE', c2X, y3 - 17, _W - c2X - 16, 14);
+  hhLbl.getText().setText('HOUSEHOLD PROFILE');
+  hhLbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+
+  col2Y = _fieldRows_(s3, col2Y, [
+    ['Occupants',     '{SA_Occupants}'   ],
+    ['Home daytime',  '{SA_HomeDaytime}' ],
+    ['Hot water',     '{SA_HotWater}'    ],
+    ['Gas appliances','{SA_GasAppliances}'],
+    ['EV / planning', '{SA_Ev}'          ],
+  ], c2X, c2VX, 17);
+
+  var bottomY = Math.max(col1Y, col2Y) + 8;
+  bottomY = _sectionBand_(s3, bottomY, 'BATTERY & EPS CONFIGURATION');
+  bottomY += 4;
+  bottomY = _fieldRows_(s3, bottomY, [
+    ['Wi-Fi SSID',    '{SA_WifiSsid}'   ],
+    ['Wi-Fi password','{SA_WifiPassword}'],
+    ['EPS circuit 1', '{SA_EpsCircuit1}'],
+    ['EPS circuit 2', '{SA_EpsCircuit2}'],
+    ['EPS circuit 3', '{SA_EpsCircuit3}'],
+  ], c1X, c1VX, 17);
+
+  bottomY += 8;
+  bottomY = _sectionBand_(s3, bottomY, 'SITE NOTES');
+  bottomY += 4;
+  var notesBox = s3.insertShape(SlidesApp.ShapeType.RECTANGLE, 16, bottomY, _W - 32, Math.min(80, _H - bottomY - 12));
+  notesBox.getFill().setSolidFill('#f9fafb');
+  notesBox.getBorder().setTransparent();
+  var notesVal = s3.insertTextBox('{SA_Notes}', 22, bottomY + 4, _W - 44, Math.min(72, _H - bottomY - 16));
+  notesVal.getText().setText('{SA_Notes}');
+  notesVal.getText().getTextStyle().setFontSize(8.5).setForegroundColor('#374151').setFontFamily('Arial');
+
+  pres.saveAndClose();
+  return pres.getId();
+}
+
+// ── System Specification template ─────────────────────────────────────────────
+// Slide 1: Hero (system size + status)
+// Slide 2: Solar array + inverter + battery spec tables
+// Slide 3: EV charger + installation + notes
+
+function _createSystemSpecTemplate_(tplFolder) {
+  var pres = SlidesApp.create('MASTER — System Specification Annex');
+  _movePresToFolder_(pres.getId(), tplFolder);
+
+  // ── Slide 1: Hero ───────────────────────────────────────────────────────────
+  var s1 = pres.getSlides()[0];
+  _clearSlide_(s1);
+
+  var y = _annexHeader_(s1);
+
+  y = _annexInfoStrip_(s1, y, [
+    { label: 'JOB NUMBER', value: '{SS_JobNumber}' },
+    { label: 'DATE',       value: '{SS_Date}'       },
+    { label: 'CLIENT',     value: '{SS_ClientName}' },
+    { label: 'STATUS',     value: '{SS_Status}'     },
+  ]);
+
+  y = _annexHero_(s1, y, 290,
+    'SYSTEM SPECIFICATION',
+    '{SS_SystemSizeKw}',
+    'SOLAR SYSTEM FOR {SS_ClientName}',
+    '{SS_Address}\n{SS_Postcode}\n\nSolar Array:\n{SS_PanelCount} × {SS_PanelMake} {SS_PanelModel}\n{SS_PanelWatts}W panels\n\nInverter:\n{SS_InverterMake} {SS_InverterModel}\n{SS_InverterKw}\n\nBattery:\n{SS_BatterySizeKwh}'
+  );
+
+  _annexStatsBar_(s1, y, [
+    { value: '{SS_SystemSizeKw}',   label: 'SOLAR ARRAY'   },
+    { value: '{SS_BatterySizeKwh}', label: 'BATTERY STORAGE'},
+    { value: '{SS_InverterKw}',     label: 'INVERTER'       },
+  ]);
+
+  // ── Slide 2: Component spec tables ──────────────────────────────────────────
+  var s2 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s2);
+
+  var y2 = _annexCompactHeader_(s2, 'System Specification', '{SS_JobNumber}', '{SS_ClientName}');
+  y2 += 6;
+
+  var col2X = Math.floor(_W / 2) + 8;
+
+  // Left: Solar + Inverter
+  y2 = _sectionBand_(s2, y2, 'SOLAR ARRAY');
+  var leftY2 = y2 + 4;
+  leftY2 = _fieldRows_(s2, leftY2, [
+    ['System size',  '{SS_SystemSizeKw}'  ],
+    ['Panel make',   '{SS_PanelMake}'     ],
+    ['Panel model',  '{SS_PanelModel}'    ],
+    ['Panel watts',  '{SS_PanelWatts}'    ],
+    ['Panel count',  '{SS_PanelCount}'    ],
+  ], 20, 120, 17);
+
+  leftY2 += 6;
+  var invBandBg = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, 16, leftY2, col2X - 32, 16);
+  invBandBg.getFill().setSolidFill('#111827');
+  invBandBg.getBorder().setTransparent();
+  var invBandLbl = s2.insertTextBox('INVERTER', 20, leftY2 + 1, col2X - 40, 14);
+  invBandLbl.getText().setText('INVERTER');
+  invBandLbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+  leftY2 += 20;
+  leftY2 = _fieldRows_(s2, leftY2, [
+    ['Type',     '{SS_InverterType}' ],
+    ['Make',     '{SS_InverterMake}' ],
+    ['Model',    '{SS_InverterModel}'],
+    ['Capacity', '{SS_InverterKw}'   ],
+  ], 20, 120, 17);
+
+  // Right: Battery + EPS
+  var rightY2 = y2 + 4;
+  var batBand = s2.insertShape(SlidesApp.ShapeType.RECTANGLE, col2X - 4, y2 - 18, _W - col2X - 8, 16);
+  batBand.getFill().setSolidFill('#111827');
+  batBand.getBorder().setTransparent();
+  var batLbl = s2.insertTextBox('BATTERY STORAGE', col2X, y2 - 17, _W - col2X - 16, 14);
+  batLbl.getText().setText('BATTERY STORAGE');
+  batLbl.getText().getTextStyle().setFontSize(7).setBold(true).setForegroundColor('#FFD100').setFontFamily('Arial');
+
+  rightY2 = _fieldRows_(s2, rightY2, [
+    ['Capacity',       '{SS_BatterySizeKwh}'     ],
+    ['Make',           '{SS_BatteryMake}'         ],
+    ['Model',          '{SS_BatteryModel}'        ],
+    ['Usable capacity','{SS_BatteryUsableKwh}'    ],
+    ['Wi-Fi SSID',     '{SS_WifiSsid}'            ],
+    ['Wi-Fi password', '{SS_WifiPassword}'        ],
+    ['EPS circuit 1',  '{SS_EpsCircuit1}'         ],
+    ['EPS circuit 2',  '{SS_EpsCircuit2}'         ],
+    ['EPS circuit 3',  '{SS_EpsCircuit3}'         ],
+  ], col2X, col2X + 110, 17);
+
+  // ── Slide 3: EV + installation + notes ─────────────────────────────────────
+  var s3 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s3);
+
+  var y3 = _annexCompactHeader_(s3, 'System Specification', '{SS_JobNumber}', '{SS_ClientName}');
+  y3 += 8;
+
+  y3 = _sectionBand_(s3, y3, 'EV CHARGER');
+  y3 += 4;
+  y3 = _fieldRows_(s3, y3, [
+    ['EV status',  '{SS_EvStatus}'      ],
+    ['Make',       '{SS_EvChargerMake}' ],
+    ['Model',      '{SS_EvChargerModel}'],
+    ['Capacity',   '{SS_EvChargerKw}'   ],
+  ], 20, 130, 17);
+
+  y3 += 8;
+  y3 = _sectionBand_(s3, y3, 'INSTALLATION');
+  y3 += 4;
+  y3 = _fieldRows_(s3, y3, [
+    ['Roof type',     '{SS_RoofType}'      ],
+    ['Mounting type', '{SS_MountingType}'  ],
+    ['Cable run',     '{SS_CableRunMetres}'],
+  ], 20, 130, 17);
+
+  y3 += 8;
+  y3 = _sectionBand_(s3, y3, 'INSTALLER NOTES');
+  y3 += 4;
+  var notesBox3 = s3.insertShape(SlidesApp.ShapeType.RECTANGLE, 16, y3, _W - 32, 80);
+  notesBox3.getFill().setSolidFill('#f9fafb');
+  notesBox3.getBorder().setTransparent();
+  var notesVal3 = s3.insertTextBox('{SS_Notes}', 22, y3 + 4, _W - 44, 72);
+  notesVal3.getText().setText('{SS_Notes}');
+  notesVal3.getText().getTextStyle().setFontSize(8.5).setForegroundColor('#374151').setFontFamily('Arial');
+
+  pres.saveAndClose();
+  return pres.getId();
+}
+
+// ── NMI & Grid Data template ──────────────────────────────────────────────────
+// Slide 1: Hero (NMI number, DNSP, consumption summary)
+// Slide 2: Full grid data details
+
+function _createNMIDataTemplate_(tplFolder) {
+  var pres = SlidesApp.create('MASTER — NMI & Grid Data Annex');
+  _movePresToFolder_(pres.getId(), tplFolder);
+
+  // ── Slide 1: Hero ───────────────────────────────────────────────────────────
+  var s1 = pres.getSlides()[0];
+  _clearSlide_(s1);
+
+  var y = _annexHeader_(s1);
+
+  y = _annexInfoStrip_(s1, y, [
+    { label: 'JOB NUMBER', value: '{NMI_JobNumber}'     },
+    { label: 'DATE',       value: '{NMI_GeneratedDate}' },
+    { label: 'CLIENT',     value: '{NMI_ClientName}'    },
+    { label: 'ADDRESS',    value: '{NMI_Address}'       },
+  ]);
+
+  y = _annexHero_(s1, y, 290,
+    'NMI & GRID DATA',
+    '{NMI_NmiNumber}',
+    'METER IDENTIFIER FOR {NMI_ClientName}',
+    'DNSP: {NMI_Dnsp}\nTariff: {NMI_TariffName}\nPhase supply: {NMI_Phases}\n\nImport rate: {NMI_ImportRateKwh}\nFeed-in rate: {NMI_FeedInRateKwh}\n\nData accepted: {NMI_DaysAccepted} days\nChannel: {NMI_ChosenChannel}'
+  );
+
+  _annexStatsBar_(s1, y, [
+    { value: '{NMI_AnnualKwh}',   label: 'ANNUAL CONSUMPTION' },
+    { value: '{NMI_AvgDailyKwh}', label: 'AVERAGE DAILY'      },
+    { value: '{NMI_PeakPct}',     label: 'PEAK USAGE'         },
+  ]);
+
+  // ── Slide 2: Full NMI details ───────────────────────────────────────────────
+  var s2 = pres.appendSlide(SlidesApp.PredefinedLayout.BLANK);
+  _clearSlide_(s2);
+
+  var y2 = _annexCompactHeader_(s2, 'NMI & Grid Data', '{NMI_JobNumber}', '{NMI_ClientName}');
+  y2 += 8;
+
+  y2 = _sectionBand_(s2, y2, 'METER IDENTIFIER');
+  y2 += 4;
+  y2 = _fieldRows_(s2, y2, [
+    ['NMI number',     '{NMI_NmiNumber}'  ],
+    ['DNSP',           '{NMI_Dnsp}'       ],
+    ['Tariff name',    '{NMI_TariffName}' ],
+    ['Phase supply',   '{NMI_Phases}'     ],
+  ]);
+
+  y2 += 8;
+  y2 = _sectionBand_(s2, y2, 'TARIFF RATES');
+  y2 += 4;
+  y2 = _fieldRows_(s2, y2, [
+    ['Import rate ($/kWh)',   '{NMI_ImportRateKwh}' ],
+    ['Feed-in rate ($/kWh)',  '{NMI_FeedInRateKwh}' ],
+  ]);
+
+  y2 += 8;
+  y2 = _sectionBand_(s2, y2, 'CONSUMPTION DATA');
+  y2 += 4;
+  y2 = _fieldRows_(s2, y2, [
+    ['Annual consumption', '{NMI_AnnualKwh}'   ],
+    ['Average daily',      '{NMI_AvgDailyKwh}' ],
+    ['Peak usage %',       '{NMI_PeakPct}'      ],
+    ['Off-peak usage %',   '{NMI_OffpeakPct}'   ],
+  ]);
+
+  y2 += 8;
+  y2 = _sectionBand_(s2, y2, 'DATA QUALITY');
+  y2 += 4;
+  y2 = _fieldRows_(s2, y2, [
+    ['Days accepted',   '{NMI_DaysAccepted}'  ],
+    ['Channel used',    '{NMI_ChosenChannel}' ],
+    ['Generated',       '{NMI_GeneratedDate}' ],
+  ]);
 
   pres.saveAndClose();
   return pres.getId();

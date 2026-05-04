@@ -63,14 +63,19 @@ function generateReport(p) {
 
     const pdfBlob = DriveApp.getFileById(rj.id).getAs('application/pdf');
     pdfBlob.setName(title + '.pdf');
-    DriveApp.getFileById(rj.id).setTrashed(true);
 
     let driveUrl = '';
     try {
       const dateS2 = Utilities.formatDate(new Date(), 'Australia/Melbourne', 'yyyyMMdd');
       const jobFolder = getOrCreateJobFolder(clientName, dateS2);
       driveUrl = jobFolder.createFile(pdfBlob.copyBlob()).getUrl();
-    } catch(e2) {}
+      // Move editable Google Doc to job folder instead of trashing it
+      const docFile = DriveApp.getFileById(rj.id);
+      jobFolder.addFile(docFile);
+      DriveApp.getRootFolder().removeFile(docFile);
+    } catch(e2) {
+      try { DriveApp.getFileById(rj.id).setTrashed(true); } catch(_) {}
+    }
 
     const profit25   = profit25_calc !== undefined ? profit25_calc : (total25 - sysNetNum);
     const emailHtml  = buildEmailHTML(clientName, postcode, dateS, result, systemKw, batteryKwh,

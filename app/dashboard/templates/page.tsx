@@ -132,6 +132,7 @@ function AnnexCard({
   const isPhotoAnnex = ['client-photos-intake', 'client-photos-followup', 'installer-photos'].includes(
     annex.slug
   )
+  const isHeaSaAnnex = annex.slug === 'hea-sa'
 
   return (
     <div className="bg-white border border-[#e5e9f0] rounded-xl p-5 flex flex-col gap-3 hover:border-[#d0d5dd] transition-colors">
@@ -198,6 +199,14 @@ function AnnexCard({
             <span className="text-[11px] text-[#6b7280]">
               Edit via Drive <code className="font-mono text-[#aaa]">05-photos/</code> folder on
               each job
+            </span>
+          </div>
+        )}
+
+        {isHeaSaAnnex && (
+          <div className="pt-1">
+            <span className="text-[11px] text-[#6b7280]">
+              Editable Google Doc saved to each job&apos;s Drive folder after SA generation
             </span>
           </div>
         )}

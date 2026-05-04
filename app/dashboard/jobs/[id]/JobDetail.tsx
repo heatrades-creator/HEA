@@ -21,7 +21,7 @@ type WorkflowTask = {
   emoji: string;
   label: string;
   detail?: string;
-  autoKey?: 'nmi' | 'estimation';
+  autoKey?: 'nmi' | 'openSolar';
   informational?: boolean;
   links?: Array<{ label: string; href: string }>;
 };

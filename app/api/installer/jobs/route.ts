@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db'
 import { leadToJob } from '@/lib/installer-jobs'
 
 const HIDDEN_STATUSES = new Set(['Complete', 'Archived'])
-const EXCLUDED_LEAD_STATUSES = ['rejected', 'duplicate']
+const EXCLUDED_LEAD_STATUSES = ['rejected', 'duplicate', 'archived']
 
 export async function GET(req: NextRequest) {
   const installer = getInstallerFromRequest(req)

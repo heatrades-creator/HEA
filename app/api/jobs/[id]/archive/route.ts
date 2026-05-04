@@ -21,8 +21,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   try { data = JSON.parse(text); } catch { return NextResponse.json({ error: 'GAS parse error' }, { status: 502 }); }
   if (data.error) return NextResponse.json({ error: data.error }, { status: 400 });
 
-  // Release any installer claim on this job
-  await prisma.jobClaim.deleteMany({ where: { jobNumber: id } }).catch(() => {});
+  // Release any installer claim + mark the Prisma lead archived so it's
+  // excluded from the installer app even if GAS is temporarily unreachable.
+  await Promise.all([
+    prisma.jobClaim.deleteMany({ where: { jobNumber: id } }).catch(() => {}),
+    prisma.lead.updateMany({ where: { gasJobNumber: id }, data: { status: 'archived' } }).catch(() => {}),
+  ]);
 
   return NextResponse.json(data);
 }

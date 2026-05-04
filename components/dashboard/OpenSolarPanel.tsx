@@ -244,6 +244,12 @@ export default function OpenSolarPanel({ job }: { job: GASJob }) {
   const [copiedCommand, setCopiedCommand] = useState(false);
   const [copiedPrompt, setCopiedPrompt]   = useState(false);
 
+  // Drive PDF detection (polls every 30s — same pattern as NMI detection)
+  const [pdfDetected, setPdfDetected]     = useState(false);
+  const [pdfFileName, setPdfFileName]     = useState<string | null>(null);
+  const [pdfFileUrl, setPdfFileUrl]       = useState<string | null>(null);
+  const [proposalsFolderUrl, setProposalsFolderUrl] = useState<string | null>(null);
+
   // Tabs
   const [tab, setTab] = useState<'packet' | 'link'>('packet');
 
@@ -262,6 +268,30 @@ export default function OpenSolarPanel({ job }: { job: GASJob }) {
   }, [job.jobNumber]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Poll GAS every 30s for the OpenSolar PDF in Drive
+  useEffect(() => {
+    let cancelled = false;
+    async function checkPdf() {
+      try {
+        const res = await fetch(`/api/dashboard/pipeline/check-opensolar?jobNumber=${job.jobNumber}`);
+        if (!res.ok) return;
+        const data = await res.json() as {
+          hasOpenSolarPdf?: boolean; fileName?: string | null;
+          fileUrl?: string | null; proposalsSubfolderUrl?: string | null;
+        };
+        if (!cancelled) {
+          setPdfDetected(!!data.hasOpenSolarPdf);
+          setPdfFileName(data.fileName ?? null);
+          setPdfFileUrl(data.fileUrl ?? null);
+          setProposalsFolderUrl(data.proposalsSubfolderUrl ?? null);
+        }
+      } catch {}
+    }
+    checkPdf();
+    const interval = setInterval(checkPdf, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [job.jobNumber]);
 
   async function saveProjectId() {
     const pid = parseInt(projectIdInput.trim(), 10);
@@ -312,17 +342,35 @@ export default function OpenSolarPanel({ job }: { job: GASJob }) {
               Linked #{os!.projectId}
             </span>
           )}
+          {/* PDF detection indicator */}
+          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${
+            pdfDetected
+              ? 'bg-green-100 text-green-700 border-green-200'
+              : 'bg-[#f9fafb] text-[#9ca3af] border-[#e5e9f0]'
+          }`}>
+            {pdfDetected ? '✓ PDF in Drive' : '⏳ Awaiting PDF'}
+          </span>
         </div>
-        {isLinked && os?.shareLink && (
-          <a
-            href={os.shareLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] font-medium text-[#6b7280] hover:text-[#111827] underline"
-          >
-            Share link ↗
-          </a>
-        )}
+        <div className="flex items-center gap-3">
+          {pdfDetected && pdfFileUrl && (
+            <a href={pdfFileUrl} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] font-medium text-green-700 hover:text-green-800 underline">
+              {pdfFileName ?? 'open-solar PDF'} ↗
+            </a>
+          )}
+          {proposalsFolderUrl && (
+            <a href={proposalsFolderUrl} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] font-medium text-[#6b7280] hover:text-[#111827] underline">
+              02-proposals/ ↗
+            </a>
+          )}
+          {isLinked && os?.shareLink && !pdfDetected && (
+            <a href={os.shareLink} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] font-medium text-[#6b7280] hover:text-[#111827] underline">
+              Share link ↗
+            </a>
+          )}
+        </div>
       </div>
 
       {/* Package selector */}
@@ -480,6 +528,23 @@ export default function OpenSolarPanel({ job }: { job: GASJob }) {
             After Ada designs the project in OpenSolar, paste the project ID here to link it to this job.
             The project ID appears in the OpenSolar URL: <code className="bg-[#f9fafb] px-1 rounded text-[#111827]">/projects/12345/</code>
           </p>
+
+          {/* PDF upload instructions */}
+          <div className={`rounded-lg border px-4 py-3 text-xs leading-relaxed ${pdfDetected ? 'border-green-200 bg-green-50 text-green-800' : 'border-[#ffd100]/40 bg-[#fffbea] text-[#374151]'}`}>
+            {pdfDetected ? (
+              <><strong>✓ PDF detected</strong> — {pdfFileName}. This will be included automatically when generating the Electrical Works Proposal document.</>
+            ) : (
+              <>
+                <strong>PDF step:</strong> Export the proposal PDF from OpenSolar → rename it to{' '}
+                <code className="bg-white/60 px-1 rounded font-mono">{job.jobNumber}-annex-open-solar-…-{new Date().toISOString().slice(0,10)}.pdf</code>
+                {' '}→ upload to the client&apos;s{' '}
+                {proposalsFolderUrl
+                  ? <a href={proposalsFolderUrl} target="_blank" rel="noopener noreferrer" className="underline font-medium">02-proposals/ folder ↗</a>
+                  : <span className="font-medium">02-proposals/ Drive folder</span>
+                }. The panel will auto-detect it within 30 seconds.
+              </>
+            )}
+          </div>
 
           <div className="space-y-3">
             <div>

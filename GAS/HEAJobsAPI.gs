@@ -81,6 +81,14 @@ function doGet(e) {
     return jsonResponse(checkEstimation_(e.parameter.jobNumber));
   }
 
+  if (e.parameter.action === 'checkOpenSolarPdf' && e.parameter.jobNumber) {
+    return jsonResponse(checkOpenSolarPdf_(e.parameter.jobNumber));
+  }
+
+  if (e.parameter.action === 'getOpenSolarPdfBytes' && e.parameter.jobNumber) {
+    return jsonResponse(getOpenSolarPdfBytes_(e.parameter.jobNumber));
+  }
+
   if (e.parameter.action === 'getPhotos' && e.parameter.jobNumber) {
     return jsonResponse(getPhotos_(e.parameter.jobNumber));
   }
@@ -724,6 +732,60 @@ function checkEstimation_(jobNumber) {
     return { hasEstimation: false, fileName: null, fileUrl: null };
   } catch (e) {
     return { hasEstimation: false, fileName: null, fileUrl: null, error: String(e) };
+  }
+}
+
+// Detects an OpenSolar PDF manually placed in 02-proposals/ by an admin.
+// File must contain "open-solar" in the name (naming convention:
+// {JOB-ID}-annex-open-solar-{Client-Name}-{YYYY-MM-DD}.pdf).
+function checkOpenSolarPdf_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasOpenSolarPdf: false, fileName: null, fileUrl: null, proposalsSubfolderUrl: null };
+
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { hasOpenSolarPdf: false, fileName: null, fileUrl: null, proposalsSubfolderUrl: null };
+
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const proposalsFolder = getOrCreateDriveFolder_(clientFolder, '02-proposals');
+    const files = proposalsFolder.getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      const name = file.getName();
+      if (name.indexOf('open-solar') !== -1) {
+        return { hasOpenSolarPdf: true, fileName: name, fileUrl: file.getUrl(), proposalsSubfolderUrl: proposalsFolder.getUrl() };
+      }
+    }
+    return { hasOpenSolarPdf: false, fileName: null, fileUrl: null, proposalsSubfolderUrl: proposalsFolder.getUrl() };
+  } catch (err) {
+    return { hasOpenSolarPdf: false, fileName: null, fileUrl: null, proposalsSubfolderUrl: null, error: String(err) };
+  }
+}
+
+// Returns the raw bytes (base64) of the OpenSolar PDF from 02-proposals/.
+// Called by the Next.js open-solar annex generator to include the PDF in merges.
+function getOpenSolarPdfBytes_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { error: 'Job not found or no Drive folder' };
+
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { error: 'Invalid Drive URL' };
+
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const proposalsFolder = getOrCreateDriveFolder_(clientFolder, '02-proposals');
+    const files = proposalsFolder.getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      const name = file.getName();
+      if (name.indexOf('open-solar') !== -1) {
+        const bytes = Utilities.base64Encode(file.getBlob().getBytes());
+        return { bytes: bytes, mimeType: file.getMimeType(), fileName: name };
+      }
+    }
+    return { error: 'OpenSolar PDF not found in 02-proposals/ — place a file with "open-solar" in the name there first.' };
+  } catch (err) {
+    return { error: String(err) };
   }
 }
 

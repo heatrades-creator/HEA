@@ -72,10 +72,10 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     name: 'Open Solar Report',
     description:
       'Technical system design, shading analysis, irradiance map, and annual production estimates from OpenSolar.',
-    source: 'OpenSolar API',
+    source: 'Manual upload → GAS Drive (02-proposals/)',
     driveSubfolder: '02-proposals/',
     filePattern: '{JOB-ID}-annex-open-solar-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
   {
     slug: 'client-photos-intake',

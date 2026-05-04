@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import JobDocuments from '@/components/dashboard/JobDocuments';
 import { formatHEADate } from '@/lib/format';
 import { JobComments } from '@/components/dashboard/JobComments';
+import OpenSolarPanel from '@/components/dashboard/OpenSolarPanel';
 
 const STAGE_COLORS: Record<string, string> = {
   Lead:          'bg-gray-100 text-gray-600',
@@ -569,6 +570,9 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
             />
           </div>
         </div>
+
+        {/* OpenSolar design panel — Ada packet generator + project linking */}
+        <OpenSolarPanel job={job} />
 
         {/* Field notes from installers */}
         <JobComments jobNumber={job.jobNumber} />

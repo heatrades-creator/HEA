@@ -1,0 +1,35 @@
+name: Clasp Token Keep-Alive
+
+# Google OAuth refresh tokens expire after 6 months of inactivity.
+# This workflow runs on the 1st of every month to keep the token alive,
+# and can also be triggered manually from the GitHub Actions tab.
+
+on:
+  schedule:
+    - cron: '0 2 1 * *'   # 1st of every month at 2am UTC (noon AEST)
+  workflow_dispatch:        # also triggerable manually from GitHub Actions tab
+
+jobs:
+  keepalive:
+    name: Refresh clasp token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Write credentials and verify
+        run: |
+          set -e
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
+          echo "$TOKEN" > ~/.clasprc.json
+          mkdir -p ~/.config/clasp ~/.config/@google/clasp "${XDG_CONFIG_HOME:-$HOME/.config}/clasp"
+          echo "$TOKEN" > ~/.config/clasp/default.json
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+          echo "$TOKEN" > "${XDG_CONFIG_HOME:-$HOME/.config}/clasp/credentials.json"
+          echo "=== Verifying token ==="
+          clasp whoami
+          echo "=== Token is alive ==="

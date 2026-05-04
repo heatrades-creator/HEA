@@ -482,7 +482,7 @@ function _parseAmt_(val) {
 //   {NMI_DaysAccepted}  {NMI_ChosenChannel}
 
 function setupAnnexMasterTemplates_() {
-  var parent    = DriveApp.getFolderById(CLIENTS_FOLDER_ID).getParent();
+  var parent    = DriveApp.getFolderById(CLIENTS_FOLDER_ID).getParents().next();
   var tplFolder = getOrCreateDriveFolder_(parent, 'HEA Annex Master Templates');
 
   var builders = {

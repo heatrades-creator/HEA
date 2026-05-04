@@ -145,7 +145,7 @@ export const ANNEX_REGISTRY: AnnexDef[] = [
     source: 'Powercor NMI platform → GAS Drive (00-nmi-data/)',
     driveSubfolder: '00-nmi-data/',
     filePattern: '{JOB-ID}-annex-nmi-data-{Client-Name}-{YYYY-MM-DD}.pdf',
-    status: 'planned',
+    status: 'available',
   },
 ]
 

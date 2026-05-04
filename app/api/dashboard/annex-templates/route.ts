@@ -7,18 +7,16 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const gasUrl = process.env.JOBS_GAS_URL
-  if (!gasUrl) return NextResponse.json({ error: 'GAS not configured' }, { status: 503 })
+  if (!gasUrl) return NextResponse.json([], { status: 200 })
 
-  const raw = await fetch(`${gasUrl}?action=getAnnexTemplateInfo`, { cache: 'no-store' }).then(
-    (r) => r.text()
-  )
-
-  let data: Record<string, unknown>
   try {
-    data = JSON.parse(raw)
+    const raw = await fetch(`${gasUrl}?action=getAnnexTemplateInfo`, { cache: 'no-store' }).then(
+      (r) => r.text()
+    )
+    const data = JSON.parse(raw)
+    if (data.error) return NextResponse.json([], { status: 200 })
+    return NextResponse.json(data)
   } catch {
-    return NextResponse.json({ error: 'GAS returned invalid JSON' }, { status: 502 })
+    return NextResponse.json([], { status: 200 })
   }
-
-  return NextResponse.json(data)
 }

@@ -142,7 +142,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Workflow checklist state
   const [tasksDone, setTasksDone]       = useState<Record<string, boolean>>({});
-  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; estimation: boolean }>({ nmi: false, estimation: false });
+  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; openSolar: boolean }>({ nmi: false, openSolar: false });
 
   // Load per-job checklist state from localStorage
   useEffect(() => {
@@ -157,16 +157,16 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Auto-detect NMI and estimation files for Lead stage (polls every 30s)
   useEffect(() => {
-    if (status !== 'Lead') { setAutoDetected({ nmi: false, estimation: false }); return; }
+    if (status !== 'Lead') { setAutoDetected({ nmi: false, openSolar: false }); return; }
     let cancelled = false;
     async function check() {
       try {
-        const [nmiRes, estRes] = await Promise.all([
+        const [nmiRes, osRes] = await Promise.all([
           fetch(`/api/dashboard/pipeline/check-nmi?jobNumber=${job.jobNumber}`),
-          fetch(`/api/dashboard/pipeline/check-estimation?jobNumber=${job.jobNumber}`),
+          fetch(`/api/dashboard/pipeline/check-opensolar?jobNumber=${job.jobNumber}`),
         ]);
-        const [nmiData, estData] = await Promise.all([nmiRes.json(), estRes.json()]);
-        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, estimation: !!estData.hasEstimation });
+        const [nmiData, osData] = await Promise.all([nmiRes.json(), osRes.json()]);
+        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, openSolar: !!osData.hasOpenSolar });
       } catch {}
     }
     check();
@@ -181,7 +181,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
     const allDone = workflow.tasks.every((t) => {
       if (t.informational) return true;
       if (t.autoKey === 'nmi') return autoDetected.nmi;
-      if (t.autoKey === 'estimation') return autoDetected.estimation;
+      if (t.autoKey === 'openSolar') return autoDetected.openSolar;
       return tasksDone[t.id] ?? false;
     });
     if (!allDone) return;
@@ -306,7 +306,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
           const allDone = tasks.every((t) => {
             if (t.informational) return true;
             if (t.autoKey === 'nmi') return autoDetected.nmi;
-            if (t.autoKey === 'estimation') return autoDetected.estimation;
+            if (t.autoKey === 'openSolar') return autoDetected.openSolar;
             return tasksDone[t.id] ?? false;
           });
           return (
@@ -338,7 +338,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                 {tasks.map((task) => {
                   const isDone = task.informational ? false
                     : task.autoKey === 'nmi' ? autoDetected.nmi
-                    : task.autoKey === 'estimation' ? autoDetected.estimation
+                    : task.autoKey === 'openSolar' ? autoDetected.openSolar
                     : (tasksDone[task.id] ?? false);
                   const isAuto = !!task.autoKey;
 
@@ -406,7 +406,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                         width: `${Math.round(
                           (tasks.filter((t) => !t.informational && (
                             t.autoKey === 'nmi' ? autoDetected.nmi
-                            : t.autoKey === 'estimation' ? autoDetected.estimation
+                            : t.autoKey === 'openSolar' ? autoDetected.openSolar
                             : (tasksDone[t.id] ?? false)
                           )).length / Math.max(1, tasks.filter((t) => !t.informational).length)
                         ) * 100)}%`

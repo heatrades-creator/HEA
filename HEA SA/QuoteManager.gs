@@ -146,6 +146,22 @@ function processSignedPDFs(pendingId) {
       try { docFile.setTrashed(true); } catch(_) {}
     }
 
+    // ── Also save PDF to client job folder 01-quotes/ (if driveUrl provided) ─
+    if (payload.driveUrl) {
+      try {
+        const driveMatch = payload.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch) {
+          const clientFolder = DriveApp.getFolderById(driveMatch[1]);
+          const quotesIter = clientFolder.getFoldersByName('01-quotes');
+          const quotesFolder = quotesIter.hasNext() ? quotesIter.next() : clientFolder.createFolder('01-quotes');
+          const saFile = quotesFolder.createFile(pdfBlob.copyBlob());
+          saFile.setName(title + '.pdf');
+        }
+      } catch(copyErr) {
+        Logger.log('Could not copy SA PDF to job 01-quotes folder: ' + copyErr.message);
+      }
+    }
+
     // ── Email the customer ───────────────────────────────────────────────────
     const emailHtml = buildSignedEmailHTML(payload, pdfUrl, dateS, panels, batNum, annSav, total25s, solarRebate, batRebate);
     GmailApp.sendEmail(

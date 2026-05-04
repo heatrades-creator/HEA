@@ -3716,6 +3716,8 @@ updateRebateCliffBanner();
       banner.style.display = 'block';
       banner.innerHTML = '<strong style="color:#1a3a7a">✅ Pre-filled from HEA intake</strong><br>' + lines.join(' &nbsp;·&nbsp; ');
     }
+    // Store driveUrl globally so qBld() can include it in the quote payload
+    if (pd.driveUrl) window._heaDriveUrl = pd.driveUrl;
   } catch(e) {}
 })();
 

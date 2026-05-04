@@ -32,9 +32,6 @@ export default async function TemplatesPage() {
   const templateInfoList: AnnexTemplateInfo[] = session ? await fetchAnnexTemplateInfo() : []
   const templateMap = Object.fromEntries(templateInfoList.map((t) => [t.slug, t]))
 
-  const allConfigured = templateInfoList.length > 0 && templateInfoList.every((t) => t.configured)
-  const someConfigured = templateInfoList.some((t) => t.configured)
-
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
@@ -44,24 +41,6 @@ export default async function TemplatesPage() {
           module that plugs into any document via the Documents page.
         </p>
       </div>
-
-      {/* Setup banner — shown when Slides templates haven't been created yet */}
-      {session && !allConfigured && (
-        <div className="mb-6 bg-[#fffbe6] border border-[#ffd100] rounded-xl p-4 flex items-start gap-3">
-          <span className="text-[#b45309] text-lg leading-none mt-0.5">⚠</span>
-          <div className="text-sm text-[#92400e] space-y-1">
-            <p className="font-semibold">
-              {someConfigured ? 'Some Slides templates not yet configured' : 'Slides templates not yet set up'}
-            </p>
-            <p>
-              To enable one-click template editing for the Slides-based annexes (Site Assessment,
-              Financial Outcomes, System Spec, NMI Data), open the GAS editor and run{' '}
-              <code className="font-mono bg-[#fef3c7] px-1 rounded">setupAnnexMasterTemplates_()</code> once.
-              This creates the master Slides files in Drive and saves their IDs to Script Properties.
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {ANNEX_REGISTRY.map((annex) => (
@@ -201,18 +180,15 @@ function AnnexCard({
                 href={slidesEditUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#1a73e8] hover:text-[#1557b0] transition-colors"
+                className="inline-flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-[#111827] text-[#ffd100] text-[11px] font-semibold hover:bg-[#1f2937] transition-colors"
               >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zm-7 3l5 5h-3v4h-4v-4H7l5-5z" />
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-                Open master template
+                Edit master template
               </a>
             ) : (
-              <span className="text-[11px] text-[#bbb]">
-                Template not configured — run{' '}
-                <code className="font-mono">setupAnnexMasterTemplates_()</code>
-              </span>
+              <span className="text-[10px] text-[#bbb]">Run setupAnnexTemplates in GAS to enable</span>
             )}
           </div>
         )}

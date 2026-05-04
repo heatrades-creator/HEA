@@ -85,6 +85,10 @@ function doGet(e) {
     return jsonResponse(checkOpenSolar_(e.parameter.jobNumber));
   }
 
+  if (e.parameter.action === 'checkHEASA' && e.parameter.jobNumber) {
+    return jsonResponse(checkHEASA_(e.parameter.jobNumber));
+  }
+
   if (e.parameter.action === 'getPhotos' && e.parameter.jobNumber) {
     return jsonResponse(getPhotos_(e.parameter.jobNumber));
   }
@@ -733,6 +737,29 @@ function checkOpenSolar_(jobNumber) {
     return { hasOpenSolar: false, fileName: null, fileUrl: null, proposalsFolderUrl: proposalsFolder.getUrl() };
   } catch (e) {
     return { hasOpenSolar: false, fileName: null, fileUrl: null, proposalsFolderUrl: null, error: String(e) };
+  }
+}
+
+function checkHEASA_(jobNumber) {
+  const job = findJobByNumber(getSheet(), jobNumber);
+  if (!job || !job.driveUrl) return { hasHEASA: false, fileName: null, fileUrl: null, quotesFolderUrl: null };
+
+  const folderId = job.driveUrl.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (!folderId) return { hasHEASA: false, fileName: null, fileUrl: null, quotesFolderUrl: null };
+
+  try {
+    const clientFolder = DriveApp.getFolderById(folderId[1]);
+    const quotesFolder = getOrCreateDriveFolder_(clientFolder, '01-quotes');
+    const files = quotesFolder.getFiles();
+    while (files.hasNext()) {
+      const file = files.next();
+      if (file.getName().toLowerCase().endsWith('.pdf')) {
+        return { hasHEASA: true, fileName: file.getName(), fileUrl: file.getUrl(), quotesFolderUrl: quotesFolder.getUrl() };
+      }
+    }
+    return { hasHEASA: false, fileName: null, fileUrl: null, quotesFolderUrl: quotesFolder.getUrl() };
+  } catch (e) {
+    return { hasHEASA: false, fileName: null, fileUrl: null, quotesFolderUrl: null, error: String(e) };
   }
 }
 

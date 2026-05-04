@@ -21,16 +21,16 @@ type WorkflowTask = {
   emoji: string;
   label: string;
   detail?: string;
-  autoKey?: 'nmi' | 'openSolar';
+  autoKey?: 'nmi' | 'openSolar' | 'heaSA';
   informational?: boolean;
   links?: Array<{ label: string; href: string }>;
 };
 
 const STAGE_WORKFLOW: Record<string, {
-  bg: string; border: string; nextStage: string | null; autoAdvances: boolean; tasks: WorkflowTask[];
+  bg: string; border: string; nextStage: string | null; tasks: WorkflowTask[];
 }> = {
   Lead: {
-    bg: 'bg-gray-50', border: 'border-gray-200', nextStage: 'Estimation', autoAdvances: true,
+    bg: 'bg-gray-50', border: 'border-gray-200', nextStage: 'Estimation',
     tasks: [
       {
         id: 'bill_nmi', emoji: '📄',
@@ -49,12 +49,13 @@ const STAGE_WORKFLOW: Record<string, {
       {
         id: 'analyser', emoji: '☀️',
         label: 'HEA Solar Analyser run — system size & payback period designed',
-        detail: 'Run with client. They can take the solution now or come back later — either way, tick when complete',
+        detail: 'Save the SA estimation PDF to the client\'s 01-quotes Drive folder to auto-detect',
+        autoKey: 'heaSA',
       },
     ],
   },
   Estimation: {
-    bg: 'bg-blue-50', border: 'border-blue-200', nextStage: 'Contract', autoAdvances: true,
+    bg: 'bg-blue-50', border: 'border-blue-200', nextStage: 'Contract',
     tasks: [
       {
         id: 'estimation_signed', emoji: '✍️',
@@ -64,7 +65,7 @@ const STAGE_WORKFLOW: Record<string, {
     ],
   },
   Contract: {
-    bg: 'bg-orange-50', border: 'border-orange-200', nextStage: 'Booked', autoAdvances: true,
+    bg: 'bg-orange-50', border: 'border-orange-200', nextStage: 'Booked',
     tasks: [
       { id: 'deposit_paid', emoji: '💰', label: '10% system deposit paid by client' },
       {
@@ -75,7 +76,7 @@ const STAGE_WORKFLOW: Record<string, {
     ],
   },
   Booked: {
-    bg: 'bg-purple-50', border: 'border-purple-200', nextStage: 'In Progress', autoAdvances: false,
+    bg: 'bg-purple-50', border: 'border-purple-200', nextStage: 'In Progress',
     tasks: [
       {
         id: 'install_date', emoji: '📅', informational: true,
@@ -85,7 +86,7 @@ const STAGE_WORKFLOW: Record<string, {
     ],
   },
   'In Progress': {
-    bg: 'bg-amber-50', border: 'border-amber-300', nextStage: 'Complete', autoAdvances: false,
+    bg: 'bg-amber-50', border: 'border-amber-300', nextStage: 'Complete',
     tasks: [
       {
         id: 'installing', emoji: '🔨', informational: true,
@@ -95,7 +96,7 @@ const STAGE_WORKFLOW: Record<string, {
     ],
   },
   Complete: {
-    bg: 'bg-green-50', border: 'border-green-200', nextStage: null, autoAdvances: false,
+    bg: 'bg-green-50', border: 'border-green-200', nextStage: null,
     tasks: [
       { id: 'installer_complete', emoji: '✅', label: 'Installers marked job complete in app' },
       { id: 'invoice_80', emoji: '📧', label: 'Invoice for 80% of system cost sent to client', detail: 'Use the Payments section below' },
@@ -142,7 +143,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Workflow checklist state
   const [tasksDone, setTasksDone]       = useState<Record<string, boolean>>({});
-  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; openSolar: boolean }>({ nmi: false, openSolar: false });
+  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; openSolar: boolean; heaSA: boolean }>({ nmi: false, openSolar: false, heaSA: false });
 
   // Load per-job checklist state from localStorage
   useEffect(() => {
@@ -157,16 +158,17 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Auto-detect NMI and estimation files for Lead stage (polls every 30s)
   useEffect(() => {
-    if (status !== 'Lead') { setAutoDetected({ nmi: false, openSolar: false }); return; }
+    if (status !== 'Lead') { setAutoDetected({ nmi: false, openSolar: false, heaSA: false }); return; }
     let cancelled = false;
     async function check() {
       try {
-        const [nmiRes, osRes] = await Promise.all([
+        const [nmiRes, osRes, saRes] = await Promise.all([
           fetch(`/api/dashboard/pipeline/check-nmi?jobNumber=${job.jobNumber}`),
           fetch(`/api/dashboard/pipeline/check-opensolar?jobNumber=${job.jobNumber}`),
+          fetch(`/api/dashboard/pipeline/check-hea-sa?jobNumber=${job.jobNumber}`),
         ]);
-        const [nmiData, osData] = await Promise.all([nmiRes.json(), osRes.json()]);
-        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, openSolar: !!osData.hasOpenSolar });
+        const [nmiData, osData, saData] = await Promise.all([nmiRes.json(), osRes.json(), saRes.json()]);
+        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, openSolar: !!osData.hasOpenSolar, heaSA: !!saData.hasHEASA });
       } catch {}
     }
     check();
@@ -174,19 +176,9 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
     return () => { cancelled = true; clearInterval(interval); };
   }, [status, job.jobNumber]);
 
-  // Auto-advance stage when all checklist tasks are done
-  useEffect(() => {
-    const workflow = STAGE_WORKFLOW[status];
-    if (!workflow?.autoAdvances || !workflow.nextStage || advancingRef.current) return;
-    const allDone = workflow.tasks.every((t) => {
-      if (t.informational) return true;
-      if (t.autoKey === 'nmi') return autoDetected.nmi;
-      if (t.autoKey === 'openSolar') return autoDetected.openSolar;
-      return tasksDone[t.id] ?? false;
-    });
-    if (!allDone) return;
+  function advanceStage(nextStage: string) {
+    if (advancingRef.current) return;
     advancingRef.current = true;
-    const nextStage = workflow.nextStage;
     fetch(`/api/jobs/${job.jobNumber}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -196,8 +188,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
       advancingRef.current = false;
       router.refresh();
     }).catch(() => { advancingRef.current = false; });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tasksDone, autoDetected]);
+  }
 
   function toggleTask(taskId: string, done: boolean) {
     localStorage.setItem(`hea_task_${job.jobNumber}_${taskId}`, String(done));
@@ -302,11 +293,12 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
         {(() => {
           const workflow = STAGE_WORKFLOW[status];
           if (!workflow) return null;
-          const { bg, border, nextStage, autoAdvances, tasks } = workflow;
+          const { bg, border, nextStage, tasks } = workflow;
           const allDone = tasks.every((t) => {
             if (t.informational) return true;
             if (t.autoKey === 'nmi') return autoDetected.nmi;
             if (t.autoKey === 'openSolar') return autoDetected.openSolar;
+            if (t.autoKey === 'heaSA') return autoDetected.heaSA;
             return tasksDone[t.id] ?? false;
           });
           return (
@@ -323,9 +315,9 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                   )}
                   {!nextStage && <span className="text-[#9ca3af] text-xs">— final stage</span>}
                 </div>
-                {autoAdvances && allDone && (
+                {allDone && nextStage && (
                   <span className="text-[11px] text-green-700 font-semibold bg-green-100 px-2 py-0.5 rounded-full">
-                    ✓ Advancing…
+                    ✓ All done
                   </span>
                 )}
               </div>
@@ -339,6 +331,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                   const isDone = task.informational ? false
                     : task.autoKey === 'nmi' ? autoDetected.nmi
                     : task.autoKey === 'openSolar' ? autoDetected.openSolar
+                    : task.autoKey === 'heaSA' ? autoDetected.heaSA
                     : (tasksDone[task.id] ?? false);
                   const isAuto = !!task.autoKey;
 
@@ -407,6 +400,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                           (tasks.filter((t) => !t.informational && (
                             t.autoKey === 'nmi' ? autoDetected.nmi
                             : t.autoKey === 'openSolar' ? autoDetected.openSolar
+                            : t.autoKey === 'heaSA' ? autoDetected.heaSA
                             : (tasksDone[t.id] ?? false)
                           )).length / Math.max(1, tasks.filter((t) => !t.informational).length)
                         ) * 100)}%`
@@ -415,6 +409,27 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                   </div>
                 </div>
               )}
+
+              {/* Next / Back buttons */}
+              <div className="mt-4 flex gap-2">
+                {status === 'Estimation' && (
+                  <button
+                    onClick={() => advanceStage('Lead')}
+                    className="flex-1 py-2 rounded-lg text-sm font-semibold border border-[#e5e9f0] bg-white text-[#6b7280] hover:text-[#111827] hover:border-[#111827] transition-all"
+                  >
+                    ← Lead tasks
+                  </button>
+                )}
+                {nextStage && (
+                  <button
+                    disabled={!allDone}
+                    onClick={() => allDone && advanceStage(nextStage)}
+                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${allDone ? 'bg-[#ffd100] text-[#111827] cursor-pointer hover:bg-[#e6bc00]' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                  >
+                    {allDone ? `Move to ${nextStage} →` : `Complete tasks to advance →`}
+                  </button>
+                )}
+              </div>
             </div>
           );
         })()}

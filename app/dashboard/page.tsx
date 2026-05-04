@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { formatHEADate } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Overview | HEA' };
@@ -200,7 +201,7 @@ export default async function DashboardPage() {
                         {job.status}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell">{job.createdDate ?? '—'}</td>
+                    <td className="px-5 py-3 text-[#6b7280] text-xs hidden md:table-cell">{job.createdDate ? formatHEADate(job.createdDate) : '—'}</td>
                   </tr>
                 ))
               )}

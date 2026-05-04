@@ -42,13 +42,14 @@ const STAGE_WORKFLOW: Record<string, {
       {
         id: 'opensolar', emoji: '🔆',
         label: 'System pre-designed on OpenSolar',
+        detail: 'Proposal PDF saved to client Drive proposals folder',
+        autoKey: 'openSolar',
         links: [{ label: 'Open OpenSolar ↗', href: 'https://app.opensolar.com/220067/projects' }],
       },
       {
         id: 'analyser', emoji: '☀️',
         label: 'HEA Solar Analyser run — system size & payback period designed',
-        detail: 'Estimation may be signed here on the spot',
-        autoKey: 'estimation',
+        detail: 'Run with client. They can take the solution now or come back later — either way, tick when complete',
       },
     ],
   },
@@ -141,7 +142,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
 
   // Workflow checklist state
   const [tasksDone, setTasksDone]       = useState<Record<string, boolean>>({});
-  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; estimation: boolean; nmiSubfolderUrl?: string }>({ nmi: false, estimation: false });
+  const [autoDetected, setAutoDetected] = useState<{ nmi: boolean; openSolar: boolean; nmiSubfolderUrl?: string; proposalsFolderUrl?: string }>({ nmi: false, openSolar: false });
 
   // Load per-job checklist state from localStorage
   useEffect(() => {
@@ -160,12 +161,17 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
     let cancelled = false;
     async function check() {
       try {
-        const [nmiRes, estRes] = await Promise.all([
+        const [nmiRes, osRes] = await Promise.all([
           fetch(`/api/dashboard/pipeline/check-nmi?jobNumber=${job.jobNumber}`),
-          fetch(`/api/dashboard/pipeline/check-estimation?jobNumber=${job.jobNumber}`),
+          fetch(`/api/dashboard/pipeline/check-opensolar?jobNumber=${job.jobNumber}`),
         ]);
-        const [nmiData, estData] = await Promise.all([nmiRes.json(), estRes.json()]);
-        if (!cancelled) setAutoDetected({ nmi: !!nmiData.hasNMI, estimation: !!estData.hasEstimation, nmiSubfolderUrl: nmiData.nmiSubfolderUrl ?? undefined });
+        const [nmiData, osData] = await Promise.all([nmiRes.json(), osRes.json()]);
+        if (!cancelled) setAutoDetected({
+          nmi: !!nmiData.hasNMI,
+          openSolar: !!osData.hasOpenSolar,
+          nmiSubfolderUrl: nmiData.nmiSubfolderUrl ?? undefined,
+          proposalsFolderUrl: osData.proposalsFolderUrl ?? undefined,
+        });
       } catch {}
     }
     check();
@@ -180,7 +186,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
     const allDone = workflow.tasks.every((t) => {
       if (t.informational) return true;
       if (t.autoKey === 'nmi') return autoDetected.nmi;
-      if (t.autoKey === 'estimation') return autoDetected.estimation;
+      if (t.autoKey === 'openSolar') return autoDetected.openSolar;
       return tasksDone[t.id] ?? false;
     });
     if (!allDone) return;
@@ -305,7 +311,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
           const allDone = tasks.every((t) => {
             if (t.informational) return true;
             if (t.autoKey === 'nmi') return autoDetected.nmi;
-            if (t.autoKey === 'estimation') return autoDetected.estimation;
+            if (t.autoKey === 'openSolar') return autoDetected.openSolar;
             return tasksDone[t.id] ?? false;
           });
           return (
@@ -337,7 +343,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                 {tasks.map((task) => {
                   const isDone = task.informational ? false
                     : task.autoKey === 'nmi' ? autoDetected.nmi
-                    : task.autoKey === 'estimation' ? autoDetected.estimation
+                    : task.autoKey === 'openSolar' ? autoDetected.openSolar
                     : (tasksDone[task.id] ?? false);
                   const isAuto = !!task.autoKey;
 
@@ -345,6 +351,7 @@ export default function JobDetail({ job, paymentStatus, paymentMilestone }: { jo
                     ...(task.links ?? []),
                     ...(task.id === 'analyser' ? [{ label: 'Solar Analyser ↗', href: analyserUrl }] : []),
                     ...(task.autoKey === 'nmi' ? [{ label: 'Drive Folder ↗', href: autoDetected.nmiSubfolderUrl ?? job.driveUrl ?? '' }].filter(l => l.href) : []),
+                    ...(task.autoKey === 'openSolar' && autoDetected.proposalsFolderUrl ? [{ label: 'Proposals Folder ↗', href: autoDetected.proposalsFolderUrl }] : []),
                   ];
 
                   return (

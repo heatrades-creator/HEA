@@ -1,7 +1,6 @@
 import { ANNEX_REGISTRY, type AnnexDef } from '@/lib/document-config'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { headers } from 'next/headers'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Templates | HEA' }
@@ -13,15 +12,15 @@ type AnnexTemplateInfo = {
 }
 
 async function fetchAnnexTemplateInfo(): Promise<AnnexTemplateInfo[]> {
+  const gasUrl = process.env.JOBS_GAS_URL
+  if (!gasUrl) return []
   try {
-    const h = await headers()
-    const host = h.get('host') ?? 'localhost:3000'
-    const proto = host.startsWith('localhost') ? 'http' : 'https'
-    const res = await fetch(`${proto}://${host}/api/dashboard/annex-templates`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    return res.json()
+    const raw = await fetch(`${gasUrl}?action=getAnnexTemplateInfo`, { cache: 'no-store' }).then(
+      (r) => r.text()
+    )
+    const data = JSON.parse(raw)
+    if (data.error) return []
+    return data
   } catch {
     return []
   }

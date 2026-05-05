@@ -146,7 +146,7 @@ const DRAWER_SECTIONS = [
     items: [
       { label: 'Documents',      href: '/dashboard/documents',  exact: false, icon: icons.documents,  external: false },
       { label: 'Templates',      href: '/dashboard/templates',  exact: false, icon: icons.templates,  external: false },
-      { label: 'Pricing',        href: '/dashboard/pricing',    exact: false, icon: icons.pricing,    external: false },
+      { label: 'Rapid Quote',     href: '/dashboard/pricing',    exact: false, icon: icons.pricing,    external: false },
     ],
   },
   {

@@ -59,9 +59,9 @@ export default async function PricingPage({ searchParams }: { searchParams: Sear
     <div className="p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#111827]">Pricing</h1>
+          <h1 className="text-2xl font-bold text-[#111827]">Rapid Quote</h1>
           <p className="text-sm text-[#6b7280] mt-0.5">
-            {jobNumber ? `Building quote for ${jobNumber}${clientName ? ` — ${clientName}` : ''}` : 'Browse packages and build quotes'}
+            {jobNumber ? `Building quote for ${jobNumber}${clientName ? ` — ${clientName}` : ''}` : 'Build accurate quotes fast'}
           </p>
         </div>
         {sheetUrl && (

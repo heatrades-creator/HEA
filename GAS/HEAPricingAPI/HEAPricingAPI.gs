@@ -50,6 +50,43 @@ function doGet(e) {
   return jsonOut({ error: 'Unknown action. Use getBundles, getSolarBase, getBatteryBase, getExtras, getSettings, or getSheetUrl.' });
 }
 
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents);
+    var action = body.action;
+
+    if (action === 'updateExtrasPrice') {
+      return jsonOut(updateExtrasPrice_(body.section, body.item, body.newPrice));
+    }
+    if (action === 'addExtrasRow') {
+      return jsonOut(addExtrasRow_(body.section, body.item, body.unit, body.price));
+    }
+    return jsonOut({ error: 'Unknown POST action.' });
+  } catch(err) {
+    return jsonOut({ error: 'POST error: ' + err.message });
+  }
+}
+
+function updateExtrasPrice_(section, item, newPrice) {
+  var sheet;
+  try { sheet = getSheet_('Extras'); } catch(e) { return { error: e.message }; }
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === String(section).trim() && String(data[i][1]).trim() === String(item).trim()) {
+      sheet.getRange(i + 1, 4).setValue('$' + parseFloat(newPrice).toFixed(2));
+      return { ok: true };
+    }
+  }
+  return { error: 'Row not found: ' + section + ' / ' + item };
+}
+
+function addExtrasRow_(section, item, unit, price) {
+  var sheet;
+  try { sheet = getSheet_('Extras'); } catch(e) { return { error: e.message }; }
+  sheet.appendRow([section, item, unit || 'each', '$' + parseFloat(price).toFixed(2), '']);
+  return { ok: true };
+}
+
 // ── Sheet access ─────────────────────────────────────────────────────────────
 
 function getSheet_(tabName) {

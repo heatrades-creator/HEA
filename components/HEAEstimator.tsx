@@ -38,24 +38,25 @@ interface EstimateOutput {
 
 function computeEstimate(inputs: EstimatorInputs): EstimateOutput {
   let systemKw = 6.6;
-  let priceMin = 8000;
-  let priceMax = 12000;
+  // Solar-only base: 6.6kW = $4,000; scaled per watt above that ($0.59/W)
+  let priceMin = 4000;
+  let priceMax = 5500;
   let savingsMin = 1200;
   let savingsMax = 2000;
 
-  // Bill range
-  if (inputs.bill === "600_plus") { systemKw = 10; priceMin = 11000; priceMax = 16000; savingsMin = 2000; savingsMax = 3500; }
-  if (inputs.bill === "under_300") { systemKw = 5; priceMin = 6500; priceMax = 10000; savingsMin = 800; savingsMax = 1400; }
+  // Bill range drives system size
+  if (inputs.bill === "600_plus") { systemKw = 10; priceMin = 5900; priceMax = 7800; savingsMin = 2000; savingsMax = 3500; }
+  if (inputs.bill === "under_300") { systemKw = 5; priceMin = 3200; priceMax = 4500; savingsMin = 800; savingsMax = 1400; }
 
   // Home size modifier
-  if (inputs.homeSize === "large") { systemKw += 1.5; priceMin += 1500; priceMax += 2500; savingsMin += 300; savingsMax += 600; }
-  if (inputs.homeSize === "small") { systemKw = Math.max(systemKw - 1, 3.3); priceMin -= 500; savingsMin -= 200; }
+  if (inputs.homeSize === "large") { systemKw += 1.5; priceMin += 900; priceMax += 1400; savingsMin += 300; savingsMax += 600; }
+  if (inputs.homeSize === "small") { systemKw = Math.max(systemKw - 1, 3.3); priceMin -= 400; savingsMin -= 200; }
 
-  // EV modifier
-  if (inputs.ev) { systemKw += 1.5; priceMin += 1000; priceMax += 1500; savingsMin += 500; savingsMax += 900; }
+  // EV modifier — larger system
+  if (inputs.ev) { systemKw += 1.5; priceMin += 900; priceMax += 1300; savingsMin += 500; savingsMax += 900; }
 
-  // Battery add-on
-  if (inputs.battery) { priceMin += 8000; priceMax += 14000; savingsMin += 800; savingsMax += 1500; }
+  // Battery add-on — real data: FoxESS 18kWh 1P battery-only $12,290 → GoodWe 33.2kWh $17,700
+  if (inputs.battery) { priceMin += 10000; priceMax += 14000; savingsMin += 1200; savingsMax += 2200; }
 
   // Round system kw to 1dp
   systemKw = Math.round(systemKw * 10) / 10;

@@ -26,25 +26,25 @@ type PricingPkg = {
 const FALLBACK_SOLAR: PricingPkg[] = [
   {
     name: "Solar Starter",
-    specs: "6.6 kW array · 5 kW inverter",
-    from: null,
-    includes: ["6.6 kW panel array", "5 kW grid-connect inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
+    specs: "6.6 kW array · GoodWe inverter",
+    from: "4,000",
+    includes: ["6.6 kW Risen 475W panel array", "GoodWe inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
     note: "Ideal for smaller households wanting to reduce bills without over-capitalising.",
     popular: false,
   },
   {
     name: "Solar Mid",
-    specs: "10 kW array · 8 kW inverter",
-    from: null,
-    includes: ["10 kW panel array", "8 kW inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
-    note: "Suits medium to large households with daytime consumption.",
+    specs: "8.55 kW array · GoodWe inverter",
+    from: "5,045",
+    includes: ["8.55 kW Risen 475W panel array", "GoodWe inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
+    note: "Suits medium to large households with solid daytime consumption.",
     popular: true,
   },
   {
     name: "Solar Max",
-    specs: "13.2 kW array · 10 kW inverter",
-    from: null,
-    includes: ["13.2 kW panel array", "10 kW inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
+    specs: "13.3 kW array · GoodWe inverter",
+    from: "7,847",
+    includes: ["13.3 kW Risen 475W panel array", "GoodWe inverter", "Standard roof mount", "Grid connection", "Monitoring setup"],
     note: "Large households or those planning to add EV charging and/or battery later.",
     popular: false,
   },
@@ -52,20 +52,28 @@ const FALLBACK_SOLAR: PricingPkg[] = [
 
 const FALLBACK_BATTERY: PricingPkg[] = [
   {
-    name: "Battery Add-On — Small",
-    specs: "5–7 kWh usable capacity",
-    from: null,
-    includes: ["5–7 kWh battery", "Inverter/charger if required", "Switchboard integration", "Monitoring setup"],
-    note: "Suits smaller households or those wanting partial overnight coverage.",
+    name: "Solar + Battery — Starter",
+    specs: "6.6 kW solar · FoxESS 18 kWh battery",
+    from: "16,790",
+    includes: ["6.6 kW Risen 475W panel array", "FoxESS 18 kWh CQ6 battery", "FoxESS KH10 10kW inverter", "Monitoring setup"],
+    note: "Entry-level solar + storage. Good overnight coverage for most households.",
     popular: false,
   },
   {
-    name: "Battery Add-On — Standard",
-    specs: "10–13 kWh usable capacity",
-    from: null,
-    includes: ["10–13 kWh battery", "Inverter/charger if required", "Full overnight coverage", "VPP-ready config"],
-    note: "Most common size for Bendigo family homes. Covers overnight usage for most households.",
+    name: "Solar + Battery — Popular",
+    specs: "6.6 kW solar · FoxESS 29.9 kWh battery",
+    from: "19,020",
+    includes: ["6.6 kW Risen 475W panel array", "FoxESS 29.9 kWh CQ6 battery", "FoxESS KH10 10kW inverter", "Monitoring setup"],
+    note: "Most popular combo — strong overnight coverage and excellent self-consumption.",
     popular: true,
+  },
+  {
+    name: "Solar + Battery — Premium",
+    specs: "6.6 kW solar · GoodWe 33.2 kWh battery",
+    from: "22,190",
+    includes: ["6.6 kW Risen 475W panel array", "GoodWe 33.2 kWh (4-stack) battery", "GoodWe 10kW hybrid inverter", "Full home backup capability"],
+    note: "Maximum storage with full home backup. Ideal for energy independence.",
+    popular: false,
   },
 ];
 
@@ -157,8 +165,8 @@ export default async function PricingPage() {
         {/* Battery Add-Ons */}
         <section className="py-20 px-4 bg-slate-50">
           <div className="max-w-4xl mx-auto">
-            <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center">Battery Add-Ons</h2>
-            <p className="text-slate-500 text-center mb-10">Retrofit to existing solar, or added alongside a new system.</p>
+            <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center">Solar + Battery Packages</h2>
+            <p className="text-slate-500 text-center mb-10">Complete solar + battery bundles. Before Solar Victoria $1,400 rebate (customer applies separately).</p>
             <div className="grid md:grid-cols-2 gap-8 mb-8">
               {BATTERY_PACKAGES.map((pkg) => (
                 <div key={pkg.name} className={`rounded-2xl border-2 p-8 flex flex-col ${pkg.popular ? "border-yellow-400 shadow-xl" : "border-slate-200"} bg-white`}>

@@ -7,6 +7,7 @@ on:
       - 'HEA INTAKE/**'
       - 'GAS/**'
       - 'HEA SA/**'
+      - 'GAS/HEAPricingAPI/**'
   workflow_dispatch:   # manual trigger from GitHub Actions tab
 
 # Shared credential-write script used by every job
@@ -161,6 +162,78 @@ jobs:
           clasp deploy -i "AKfycbwERmJbdTrnpM_-ABgXGtRolMCzSG2nDWJNyJjhfDx-baSI1BJWiehTdCM9qW0VSWU" \
             --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "=== PhotoPortal live immediately ==="
+
+  # ── Deploy HEA Pricing API ────────────────────────────────────────────────────
+  deploy-pricing-api:
+    name: Push HEA Pricing API
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install clasp
+        run: npm install -g @google/clasp
+
+      - name: Write credentials
+        run: |
+          set -e
+          TOKEN='${{ secrets.CLASPRC_JSON }}'
+          echo "$TOKEN" > ~/.clasprc.json
+          mkdir -p ~/.config/@google/clasp ~/.config/clasp
+          echo "$TOKEN" > ~/.config/@google/clasp/credentials.json
+          echo "$TOKEN" > ~/.config/clasp/credentials.json
+
+      - name: Push and deploy
+        working-directory: GAS/HEAPricingAPI
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: prj_4wvjTKCHlMjJtCZ5zFTRmZqU9IdK
+        run: |
+          if grep -q "REPLACE_WITH" .clasp.json; then
+            echo "Pricing API script ID not configured — skipping (add Script ID to GAS/HEAPricingAPI/.clasp.json)"
+            exit 0
+          fi
+          set -xe
+          cat .clasp.json
+          echo "=== Pushing code ==="
+          clasp push --force
+          echo "=== Updating live deployment ==="
+          DEPLOY_ID=$(clasp deployments 2>&1 | grep -v "@HEAD" | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
+          if [ -n "$DEPLOY_ID" ]; then
+            clasp deploy -i "$DEPLOY_ID" --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          else
+            DEPLOY_ID=$(clasp deploy --description "Auto-deploy $(date -u +%Y-%m-%dT%H:%M:%SZ)" 2>&1 | grep -oE 'AK[A-Za-z0-9_-]+' | head -1)
+          fi
+          GAS_URL="https://script.google.com/macros/s/${DEPLOY_ID}/exec"
+          echo "=== HEA Pricing API live immediately ==="
+          echo "=== PRICING_GAS_URL: ${GAS_URL} ==="
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "=== Auto-updating PRICING_GAS_URL in Vercel ==="
+            curl -sf -X DELETE \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?key=PRICING_GAS_URL" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" || true
+            curl -sf -X POST \
+              "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"key\":\"PRICING_GAS_URL\",\"value\":\"${GAS_URL}\",\"type\":\"plain\",\"target\":[\"production\",\"preview\",\"development\"]}" \
+              || echo "=== Vercel env update skipped (var unchanged) ==="
+            curl -sf -X DELETE \
+              "https://api.vercel.com/v9/projects/${VERCEL_PROJECT_ID}/env?key=NEXT_PUBLIC_PRICING_GAS_URL" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" || true
+            curl -sf -X POST \
+              "https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env" \
+              -H "Authorization: Bearer ${VERCEL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"key\":\"NEXT_PUBLIC_PRICING_GAS_URL\",\"value\":\"${GAS_URL}\",\"type\":\"plain\",\"target\":[\"production\",\"preview\",\"development\"]}" \
+              || echo "=== Vercel NEXT_PUBLIC env update skipped ==="
+            echo "=== Vercel PRICING_GAS_URL update attempted ==="
+          else
+            echo "=== (Set VERCEL_TOKEN + VERCEL_PROJECT_ID secrets to auto-update Vercel) ==="
+          fi
 
   # ── Deploy HEA Solar Analyser ─────────────────────────────────────────────
   deploy-solar-analyser:

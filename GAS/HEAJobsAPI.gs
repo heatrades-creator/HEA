@@ -48,6 +48,17 @@ const COL = {
   EPS_CIRCUIT_2:    23, // W
   EPS_CIRCUIT_3:    24, // X
   POSTCODE:         25, // Y
+  // Equipment detail columns — populated by Quote Builder via /api/dashboard/pricing/apply
+  PANEL_BRAND:      26, // Z
+  PANEL_MODEL:      27, // AA
+  INVERTER_BRAND:   28, // AB
+  INVERTER_MODEL:   29, // AC
+  BATTERY_BRAND:    30, // AD
+  BATTERY_MODEL:    31, // AE
+  BATTERY_KWH:      32, // AF
+  EV_CHARGER:       33, // AG
+  QUOTE_LABEL:      34, // AH
+  EXTRAS_SUMMARY:   35, // AI
 };
 
 // ---------------------------------------------------------------------------
@@ -280,16 +291,24 @@ function getSheet() {
       'Occupants', 'Home Daytime', 'Hot Water', 'Gas Appliances', 'EV',
       'WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3',
       'Postcode',
+      'Panel Brand', 'Panel Model', 'Inverter Brand', 'Inverter Model',
+      'Battery Brand', 'Battery Model', 'Battery kWh',
+      'EV Charger', 'Quote Label', 'Extras Summary',
     ]);
     sheet.setFrozenRows(1);
-    sheet.getRange(1, 1, 1, 25).setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 35).setFontWeight('bold');
   } else {
     // Migration: add new column headers if they don't exist yet
     const lastCol = sheet.getLastColumn();
-    const newHeaders = ['WiFi SSID', 'WiFi Password', 'EPS Circuit 1', 'EPS Circuit 2', 'EPS Circuit 3', 'Postcode'];
-    newHeaders.forEach(function(header, i) {
-      const col = 20 + i;
-      if (lastCol < col) sheet.getRange(1, col).setValue(header);
+    const allHeaders = [
+      [20, 'WiFi SSID'], [21, 'WiFi Password'], [22, 'EPS Circuit 1'], [23, 'EPS Circuit 2'],
+      [24, 'EPS Circuit 3'], [25, 'Postcode'],
+      [26, 'Panel Brand'], [27, 'Panel Model'], [28, 'Inverter Brand'], [29, 'Inverter Model'],
+      [30, 'Battery Brand'], [31, 'Battery Model'], [32, 'Battery kWh'],
+      [33, 'EV Charger'], [34, 'Quote Label'], [35, 'Extras Summary'],
+    ];
+    allHeaders.forEach(function(pair) {
+      if (lastCol < pair[0]) sheet.getRange(1, pair[0]).setValue(pair[1]);
     });
   }
 
@@ -363,6 +382,7 @@ function createJob(sheet, data) {
     data.epsCircuit2     || '',
     data.epsCircuit3     || '',
     data.postcode        || '',
+    '', '', '', '', '', '', '', '', '', '', // Equipment cols Z-AI (blank on create)
   ]);
 
   return {
@@ -417,14 +437,25 @@ function updateJob(sheet, data) {
   if (data.epsCircuit1     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_1).setValue(data.epsCircuit1);
   if (data.epsCircuit2     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_2).setValue(data.epsCircuit2);
   if (data.epsCircuit3     !== undefined) sheet.getRange(row, COL.EPS_CIRCUIT_3).setValue(data.epsCircuit3);
+  // Equipment detail — set by Quote Builder
+  if (data.panelBrand      !== undefined) sheet.getRange(row, COL.PANEL_BRAND).setValue(data.panelBrand);
+  if (data.panelModel      !== undefined) sheet.getRange(row, COL.PANEL_MODEL).setValue(data.panelModel);
+  if (data.inverterBrand   !== undefined) sheet.getRange(row, COL.INVERTER_BRAND).setValue(data.inverterBrand);
+  if (data.inverterModel   !== undefined) sheet.getRange(row, COL.INVERTER_MODEL).setValue(data.inverterModel);
+  if (data.batteryBrand    !== undefined) sheet.getRange(row, COL.BATTERY_BRAND).setValue(data.batteryBrand);
+  if (data.batteryModel    !== undefined) sheet.getRange(row, COL.BATTERY_MODEL).setValue(data.batteryModel);
+  if (data.batteryKwh      !== undefined) sheet.getRange(row, COL.BATTERY_KWH).setValue(data.batteryKwh);
+  if (data.evCharger       !== undefined) sheet.getRange(row, COL.EV_CHARGER).setValue(data.evCharger);
+  if (data.quoteLabel      !== undefined) sheet.getRange(row, COL.QUOTE_LABEL).setValue(data.quoteLabel);
+  if (data.extrasSummary   !== undefined) sheet.getRange(row, COL.EXTRAS_SUMMARY).setValue(data.extrasSummary);
 
-  return rowToJob(sheet.getRange(row, 1, 1, 25).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 35).getValues()[0]);
 }
 
 function findJobByNumber(sheet, jobNumber) {
   const row = findRowByJobNumber(sheet, jobNumber);
   if (!row) return null;
-  return rowToJob(sheet.getRange(row, 1, 1, 25).getValues()[0]);
+  return rowToJob(sheet.getRange(row, 1, 1, 35).getValues()[0]);
 }
 
 function findRowByJobNumber(sheet, jobNumber) {
@@ -440,7 +471,7 @@ function findRowByJobNumber(sheet, jobNumber) {
 function getAllJobs(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return [];
-  const values = sheet.getRange(2, 1, lastRow - 1, 25).getValues();
+  const values = sheet.getRange(2, 1, lastRow - 1, 35).getValues();
   return values
     .filter(row => row[0])
     .map(rowToJob)
@@ -501,6 +532,16 @@ function rowToJob(row) {
     epsCircuit2:     String(row[22] || ''),
     epsCircuit3:     String(row[23] || ''),
     postcode:        String(row[24] || ''),
+    panelBrand:      String(row[25] || ''),
+    panelModel:      String(row[26] || ''),
+    inverterBrand:   String(row[27] || ''),
+    inverterModel:   String(row[28] || ''),
+    batteryBrand:    String(row[29] || ''),
+    batteryModel:    String(row[30] || ''),
+    batteryKwh:      String(row[31] || ''),
+    evCharger:       String(row[32] || ''),
+    quoteLabel:      String(row[33] || ''),
+    extrasSummary:   String(row[34] || ''),
   };
 }
 

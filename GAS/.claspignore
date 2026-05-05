@@ -3,3 +3,6 @@ PhotoPortal/**
 
 # Exclude C2 sub-project — separate GAS project, must not pollute Jobs API
 C2/**
+
+# Exclude HEAPricingAPI — separate GAS project with its own .clasp.json
+HEAPricingAPI/**

@@ -54,6 +54,17 @@ export type GASJob = {
   epsCircuit1:    string
   epsCircuit2:    string
   epsCircuit3:    string
+  // Equipment detail — set by Quote Builder via /api/dashboard/pricing/apply
+  panelBrand:     string
+  panelModel:     string
+  inverterBrand:  string
+  inverterModel:  string
+  batteryBrand:   string
+  batteryModel:   string
+  batteryKwh:     string
+  evCharger:      string
+  quoteLabel:     string
+  extrasSummary:  string
 }
 
 export type PdfFonts = { bold: PDFFont; font: PDFFont }
